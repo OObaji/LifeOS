@@ -72,7 +72,8 @@
             Fingerprint, Delete, KeyRound, ShieldQuestion, RotateCcw, Menu, X, Save, Edit3, Wifi, WifiOff, Database,
             Timer, Play, Pause, Wrench, File, CreditCard, Coins, Heart, Activity, Scissors, Share2, Mail, Archive, Image,
             Cloud, CloudRain, CloudSun, CloudSnow, CloudLightning, Thermometer,
-            List, Grid, Columns, Utensils, FileText, Trash, ShieldAlert, Flame, Volume2, ChevronLeft
+            List, Grid, Columns, Utensils, FileText, Trash, ShieldAlert, Flame, Volume2, ChevronLeft,
+            ListTodo, ArrowUpRight, CheckSquare, Flower2, Dumbbell
         } from "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0";
 
         // --- FIREBASE IMPORTS ---
@@ -113,7 +114,8 @@
             isFirebaseConfigured = false;
         }
 
-        // --- DATA ---
+        // --- GLOBAL DATA ---
+        // Defined globally to be shared across components
         const DEFAULT_MEALS = [
             { day: 'Monday', type: 'Breakfast', text: 'Boiled eggs + bread + tea/coffee' },
             { day: 'Monday', type: 'Lunch', text: 'Jollof rice + chicken' },
@@ -136,6 +138,78 @@
             { day: 'Sunday', type: 'Breakfast', text: 'Plantain + scrambled eggs' },
             { day: 'Sunday', type: 'Lunch', text: 'White spaghetti & sauce' },
             { day: 'Sunday', type: 'Dinner', text: 'Beans & plantain' }
+        ];
+
+        const BIBLE_TOPICS = [
+            {
+                title: "Finance & Wealth",
+                desc: "Stewardship, generosity, and trust in God's provision.",
+                verses: ["Proverbs 22:7 - The borrower is slave to the lender.", "Matthew 6:24 - You cannot serve both God and money.", "Malachi 3:10 - Bring the whole tithe into the storehouse."],
+                chapters: ["Proverbs 3", "Matthew 6", "1 Timothy 6"]
+            },
+            {
+                title: "Overcoming Lust",
+                desc: "Purity of heart, fleeing temptation, and self-control.",
+                verses: ["2 Timothy 2:22 - Flee the evil desires of youth.", "1 Corinthians 6:18 - Flee from sexual immorality.", "Psalm 119:9 - How can a young person stay on the path of purity? By living according to your word."],
+                chapters: ["Romans 6", "1 Corinthians 6", "Psalm 51"]
+            },
+            {
+                title: "Power of Prayer",
+                desc: "Communion with God, persistence, and faith.",
+                verses: ["Philippians 4:6 - Do not be anxious about anything, but in every situation, by prayer and petition...", "1 Thessalonians 5:17 - Pray continually.", "James 5:16 - The prayer of a righteous person is powerful and effective."],
+                chapters: ["Luke 11", "Matthew 6", "Psalm 145"]
+            },
+            {
+                title: "Anxiety & Peace",
+                desc: "Finding rest in God's presence amidst chaos.",
+                verses: ["1 Peter 5:7 - Cast all your anxiety on him because he cares for you.", "John 14:27 - Peace I leave with you; my peace I give you.", "Isaiah 26:3 - You will keep in perfect peace those whose minds are steadfast."],
+                chapters: ["Philippians 4", "Psalm 23", "Matthew 6"]
+            },
+            {
+                title: "Diligence & Work",
+                desc: "Working unto the Lord and avoiding laziness.",
+                verses: ["Colossians 3:23 - Whatever you do, work at it with all your heart...", "Proverbs 13:4 - A sluggard’s appetite is never filled, but the desires of the diligent are fully satisfied."],
+                chapters: ["Proverbs 6", "Ecclesiastes 3", "2 Thessalonians 3"]
+            }
+        ];
+
+        const DAILY_SPIRITUALITY = [
+            { verse: "Joshua 1:9", text: "Have I not commanded you? Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go.", prayer: "Lord, grant me the courage to face today's challenges knowing You are by my side.", encouragement: "You are never alone in your battles. God's presence is your greatest weapon." },
+            { verse: "Jeremiah 29:11", text: "For I know the plans I have for you,” declares the Lord, “plans to prosper you and not to harm you, plans to give you hope and a future.", prayer: "Father, help me trust in Your perfect timing and Your good plans for my life.", encouragement: "Your future is bright because it is in God's hands." },
+            { verse: "Isaiah 40:31", text: "But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint.", prayer: "Renew my strength, Lord. Help me to wait on You and not rush ahead.", encouragement: "Patience isn't just waiting; it's how you behave while you wait. God is strengthening you." },
+            { verse: "Romans 8:28", text: "And we know that in all things God works for the good of those who love him, who have been called according to his purpose.", prayer: "God, thank You for weaving even the bad parts of my life into a beautiful tapestry.", encouragement: "Every setback is a setup for a comeback with God." },
+            { verse: "Psalm 46:10", text: "He says, 'Be still, and know that I am God; I will be exalted among the nations, I will be exalted in the earth.'", prayer: "Quiet my anxious thoughts, Lord. Help me to simply be still and acknowledge Your power.", encouragement: "Peace is not the absence of trouble, but the presence of God." }
+        ];
+
+        const BIBLE_BOOKS = [
+            { category: "Foundations (Pentateuch)", books: [
+                { name: "Genesis", theme: "Beginnings & Family", app: "Family Dynamics & Legacy. Understanding human nature and trusting God's long-term plan.", keys: "Gen 1 (Purpose), Gen 37-50 (Resilience)" },
+                { name: "Exodus", theme: "Deliverance", app: "Leadership & Freedom. Breaking free from bad habits and establishing principled order.", keys: "Ex 3-4 (Calling), Ex 20 (Ethics)" },
+                { name: "Proverbs", theme: "Wisdom", app: "Finance & Habits. Practical advice on money, speech, work ethic, and avoiding toxic people.", keys: "Prov 3 (Trust), Prov 22 (Money)" },
+                { name: "Deuteronomy", theme: "Remembrance", app: "Review & Strategy. Learning from the past to build a successful future.", keys: "Deut 28 (Blessings/Curses)" }
+            ]},
+            { category: "History & Leadership", books: [
+                { name: "Joshua", theme: "Conquest", app: "Courage & Strategy. Taking new territory in career/business and stepping into leadership.", keys: "Josh 1 (Mindset)" },
+                { name: "Nehemiah", theme: "Rebuilding", app: "Project Management. How to build a great work, handle opposition, and lead a team.", keys: "Neh 1-6 (Execution)" },
+                { name: "Esther", theme: "Providence", app: "Strategic Influence. Using your position for good in high-stakes environments.", keys: "Esther 4 (Courage)" },
+                { name: "1&2 Samuel", theme: "Kingship", app: "Humility & Power. Handling promotion and dealing with toxic leadership.", keys: "1 Sam 16 (Character)" }
+            ]},
+            { category: "Wisdom & Mindset", books: [
+                { name: "Job", theme: "Suffering", app: "Resilience. Dealing with unexplained loss and remaining faithful when things go wrong.", keys: "Job 1-2, 42" },
+                { name: "Psalms", theme: "Emotion", app: "Mental Health. Processing raw emotions (anger, fear, joy) through prayer.", keys: "Ps 23 (Peace), Ps 91 (Protection)" },
+                { name: "Ecclesiastes", theme: "Meaning", app: "Purpose & Burnout. Finding meaning beyond career success and wealth.", keys: "Ecc 3 (Seasons)" }
+            ]},
+            { category: "The Gospels (Jesus)", books: [
+                { name: "Matthew", theme: "The King", app: "Ethics & Kingdom Living. The ultimate guide for character and conflict resolution.", keys: "Matt 5-7 (Sermon on Mount)" },
+                { name: "Luke", theme: "The Man", app: "Compassion. Caring for the marginalized and understanding God's grace.", keys: "Luke 15 (Prodigal Son)" },
+                { name: "John", theme: "The God", app: "Identity. Understanding who Jesus is and finding true life/identity in Him.", keys: "John 15 (Abiding)" }
+            ]},
+            { category: "Early Church & Letters", books: [
+                { name: "Acts", theme: "The Spirit", app: "Community & Boldness. Living out faith in a skeptical world.", keys: "Acts 2 (Holy Spirit)" },
+                { name: "Romans", theme: "The Gospel", app: "Theology & Mindset. A logical breakdown of faith and renewing the mind.", keys: "Rom 8 (No Condemnation), Rom 12 (Transformation)" },
+                { name: "Philippians", theme: "Joy", app: "Contentment. Finding joy regardless of circumstances.", keys: "Phil 4 (Anxiety/Peace)" },
+                { name: "James", theme: "Action", app: "Integrity. Faith without works is dead; controlling the tongue.", keys: "James 1 (Trials), James 3 (Speech)" }
+            ]}
         ];
 
         // --- COMPONENTS ---
@@ -338,7 +412,7 @@
 
         // --- VIEWS ---
 
-        const DashboardView = ({ onNavigate, meals = [] }) => {
+        const DashboardView = ({ onNavigate, meals = [], tasks = [] }) => {
             const [dailyFocus, setDailyFocus] = useState("");
             const [isEditing, setIsEditing] = useState(true);
             const [focusInput, setFocusInput] = useState("");
@@ -360,6 +434,41 @@
                 const defaultMeal = DEFAULT_MEALS.find(m => m.day === todayName && m.type === type);
                 return defaultMeal ? defaultMeal.text : "Not planned";
             };
+
+            // Fitness Logic
+            const fitnessHabits = {
+                'Monday': '30 mins Cardio (Run/Jog)',
+                'Tuesday': 'Upper Body Strength',
+                'Wednesday': 'Active Recovery / Yoga',
+                'Thursday': 'Lower Body Strength',
+                'Friday': 'HIIT / Cardio Circuit',
+                'Saturday': 'Long Walk or Hike',
+                'Sunday': 'Rest & Stretching'
+            };
+            const todaysFitness = fitnessHabits[todayName] || "Active Rest";
+
+            const dailyHealthHabits = [
+                { icon: "💧", text: "Drink 3L Water" },
+                { icon: "🥤", text: "Protein Shake" },
+                { icon: "😴", text: "Sleep 7h+" },
+                { icon: "💊", text: "Take Vitamins" }
+            ];
+
+            // 2026 Goals
+            const goals2026 = [
+                "Complete Undergraduate with good grades",
+                "Finish paying school fees & debt free",
+                "Take up additional work to pay off all debt",
+                "Enroll on Masters Degree",
+                "Figure out career goals"
+            ];
+
+            // Tasks Logic (Get top Do First tasks)
+            const urgentTasks = tasks.filter(t => t.category === 'do_first' && !t.completed).slice(0, 3);
+
+            // Spirituality Logic
+            const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
+            const dailySpirit = DAILY_SPIRITUALITY[dayOfYear % DAILY_SPIRITUALITY.length];
 
             useEffect(() => {
                 const quotes = [
@@ -445,11 +554,48 @@
                          )
                     )
                 ),
+                
+                // NEW SECTION: Life Strategy
+                React.createElement("h3", { className: "text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-4 flex items-center gap-2" }, React.createElement(Target, { size: 16 }), " Life Strategy"),
+                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-6 mb-8" },
+                    React.createElement(Card, { title: "MyLife Blueprint", action: React.createElement("a", { href: "https://www.notion.so/Blueprint-of-my-life-2cce1ae8ad3280abba74e8b4e8849b12", target: "_blank", className: "text-indigo-500 hover:text-indigo-400" }, React.createElement(ExternalLink, { size: 16 })) },
+                        React.createElement("div", { className: "flex flex-col items-center justify-center h-full py-6 text-center" },
+                            React.createElement(MapPin, { size: 32, className: "text-indigo-500 mb-2" }),
+                            React.createElement("span", { className: "font-medium text-zinc-700 dark:text-zinc-200" }, "Master Plan & Vision")
+                        )
+                    ),
+                    React.createElement(Card, { title: "2026 Strategic Plan", action: React.createElement("a", { href: "https://www.notion.so/Goals-for-2026-2dae1ae8ad3280f89702fec785b5c33e", target: "_blank", className: "text-indigo-500 hover:text-indigo-400" }, React.createElement(ExternalLink, { size: 16 })) },
+                        React.createElement("div", { className: "flex flex-col items-center justify-center h-full py-6 text-center" },
+                            React.createElement(Flag, { size: 32, className: "text-emerald-500 mb-2" }),
+                            React.createElement("span", { className: "font-medium text-zinc-700 dark:text-zinc-200" }, "5-Year Goals & Milestones")
+                        )
+                    )
+                ),
+
                 React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8" },
-                    // Left Column: Focus Timer + Food
+                    // Left Column: Focus Timer + Food + Tasks + Fitness
                     React.createElement("div", { className: "flex flex-col gap-6" },
+                        React.createElement(Card, { title: "Daily Spirit", className: "border-l-4 border-l-amber-500", action: React.createElement("button", { onClick: () => onNavigate('spirituality'), className: "text-xs font-medium text-amber-500 hover:text-amber-400 flex items-center gap-1" }, "Read More", React.createElement(ArrowRight, { size: 12 })) },
+                            React.createElement("div", { className: "space-y-2" },
+                                React.createElement("div", { className: "flex items-center gap-2 text-zinc-500 text-xs uppercase tracking-wider font-bold" },
+                                    React.createElement(Book, { size: 14 }),
+                                    "Verse of the Day"
+                                ),
+                                React.createElement("p", { className: "text-sm font-medium text-zinc-800 dark:text-zinc-200" }, dailySpirit.verse)
+                            )
+                        ),
                         React.createElement(Card, { title: "Focus Timer", className: "flex flex-col justify-center", action: React.createElement("button", { onClick: () => onNavigate('focus'), className: "text-xs font-medium text-indigo-500 hover:text-indigo-400 flex items-center gap-1" }, "Full Mode", React.createElement(ArrowRight, { size: 12 })) },
                              React.createElement(CompactTimer)
+                        ),
+                        React.createElement(Card, { title: "Matrix Priorities", className: "border-l-4 border-l-rose-500", action: React.createElement("button", { onClick: () => onNavigate('tasks'), className: "text-xs font-medium text-rose-500 hover:text-rose-400 flex items-center gap-1" }, "Matrix", React.createElement(ArrowRight, { size: 12 })) },
+                            React.createElement("div", { className: "space-y-2" },
+                                urgentTasks.length > 0 ? urgentTasks.map(task => (
+                                    React.createElement("div", { key: task.id, className: "flex items-center gap-3 p-2 rounded-lg bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800" },
+                                        React.createElement("div", { className: "w-1.5 h-1.5 rounded-full bg-rose-500" }),
+                                        React.createElement("span", { className: "text-sm text-zinc-700 dark:text-zinc-200" }, task.text)
+                                    )
+                                )) : React.createElement("p", { className: "text-zinc-400 text-sm italic" }, "No 'Do First' tasks pending.")
+                            )
                         ),
                         React.createElement(Card, { title: "Today's Fuel", className: "flex-1", action: React.createElement("button", { onClick: () => onNavigate('food'), className: "text-xs font-medium text-emerald-500 hover:text-emerald-400 flex items-center gap-1" }, "View Plan", React.createElement(ArrowRight, { size: 12 })) },
                             React.createElement("div", { className: "space-y-4" },
@@ -460,26 +606,58 @@
                                     )
                                 ))
                             )
-                        )
-                    ),
-                    // Right Column: Daily Focus (Spans 2)
-                    React.createElement(Card, { title: "Daily Focus", className: "lg:col-span-2 h-full" },
-                        React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3 h-full" },
-                            habits.map(habit => (
-                                React.createElement("button", { 
-                                    key: habit.id,
-                                    onClick: () => toggleHabit(habit.id),
-                                    className: `flex items-center gap-3 p-4 rounded-xl border transition-all h-full ${habit.completed ? 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 opacity-60' : 'bg-white dark:bg-zinc-950 border-zinc-100 dark:border-zinc-800 hover:border-indigo-500/30'}`
-                                },
-                                    React.createElement("div", { className: `w-12 h-12 rounded-full flex items-center justify-center transition-colors shrink-0 ${habit.completed ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-500' : habit.color}` },
-                                        habit.completed ? React.createElement(CheckCircle2, { size: 20 }) : React.createElement(habit.icon, { size: 20 })
-                                    ),
-                                    React.createElement("div", { className: "flex flex-col items-start flex-1 min-w-0" },
-                                        React.createElement("span", { className: "text-[10px] text-zinc-400 uppercase tracking-wider font-bold mb-1" }, habit.category),
-                                        React.createElement("span", { className: `text-sm font-bold text-left leading-tight ${habit.completed ? 'text-zinc-400 line-through' : 'text-zinc-800 dark:text-zinc-100'}` }, habit.label)
+                        ),
+                        React.createElement(Card, { title: "Health & Fitness", className: "border-l-4 border-l-orange-500" },
+                            React.createElement("div", { className: "flex items-center gap-4 mb-4" },
+                                React.createElement("div", { className: "w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0" },
+                                    React.createElement(Dumbbell, { size: 20 })
+                                ),
+                                React.createElement("div", null,
+                                    React.createElement("div", { className: "text-[10px] uppercase tracking-wider font-bold text-zinc-400 mb-0.5" }, todayName),
+                                    React.createElement("div", { className: "text-sm font-bold text-zinc-800 dark:text-zinc-100" }, todaysFitness)
+                                )
+                            ),
+                            React.createElement("div", { className: "space-y-2 pt-3 border-t border-zinc-100 dark:border-zinc-800" },
+                                React.createElement("div", { className: "text-[10px] uppercase tracking-wider font-bold text-zinc-400" }, "Daily Vitals"),
+                                dailyHealthHabits.map((habit, i) => 
+                                    React.createElement("div", { key: i, className: "flex items-center gap-3 text-xs font-medium text-zinc-600 dark:text-zinc-300" },
+                                        React.createElement("span", { className: "text-sm" }, habit.icon),
+                                        habit.text
                                     )
                                 )
-                            ))
+                            )
+                        )
+                    ),
+                    // Right Column: Daily Focus & 2026 Focus (Spans 2)
+                    React.createElement("div", { className: "lg:col-span-2 flex flex-col gap-6" },
+                        React.createElement(Card, { title: "Daily Focus", className: "flex-1" },
+                            React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" },
+                                habits.map(habit => (
+                                    React.createElement("button", { 
+                                        key: habit.id,
+                                        onClick: () => toggleHabit(habit.id),
+                                        className: `flex items-center gap-3 p-4 rounded-xl border transition-all ${habit.completed ? 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 opacity-60' : 'bg-white dark:bg-zinc-950 border-zinc-100 dark:border-zinc-800 hover:border-indigo-500/30'}`
+                                    },
+                                        React.createElement("div", { className: `w-12 h-12 rounded-full flex items-center justify-center transition-colors shrink-0 ${habit.completed ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-500' : habit.color}` },
+                                            habit.completed ? React.createElement(CheckCircle2, { size: 20 }) : React.createElement(habit.icon, { size: 20 })
+                                        ),
+                                        React.createElement("div", { className: "flex flex-col items-start flex-1 min-w-0" },
+                                            React.createElement("span", { className: "text-[10px] text-zinc-400 uppercase tracking-wider font-bold mb-1" }, habit.category),
+                                            React.createElement("span", { className: `text-sm font-bold text-left leading-tight ${habit.completed ? 'text-zinc-400 line-through' : 'text-zinc-800 dark:text-zinc-100'}` }, habit.label)
+                                        )
+                                    )
+                                ))
+                            )
+                        ),
+                        React.createElement(Card, { title: "2026 Focus", className: "bg-indigo-900/5 dark:bg-indigo-900/10 border-indigo-100 dark:border-indigo-900/30" },
+                            React.createElement("div", { className: "space-y-3" },
+                                goals2026.map((goal, index) => (
+                                    React.createElement("div", { key: index, className: "flex items-start gap-3" },
+                                        React.createElement(Flag, { size: 16, className: "text-indigo-500 mt-0.5 shrink-0" }),
+                                        React.createElement("span", { className: "text-sm font-medium text-zinc-700 dark:text-zinc-200" }, goal)
+                                    )
+                                ))
+                            )
                         )
                     )
                 ),
@@ -500,6 +678,107 @@
                     )
                 )
              );
+        };
+
+        const TasksView = ({ tasks, onAddTask, onUpdateTask, onDeleteTask }) => {
+            const [newTaskInput, setNewTaskInput] = useState("");
+            
+            // Drag and Drop Handlers
+            const onDragStart = (e, id) => {
+                e.dataTransfer.setData("taskId", id.toString());
+            };
+
+            const onDragOver = (e) => {
+                e.preventDefault();
+            };
+
+            const onDrop = (e, category) => {
+                e.preventDefault();
+                const id = e.dataTransfer.getData("taskId");
+                if (id) {
+                    onUpdateTask(id, { category });
+                }
+            };
+
+            const quadrants = [
+                { id: 'do_first', title: 'Do First', subtitle: 'Urgent & Important', color: 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/50', icon: AlertCircle, iconColor: 'text-red-500' },
+                { id: 'schedule', title: 'Schedule', subtitle: 'Not Urgent & Important', color: 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-900/50', icon: CalendarIcon, iconColor: 'text-blue-500' },
+                { id: 'delegate', title: 'Delegate', subtitle: 'Urgent & Not Important', color: 'bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-900/50', icon: ArrowUpRight, iconColor: 'text-orange-500' },
+                { id: 'dont_do', title: 'Eliminate', subtitle: 'Not Urgent & Not Important', color: 'bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800', icon: Trash, iconColor: 'text-zinc-500' }
+            ];
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter' && newTaskInput.trim()) {
+                    onAddTask({ text: newTaskInput, category: 'do_first', completed: false });
+                    setNewTaskInput("");
+                }
+            };
+
+            return React.createElement("div", { className: "h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 md:pb-0" },
+                React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4" },
+                    React.createElement("div", null,
+                        React.createElement("h3", { className: "text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2" }, "Eisenhower Matrix ", React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1" }, React.createElement(ListTodo, { size: 12 }), " Prioritize")),
+                        React.createElement("p", { className: "text-zinc-500 text-sm" }, "Drag and drop tasks to organize by priority.")
+                    ),
+                    React.createElement("div", { className: "relative w-full md:w-64" },
+                        React.createElement("input", {
+                            type: "text",
+                            value: newTaskInput,
+                            onChange: (e) => setNewTaskInput(e.target.value),
+                            onKeyDown: handleKeyDown,
+                            placeholder: "Add new task...",
+                            className: "w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl pl-4 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                        }),
+                        React.createElement("button", { 
+                            onClick: () => { if(newTaskInput.trim()) { onAddTask({ text: newTaskInput, category: 'do_first', completed: false }); setNewTaskInput(""); }},
+                            className: "absolute right-2 top-1/2 -translate-y-1/2 p-1 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors"
+                        }, React.createElement(Plus, { size: 14 }))
+                    )
+                ),
+                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-y-auto pb-2" },
+                    quadrants.map(quad => (
+                        React.createElement("div", { 
+                            key: quad.id,
+                            onDragOver: onDragOver,
+                            onDrop: (e) => onDrop(e, quad.id),
+                            className: `flex flex-col rounded-2xl border-2 p-4 ${quad.color} transition-colors min-h-[200px]`
+                        },
+                            React.createElement("div", { className: "flex justify-between items-center mb-4" },
+                                React.createElement("div", null,
+                                    React.createElement("h4", { className: "font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2" }, 
+                                        React.createElement(quad.icon, { size: 18, className: quad.iconColor }), 
+                                        quad.title
+                                    ),
+                                    React.createElement("span", { className: "text-xs text-zinc-500" }, quad.subtitle)
+                                ),
+                                React.createElement("span", { className: "text-xs font-bold bg-white/50 dark:bg-black/20 px-2 py-1 rounded-lg" },
+                                    tasks.filter(t => t.category === quad.id).length
+                                )
+                            ),
+                            React.createElement("div", { className: "space-y-2 flex-1" },
+                                tasks.filter(t => t.category === quad.id).map(task => (
+                                    React.createElement("div", { 
+                                        key: task.id, 
+                                        draggable: true,
+                                        onDragStart: (e) => onDragStart(e, task.id),
+                                        className: "group bg-white dark:bg-zinc-900 p-3 rounded-xl shadow-sm border border-zinc-100 dark:border-zinc-800 cursor-move hover:shadow-md hover:border-indigo-500/30 transition-all flex items-start gap-3"
+                                    },
+                                        React.createElement("button", { 
+                                            onClick: () => onUpdateTask(task.id, { completed: !task.completed }),
+                                            className: `mt-0.5 ${task.completed ? 'text-emerald-500' : 'text-zinc-300 hover:text-zinc-400'}` 
+                                        }, React.createElement(CheckCircle2, { size: 18, fill: task.completed ? "currentColor" : "none" })),
+                                        React.createElement("span", { className: `flex-1 text-sm ${task.completed ? 'text-zinc-400 line-through' : 'text-zinc-700 dark:text-zinc-200'}` }, task.text),
+                                        React.createElement("button", { 
+                                            onClick: () => onDeleteTask(task.id),
+                                            className: "text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" 
+                                        }, React.createElement(Trash, { size: 14 }))
+                                    )
+                                ))
+                            )
+                        )
+                    ))
+                )
+            );
         };
 
         const FocusView = () => {
@@ -762,6 +1041,108 @@
                     }),
                     React.createElement("button", { onClick: () => { if(input.trim()) { onAddWorry(input); setInput(""); } }, className: "absolute bottom-4 right-4 p-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors" },
                         React.createElement(ArrowRight, { size: 20 })
+                    )
+                )
+            );
+        };
+
+        const SpiritualityView = () => {
+            const [view, setView] = useState('daily'); // 'daily' or 'guide'
+            const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
+            const dailyContent = DAILY_SPIRITUALITY[dayOfYear % DAILY_SPIRITUALITY.length];
+
+            return React.createElement("div", { className: "h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 md:pb-0" },
+                React.createElement("div", { className: "flex justify-between items-center mb-6" },
+                    React.createElement("div", null,
+                        React.createElement("h3", { className: "text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2" }, "Spirituality ", React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1" }, React.createElement(Flower2, { size: 12 }), " Soul Care")),
+                        React.createElement("p", { className: "text-zinc-500 text-sm" }, "Daily guidance, prayer, and biblical wisdom.")
+                    ),
+                    React.createElement("div", { className: "flex p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg" },
+                        React.createElement("button", { 
+                            onClick: () => setView('daily'),
+                            className: `px-4 py-1.5 text-sm font-medium rounded-md transition-all ${view === 'daily' ? 'bg-white dark:bg-zinc-700 shadow text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}`
+                        }, "Daily Manna"),
+                        React.createElement("button", { 
+                            onClick: () => setView('guide'),
+                            className: `px-4 py-1.5 text-sm font-medium rounded-md transition-all ${view === 'guide' ? 'bg-white dark:bg-zinc-700 shadow text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}`
+                        }, "Bible Guide")
+                    )
+                ),
+                
+                view === 'daily' ? (
+                    React.createElement("div", { className: "flex-1 overflow-y-auto" },
+                        // Top Section: Daily Manna
+                        React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8" },
+                            React.createElement(Card, { title: "Verse of the Day", className: "lg:col-span-1 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20 border-amber-200 dark:border-amber-900/50" },
+                                React.createElement("div", { className: "flex flex-col h-full justify-center" },
+                                    React.createElement("h4", { className: "text-lg font-bold text-amber-800 dark:text-amber-200 mb-2" }, dailyContent.verse),
+                                    React.createElement("p", { className: "text-amber-900 dark:text-amber-100 font-serif italic text-lg leading-relaxed" }, `"${dailyContent.text}"`)
+                                )
+                            ),
+                            React.createElement(Card, { title: "Daily Prayer & Encouragement", className: "lg:col-span-2" },
+                                React.createElement("div", { className: "space-y-6" },
+                                    React.createElement("div", null,
+                                        React.createElement("div", { className: "flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2" }, React.createElement(Heart, { size: 12 }), " Prayer Point"),
+                                        React.createElement("p", { className: "text-zinc-700 dark:text-zinc-200" }, dailyContent.prayer)
+                                    ),
+                                    React.createElement("div", { className: "h-px w-full bg-zinc-100 dark:bg-zinc-800" }),
+                                    React.createElement("div", null,
+                                        React.createElement("div", { className: "flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2" }, React.createElement(Sun, { size: 12 }), " Word of Encouragement"),
+                                        React.createElement("p", { className: "text-zinc-700 dark:text-zinc-200" }, dailyContent.encouragement)
+                                    )
+                                )
+                            )
+                        ),
+
+                        // Bottom Section: Topics
+                        React.createElement("h3", { className: "text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-4 flex items-center gap-2" }, React.createElement(Book, { size: 16 }), " Quick Topic Reference"),
+                        React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" },
+                            BIBLE_TOPICS.map((topic, i) => (
+                                React.createElement("div", { key: i, className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 hover:border-amber-500/30 transition-all group" },
+                                    React.createElement("h4", { className: "font-bold text-zinc-800 dark:text-zinc-100 mb-1 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" }, topic.title),
+                                    React.createElement("p", { className: "text-xs text-zinc-500 mb-4" }, topic.desc),
+                                    
+                                    React.createElement("div", { className: "space-y-3" },
+                                        React.createElement("div", null,
+                                            React.createElement("span", { className: "text-[10px] font-bold text-zinc-400 uppercase block mb-1" }, "Key Verses"),
+                                            React.createElement("ul", { className: "space-y-1" },
+                                                topic.verses.slice(0, 2).map((v, j) => React.createElement("li", { key: j, className: "text-xs text-zinc-600 dark:text-zinc-300 pl-2 border-l-2 border-zinc-200 dark:border-zinc-700" }, v))
+                                            )
+                                        ),
+                                        React.createElement("div", null,
+                                            React.createElement("span", { className: "text-[10px] font-bold text-zinc-400 uppercase block mb-1" }, "Chapters to Read"),
+                                            React.createElement("div", { className: "flex flex-wrap gap-1" },
+                                                topic.chapters.map((c, k) => React.createElement("span", { key: k, className: "px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[10px] rounded" }, c))
+                                            )
+                                        )
+                                    )
+                                )
+                            ))
+                        )
+                    )
+                ) : (
+                    // Guide View (Table of Contents)
+                    React.createElement("div", { className: "flex-1 overflow-y-auto space-y-8 pr-2" },
+                        BIBLE_BOOKS.map((section, idx) => (
+                            React.createElement("div", { key: idx },
+                                React.createElement("h4", { className: "text-sm font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest mb-4 border-b border-zinc-200 dark:border-zinc-800 pb-2" }, section.category),
+                                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+                                    section.books.map((book, bIdx) => (
+                                        React.createElement("div", { key: bIdx, className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl flex flex-col" },
+                                            React.createElement("div", { className: "flex justify-between items-start mb-2" },
+                                                React.createElement("h5", { className: "font-bold text-zinc-900 dark:text-zinc-100" }, book.name),
+                                                React.createElement("span", { className: "text-[10px] px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-500" }, book.theme)
+                                            ),
+                                            React.createElement("p", { className: "text-xs text-zinc-600 dark:text-zinc-400 mb-3 flex-1" }, book.app),
+                                            React.createElement("div", { className: "mt-auto pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center gap-2" },
+                                                React.createElement(BookOpen, { size: 12, className: "text-amber-500" }),
+                                                React.createElement("span", { className: "text-xs font-mono text-zinc-500" }, book.keys)
+                                            )
+                                        )
+                                    ))
+                                )
+                            )
+                        ))
                     )
                 )
             );
@@ -1042,6 +1423,7 @@
             const [dumps, setDumps] = useState([]);
             const [meals, setMeals] = useState([]);
             const [worries, setWorries] = useState([]);
+            const [tasks, setTasks] = useState([]);
 
             useEffect(() => {
                 if(darkMode) document.documentElement.classList.add('dark');
@@ -1117,7 +1499,16 @@
                     setWorries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
                 }, (error) => console.error(`Error fetching worries:`, error));
 
-                return () => { unsubNotes(); unsubDumps(); unsubMeals(); unsubWorries(); };
+                // Sync Tasks
+                const qTasks = query(
+                    collection(db, 'artifacts', appId, 'users', userPath, 'tasks'),
+                    orderBy('createdAt', 'desc')
+                );
+                const unsubTasks = onSnapshot(qTasks, (snapshot) => {
+                    setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                }, (error) => console.error(`Error fetching tasks:`, error));
+
+                return () => { unsubNotes(); unsubDumps(); unsubMeals(); unsubWorries(); unsubTasks(); };
             }, [user, authError, userIdentity]);
 
             const getSafeUserPath = () => userIdentity ? `user_${userIdentity}` : null;
@@ -1180,6 +1571,23 @@
                 else setWorries(worries.filter(w => w.id !== id));
             };
 
+            const handleAddTask = async (task) => {
+                const path = getSafeUserPath();
+                if (isFirebaseConfigured && user && path) await addDoc(collection(db, 'artifacts', appId, 'users', path, 'tasks'), { ...task, createdAt: serverTimestamp() });
+                else setTasks([{id: Date.now(), ...task}, ...tasks]);
+            };
+            const handleUpdateTask = async (id, updates) => {
+                const path = getSafeUserPath();
+                // Ensure id is treated as string for consistency
+                if (isFirebaseConfigured && user && path) await updateDoc(doc(db, 'artifacts', appId, 'users', path, 'tasks', String(id)), updates);
+                else setTasks(tasks.map(t => String(t.id) === String(id) ? { ...t, ...updates } : t));
+            };
+            const handleDeleteTask = async (id) => {
+                const path = getSafeUserPath();
+                if (isFirebaseConfigured && user && path) await deleteDoc(doc(db, 'artifacts', appId, 'users', path, 'tasks', String(id)));
+                else setTasks(tasks.filter(t => String(t.id) !== String(id)));
+            };
+
             const SidebarContent = () => (
                 React.createElement(React.Fragment, null,
                     React.createElement("div", { className: "flex items-center gap-3 mb-10 px-2" },
@@ -1188,10 +1596,12 @@
                     ),
                     React.createElement("nav", { className: "space-y-2 flex-1" },
                         React.createElement(NavItem, { icon: Layout, label: "Dashboard", active: activeTab === 'dashboard', onClick: () => { setActiveTab('dashboard'); setMobileMenuOpen(false); } }),
+                        React.createElement(NavItem, { icon: ListTodo, label: "Tasks", active: activeTab === 'tasks', onClick: () => { setActiveTab('tasks'); setMobileMenuOpen(false); } }),
                         React.createElement(NavItem, { icon: Timer, label: "Focus Mode", active: activeTab === 'focus', onClick: () => { setActiveTab('focus'); setMobileMenuOpen(false); } }),
                         React.createElement(NavItem, { icon: Lightbulb, label: "Brainstorm", active: activeTab === 'brainstorm', onClick: () => { setActiveTab('brainstorm'); setMobileMenuOpen(false); } }),
                         React.createElement(NavItem, { icon: FileText, label: "Brain Dump", active: activeTab === 'braindump', onClick: () => { setActiveTab('braindump'); setMobileMenuOpen(false); } }),
                         React.createElement(NavItem, { icon: ShieldAlert, label: "Worries", active: activeTab === 'worries', onClick: () => { setActiveTab('worries'); setMobileMenuOpen(false); } }),
+                        React.createElement(NavItem, { icon: Flower2, label: "Spirituality", active: activeTab === 'spirituality', onClick: () => { setActiveTab('spirituality'); setMobileMenuOpen(false); } }),
                         React.createElement(NavItem, { icon: Utensils, label: "Food Plan", active: activeTab === 'food', onClick: () => { setActiveTab('food'); setMobileMenuOpen(false); } }),
                         React.createElement(NavItem, { icon: Wrench, label: "Tools", active: activeTab === 'tools', onClick: () => { setActiveTab('tools'); setMobileMenuOpen(false); } })
                     ),
@@ -1228,14 +1638,16 @@
                             React.createElement("div", { className: "w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800" }, "LO")
                         )
                     ),
-                    activeTab === 'dashboard' && React.createElement(DashboardView, { notes, onAddNote: handleAddNote, onNavigate: setActiveTab, meals }),
+                    activeTab === 'dashboard' && React.createElement(DashboardView, { notes, onAddNote: handleAddNote, onNavigate: setActiveTab, meals, tasks }),
+                    activeTab === 'tasks' && React.createElement(TasksView, { tasks, onAddTask: handleAddTask, onUpdateTask: handleUpdateTask, onDeleteTask: handleDeleteTask }),
                     activeTab === 'focus' && React.createElement(FocusView),
                     activeTab === 'brainstorm' && React.createElement(BrainstormView, { notes, onAddNote: handleAddNote, onUpdateNote: handleUpdateNote, onDeleteNote: handleDeleteNote }),
                     activeTab === 'braindump' && React.createElement(BrainDumpView, { dumps, onAddDump: handleAddDump, onDeleteDump: handleDeleteDump }),
                     activeTab === 'worries' && React.createElement(WorriesView, { worries, onAddWorry: handleAddWorry, onDeleteWorry: handleDeleteWorry }),
+                    activeTab === 'spirituality' && React.createElement(SpiritualityView),
                     activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal }),
                     activeTab === 'tools' && React.createElement(ToolsView),
-                    !['dashboard', 'brainstorm', 'tools', 'focus', 'braindump', 'food', 'worries'].includes(activeTab) && React.createElement("div", { className: "flex flex-col items-center justify-center h-[60vh] text-zinc-400" },
+                    !['dashboard', 'brainstorm', 'tools', 'focus', 'braindump', 'food', 'worries', 'tasks', 'spirituality'].includes(activeTab) && React.createElement("div", { className: "flex flex-col items-center justify-center h-[60vh] text-zinc-400" },
                         React.createElement("div", { className: "w-16 h-16 bg-zinc-100 dark:bg-zinc-900 rounded-2xl flex items-center justify-center mb-4" }, React.createElement(PenTool, { size: 32 })),
                         React.createElement("h3", { className: "text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2" }, "Work in Progress"),
                         React.createElement("p", null, "This room is currently under construction.")
