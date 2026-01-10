@@ -1353,11 +1353,7 @@
 
         const FitnessView = () => {
             const [plan, setPlan] = useState('gym'); // 'gym' or 'home'
-            const currentPlan = plan === 'gym' ? GYM_WORKOUT_PLAN : HOME_WORKOUT_PLAN; // Using constants from earlier definitions? Wait, I need to make sure they are defined or pass them.
-            // Actually, constants like GYM_WORKOUT_PLAN were defined in previous turns but missing in this block.
-            // I will define them inside or assume they are available if defined globally.
-            // To be safe and self-contained, I will define them here or above. They were defined above in previous complete code.
-            // In this specific response, I am regenerating the whole file so I will ensure they are there.
+            const currentPlan = plan === 'gym' ? GYM_WORKOUT_PLAN : HOME_WORKOUT_PLAN;
 
             return React.createElement("div", { className: "h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 md:pb-0" },
                 React.createElement("div", { className: "flex justify-between items-center mb-8" },
@@ -1372,7 +1368,7 @@
                 ),
                 React.createElement("div", { className: "flex-1 overflow-y-auto pr-2 space-y-6 pb-8 custom-scrollbar" },
                     React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-6" },
-                        currentPlan.map(session => ( // Relies on closure over constants defined above
+                        currentPlan.map(session => (
                             React.createElement("div", { key: session.id, className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700 transition-all group" },
                                 React.createElement("div", { className: "p-6 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50" },
                                     React.createElement("div", { className: "flex items-start justify-between" },
@@ -1722,16 +1718,20 @@
                 onGuestLogin: handleLoginSuccess 
             });
 
-            return React.createElement("div", { className: "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans" },
-                React.createElement("aside", { className: "fixed left-0 top-0 h-full w-64 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 hidden md:flex flex-col z-20" },
-                    React.createElement("h1", { className: "text-2xl font-bold mb-8" }, "LifeOS"),
+            // NEW: Define SidebarContent Component for Reusability
+            const SidebarContent = () => (
+                React.createElement(React.Fragment, null,
+                    React.createElement("div", { className: "flex items-center gap-3 mb-10 px-2" },
+                        React.createElement("div", { className: "w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-indigo-500/20 shadow-lg" }, React.createElement(Brain, { size: 18 })),
+                        React.createElement("h1", { className: "text-xl font-bold tracking-tight" }, "LifeOS")
+                    ),
                     React.createElement("nav", { className: "space-y-2 flex-1" },
                         VALID_TABS.map(t => React.createElement(NavItem, { 
                             key: t, 
                             icon: tabConfig[t].icon, 
                             label: tabConfig[t].label, 
                             active: activeTab === t, 
-                            onClick: () => setActiveTab(t) 
+                            onClick: () => { setActiveTab(t); setMobileMenuOpen(false); } 
                         }))
                     ),
                     React.createElement("div", { className: "pt-6 border-t border-zinc-200 dark:border-zinc-800 space-y-2" },
@@ -1754,24 +1754,32 @@
                             React.createElement("span", { className: "font-medium" }, "Sign Out")
                         )
                     )
+                )
+            );
+
+            return React.createElement("div", { className: "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans" },
+                // Desktop Sidebar
+                React.createElement("aside", { className: "fixed left-0 top-0 h-full w-64 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 hidden md:flex flex-col z-20" },
+                    React.createElement(SidebarContent)
                 ),
+                
+                // Mobile Menu Overlay
                 mobileMenuOpen && React.createElement("div", { className: "fixed inset-0 z-50 md:hidden" },
                     React.createElement("div", { className: "absolute inset-0 bg-black/50 backdrop-blur-sm", onClick: () => setMobileMenuOpen(false) }),
                     React.createElement("aside", { className: "absolute left-0 top-0 h-full w-64 bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 p-6 flex flex-col shadow-2xl animate-in slide-in-from-left duration-300" }, 
-                        React.createElement("h1", { className: "text-2xl font-bold mb-8" }, "LifeOS"),
-                        React.createElement("nav", { className: "space-y-2 flex-1" }, 
-                            VALID_TABS.map(t => React.createElement(NavItem, { 
-                                key: t, 
-                                icon: tabConfig[t].icon, 
-                                label: tabConfig[t].label, 
-                                active: activeTab === t, 
-                                onClick: () => { setActiveTab(t); setMobileMenuOpen(false); } 
-                            }))
-                        ),
-                        React.createElement("button", { onClick: handleLogout, className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500" }, React.createElement(LogOut, { size: 20 }), "Sign Out")
+                        React.createElement(SidebarContent)
                     )
                 ),
+
                 React.createElement("main", { className: "md:ml-64 p-4 md:p-12 max-w-7xl mx-auto" },
+                    // Header
+                    React.createElement("header", { className: "flex justify-between md:justify-end items-center mb-6" },
+                        React.createElement("button", { onClick: () => setMobileMenuOpen(true), className: "md:hidden p-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100" }, React.createElement(Menu, { size: 24 })),
+                        React.createElement("div", { className: "flex items-center gap-4" },
+                            React.createElement("div", { className: "w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800" }, "LO")
+                        )
+                    ),
+                    
                     showAuthModal && React.createElement(AuthModal, { onClose: () => setShowAuthModal(false), onLogin: handleLoginSuccess }),
                     activeTab === 'dashboard' && React.createElement(DashboardView, { 
                         onAddDump: handleAddDump, 
