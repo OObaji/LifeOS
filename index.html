@@ -42,14 +42,6 @@
         ::-webkit-scrollbar-thumb { background: #52525b; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #71717a; }
         
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        .animate-shake {
-            animation: shake 0.2s ease-in-out 2;
-        }
         .landing-gradient {
             background: linear-gradient(135deg, #09090b 0%, #18181b 100%);
         }
@@ -121,7 +113,7 @@
             console.warn("Firebase Init Error:", e);
         }
 
-        // --- LOCAL AUTH SIMULATION ---
+        // --- LOCAL AUTH SIMULATION (OFFLINE MODE) ---
         const LocalAuth = {
             login: (email, password) => {
                 const users = JSON.parse(localStorage.getItem('lifeos_local_db_users') || '{}');
@@ -132,7 +124,7 @@
             },
             signup: (email, password) => {
                 const users = JSON.parse(localStorage.getItem('lifeos_local_db_users') || '{}');
-                if (users[email.toLowerCase()]) throw new Error("Account already exists. Please sign in.");
+                if (users[email.toLowerCase()]) throw new Error("Account already exists locally. Please log in.");
                 
                 const uid = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                 users[email.toLowerCase()] = { email, password, uid };
@@ -271,37 +263,37 @@
                     onLogin({ email, uid: auth.currentUser.uid, isLocal: false });
                     onClose();
                 } catch (err) { 
-                    console.warn("Auth Error caught, triggering fallback...");
+                    console.warn("Auth Error caught, checking fallback...", err.code);
                     let msg = err.message.replace("Firebase: ", "");
                     
                     // FALLBACK TO LOCAL AUTH
-                    // This catches everything: network errors, unauthorized domains, user not found, etc.
+                    // If ANY error from Firebase (user not found in cloud, unauthorized, etc.)
+                    // we attempt local auth.
                     try {
                         const localUser = isLogin 
                             ? LocalAuth.login(email, password)
                             : LocalAuth.signup(email, password);
+                        
+                        console.log("Local Auth Successful:", localUser);
                         onLogin(localUser);
                         onClose();
                         return;
                     } catch (localErr) {
-                        // Refine error message for clarity
-                        if (localErr.message.includes("User not found")) {
-                             setError("Account not found locally. Please Create Account.");
-                        } else {
-                             setError(localErr.message); 
-                        }
+                         // Show local logic errors (e.g. "User not found locally", "Incorrect password")
+                         setError(localErr.message); 
                     }
                 } finally { setLoading(false); }
             };
 
             const handleGoogleLogin = async () => {
-                // Simulate Google Login for Preview Environment
-                setLoading(true);
-                setTimeout(() => {
-                    onLogin({ email: "Google User", uid: "google-local-" + Date.now(), isLocal: true });
-                    onClose();
-                    setLoading(false);
-                }, 800);
+                 setLoading(true);
+                 setTimeout(() => {
+                     // Force local simulation for preview env
+                     const user = { email: "Google User", uid: "google-local-" + Date.now(), isLocal: true };
+                     onLogin(user);
+                     onClose();
+                     setLoading(false);
+                 }, 800);
             };
 
             return React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" },
@@ -312,8 +304,8 @@
                     React.createElement("div", { className: "text-center mb-6" },
                         React.createElement("div", { className: "w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-3" }, React.createElement(LogIn, { size: 24 })),
                         React.createElement("div", { className: "flex justify-center gap-4 border-b border-zinc-100 dark:border-zinc-800 pb-2 mt-4" },
-                            React.createElement("button", { onClick: () => { setActiveTab("login"); setError(null); }, className: `pb-2 text-sm font-bold transition-colors ${isLogin ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-zinc-400 hover:text-zinc-600'}` }, "Sign In"),
-                            React.createElement("button", { onClick: () => { setActiveTab("signup"); setError(null); }, className: `pb-2 text-sm font-bold transition-colors ${!isLogin ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-zinc-400 hover:text-zinc-600'}` }, "Create Account")
+                            React.createElement("button", { onClick: () => { setActiveTab("login"); setError(null); }, className: `pb-2 text-sm font-bold transition-colors border-b-2 ${isLogin ? 'text-indigo-600 border-indigo-600' : 'text-zinc-400 border-transparent hover:text-zinc-600'}` }, "Sign In"),
+                            React.createElement("button", { onClick: () => { setActiveTab("signup"); setError(null); }, className: `pb-2 text-sm font-bold transition-colors border-b-2 ${!isLogin ? 'text-indigo-600 border-indigo-600' : 'text-zinc-400 border-transparent hover:text-zinc-600'}` }, "Create Account")
                         )
                     ),
 
@@ -322,6 +314,7 @@
                             React.createElement("img", { src: "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg", className: "w-5 h-5", alt: "G" }), "Sign in with Google"
                         ),
                         React.createElement("div", { className: "relative flex py-2 items-center" }, React.createElement("div", { className: "flex-grow border-t border-zinc-200 dark:border-zinc-800" }), React.createElement("span", { className: "flex-shrink mx-4 text-xs text-zinc-400 uppercase" }, "Or"), React.createElement("div", { className: "flex-grow border-t border-zinc-200 dark:border-zinc-800" })),
+                        
                         React.createElement("form", { onSubmit: handleSubmit, className: "space-y-4" },
                             React.createElement("input", { type: "email", required: true, value: email, onChange: (e) => setEmail(e.target.value), placeholder: "Email", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-zinc-900 dark:text-zinc-100" }),
                             
@@ -337,8 +330,7 @@
                             
                             React.createElement("button", { type: "submit", disabled: loading, className: "w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50" }, loading ? "Processing..." : (isLogin ? "Sign In" : "Create Account"))
                         )
-                    ),
-                    React.createElement("div", { className: "mt-4 text-center" }, React.createElement("button", { onClick: () => { setIsLogin(!isLogin); setError(null); setConfirmPassword(""); }, className: "text-xs text-zinc-500 hover:text-indigo-500 hover:underline" }, isLogin ? "Need an account? Sign up" : "Already have an account? Sign in"))
+                    )
                 )
             );
         };
@@ -417,37 +409,44 @@
                             React.createElement("h3", { className: "text-3xl font-bold mb-2" }, isLogin ? "Welcome Back" : "Create Account"),
                             React.createElement("p", { className: "text-zinc-500" }, isLogin ? "Enter your details to access your workspace." : "Start your journey to clarity today.")
                         ),
-                        React.createElement("button", { onClick: handleGoogleLogin, disabled: loading, className: "w-full py-3 mb-6 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold rounded-xl transition-all flex items-center justify-center gap-3 shadow-sm" },
-                            React.createElement("img", { src: "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg", className: "w-5 h-5", alt: "G" }), "Continue with Google"
-                        ),
-                        React.createElement("div", { className: "relative flex py-2 items-center mb-6" },
-                            React.createElement("div", { className: "flex-grow border-t border-zinc-200 dark:border-zinc-800" }),
-                            React.createElement("span", { className: "flex-shrink mx-4 text-xs text-zinc-400 uppercase font-bold tracking-wider" }, "Or with Email"),
-                            React.createElement("div", { className: "flex-grow border-t border-zinc-200 dark:border-zinc-800" })
-                        ),
                         
-                        React.createElement("form", { onSubmit: handleSubmit, className: "space-y-4" },
-                            React.createElement("div", null, React.createElement("label", { className: "block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1" }, "Email Address"), React.createElement("input", { type: "email", required: true, value: email, onChange: (e) => setEmail(e.target.value), placeholder: "name@example.com", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-zinc-900 dark:text-zinc-100" })),
+                        React.createElement("div", { className: "space-y-4" },
+                            React.createElement("button", { onClick: handleGoogleLogin, disabled: loading, className: "w-full py-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold rounded-xl transition-all flex items-center justify-center gap-3 shadow-sm" },
+                                React.createElement("img", { src: "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg", className: "w-5 h-5", alt: "G" }), "Continue with Google"
+                            ),
+                            React.createElement("div", { className: "relative flex py-2 items-center mb-6" },
+                                React.createElement("div", { className: "flex-grow border-t border-zinc-200 dark:border-zinc-800" }),
+                                React.createElement("span", { className: "flex-shrink mx-4 text-xs text-zinc-400 uppercase font-bold tracking-wider" }, "Or with Email"),
+                                React.createElement("div", { className: "flex-grow border-t border-zinc-200 dark:border-zinc-800" })
+                            ),
                             
-                            // Password Field with Toggle
-                            React.createElement("div", null,
-                                React.createElement("label", { className: "block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1" }, "Password"),
-                                React.createElement("div", { className: "relative" },
-                                    React.createElement("input", { type: showPassword ? "text" : "password", required: true, value: password, onChange: (e) => setPassword(e.target.value), placeholder: "••••••••", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-zinc-900 dark:text-zinc-100 pr-10" }),
-                                    React.createElement("button", { type: "button", onClick: () => setShowPassword(!showPassword), className: "absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200" }, React.createElement(showPassword ? EyeOff : Eye, { size: 18 }))
-                                )
+                            // LANDING TABS
+                            React.createElement("div", { className: "flex justify-center gap-6 border-b border-zinc-200 dark:border-zinc-800 pb-1 mb-4" },
+                                React.createElement("button", { onClick: () => { setActiveTab("login"); setError(null); }, className: `pb-2 text-sm font-bold transition-colors border-b-2 ${isLogin ? 'text-indigo-600 border-indigo-600' : 'text-zinc-400 border-transparent hover:text-zinc-600'}` }, "Sign In"),
+                                React.createElement("button", { onClick: () => { setActiveTab("signup"); setError(null); }, className: `pb-2 text-sm font-bold transition-colors border-b-2 ${!isLogin ? 'text-indigo-600 border-indigo-600' : 'text-zinc-400 border-transparent hover:text-zinc-600'}` }, "Create Account")
                             ),
 
-                            !isLogin && React.createElement("div", null, React.createElement("label", { className: "block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1" }, "Confirm Password"), React.createElement("input", { type: "password", required: true, value: confirmPassword, onChange: (e) => setConfirmPassword(e.target.value), placeholder: "••••••••", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-zinc-900 dark:text-zinc-100" })),
-                            
-                            error && React.createElement("div", { className: "p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg flex items-center gap-2" }, React.createElement(AlertCircle, { size: 16 }), error),
-                            
-                            React.createElement("button", { type: "submit", disabled: loading, className: "w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed mt-2" }, loading ? "Processing..." : (isLogin ? "Sign In" : "Create Account"))
-                        ),
-                        React.createElement("div", { className: "mt-6 text-center space-y-4" },
-                            React.createElement("button", { onClick: () => { setIsLogin(!isLogin); setError(null); setEmail(""); setPassword(""); setConfirmPassword(""); }, className: "text-sm text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors" }, isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"),
-                            React.createElement("div", { className: "h-px w-12 bg-zinc-200 dark:bg-zinc-800 mx-auto" }),
-                            React.createElement("button", { onClick: handleGuest, disabled: loading, className: "text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors uppercase tracking-wider font-bold" }, "Continue as Guest")
+                            React.createElement("form", { onSubmit: handleSubmit, className: "space-y-4" },
+                                React.createElement("div", null, React.createElement("label", { className: "block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1" }, "Email Address"), React.createElement("input", { type: "email", required: true, value: email, onChange: (e) => setEmail(e.target.value), placeholder: "name@example.com", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-zinc-900 dark:text-zinc-100" })),
+                                
+                                // Password Field with Toggle
+                                React.createElement("div", null,
+                                    React.createElement("label", { className: "block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1" }, "Password"),
+                                    React.createElement("div", { className: "relative" },
+                                        React.createElement("input", { type: showPassword ? "text" : "password", required: true, value: password, onChange: (e) => setPassword(e.target.value), placeholder: "••••••••", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-zinc-900 dark:text-zinc-100 pr-10" }),
+                                        React.createElement("button", { type: "button", onClick: () => setShowPassword(!showPassword), className: "absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200" }, React.createElement(showPassword ? EyeOff : Eye, { size: 18 }))
+                                    )
+                                ),
+
+                                !isLogin && React.createElement("div", null, React.createElement("label", { className: "block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1" }, "Confirm Password"), React.createElement("input", { type: "password", required: true, value: confirmPassword, onChange: (e) => setConfirmPassword(e.target.value), placeholder: "••••••••", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-zinc-900 dark:text-zinc-100" })),
+                                
+                                error && React.createElement("div", { className: "p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg flex items-center gap-2" }, React.createElement(AlertCircle, { size: 16 }), error),
+                                
+                                React.createElement("button", { type: "submit", disabled: loading, className: "w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed mt-2" }, loading ? "Processing..." : (isLogin ? "Sign In" : "Create Account"))
+                            ),
+                            React.createElement("div", { className: "mt-6 text-center" },
+                                React.createElement("button", { onClick: handleGuest, disabled: loading, className: "text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors uppercase tracking-wider font-bold" }, "Continue as Guest")
+                            )
                         )
                     )
                 )
@@ -769,18 +768,18 @@
             const [activeTab, setActiveTab] = useState(() => localStorage.getItem('lifeos_active_tab') || 'dashboard');
             const [darkMode, setDarkMode] = useState(() => JSON.parse(localStorage.getItem('lifeos_dark_mode') || 'true'));
             
-            // Session Persistence
+            // Session Persistence with explicit check
             const [user, setUser] = useState(() => {
-                const stored = localStorage.getItem('lifeos_user_session');
-                return stored ? JSON.parse(stored) : null;
+                try {
+                    const stored = localStorage.getItem('lifeos_user_session');
+                    return stored ? JSON.parse(stored) : null;
+                } catch(e) { return null; }
             });
             
-            // Safety Flag
             const [isDataLoaded, setIsDataLoaded] = useState(false);
             const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
             const [showShareModal, setShowShareModal] = useState(false);
             const [showAuthModal, setShowAuthModal] = useState(false);
-            const [authError, setAuthError] = useState(null);
 
             const [dumps, setDumps] = useState([]);
             const [meals, setMeals] = useState([]);
@@ -791,21 +790,6 @@
             const [activeSound, setActiveSound] = useState(null);
             const [isPlayingSound, setIsPlayingSound] = useState(false);
             const audioRef = useRef(new Audio());
-
-            // Auth Listener - ONLY for initial check, does not force logout if local
-            useEffect(() => {
-                if (isFirebaseConfigured) {
-                    const unsubscribe = onAuthStateChanged(auth, (u) => {
-                        // Only auto-update if cloud login happens and we aren't already locally logged in
-                        if (u && (!user || !user.isLocal)) {
-                             const newUser = { email: u.email || "Guest", uid: u.uid, isLocal: false };
-                             setUser(newUser);
-                             localStorage.setItem('lifeos_user_session', JSON.stringify(newUser));
-                        }
-                    });
-                    return () => unsubscribe();
-                }
-            }, []);
 
             // Handle Manual Login Success
             const handleLoginSuccess = (userData) => {
@@ -941,6 +925,16 @@
                         VALID_TABS.map(t => React.createElement(NavItem, { key: t, icon: Layout, label: t.charAt(0).toUpperCase() + t.slice(1), active: activeTab === t, onClick: () => setActiveTab(t) }))
                     ),
                     React.createElement("div", { className: "pt-6 border-t border-zinc-200 dark:border-zinc-800 space-y-2" },
+                        // PROFILE CARD
+                        user && React.createElement("div", { className: "flex items-center gap-3 px-3 py-2 mb-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800" },
+                            React.createElement("div", { className: "w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0" }, 
+                                React.createElement(User, { size: 16 })
+                            ),
+                            React.createElement("div", { className: "flex-1 overflow-hidden" },
+                                React.createElement("p", { className: "text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider" }, "Signed in as"),
+                                React.createElement("p", { className: "text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate" }, user.email)
+                            )
+                        ),
                         React.createElement("button", { onClick: () => setDarkMode(!darkMode), className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors" },
                             React.createElement(darkMode ? Sun : Moon, { size: 20 }),
                             React.createElement("span", { className: "font-medium" }, darkMode ? "Light Mode" : "Dark Mode")
