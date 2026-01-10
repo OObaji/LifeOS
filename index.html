@@ -42,13 +42,8 @@
         ::-webkit-scrollbar-thumb { background: #52525b; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #71717a; }
         
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        .animate-shake {
-            animation: shake 0.2s ease-in-out 2;
+        .landing-gradient {
+            background: linear-gradient(135deg, #09090b 0%, #18181b 100%);
         }
     </style>
 </head>
@@ -74,79 +69,97 @@
             Cloud, CloudRain, CloudSun, CloudSnow, CloudLightning, Thermometer,
             List, Grid, Columns, Utensils, FileText, Trash, ShieldAlert, Flame, Volume2, ChevronLeft,
             ListTodo, ArrowUpRight, CheckSquare, Flower2, Dumbbell, Github, Bot, Newspaper, QrCode,
-            Waves, Wind
+            Waves, Wind, Mountain, Footprints, Ban, ShieldCheck, Milestone, User, LogIn, ArrowLeft, Info,
+            Eye, EyeOff
         } from "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0";
 
         // --- FIREBASE IMPORTS ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { 
+            getAuth, 
+            signInWithCustomToken, 
+            signInAnonymously, 
+            onAuthStateChanged, 
+            signOut,
+            signInWithEmailAndPassword,
+            createUserWithEmailAndPassword,
+            GoogleAuthProvider,
+            signInWithPopup
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, query, orderBy, serverTimestamp, setDoc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // --- CONFIGURATION ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyCKGxtGBjHjHkOh902YgfU6h4-NBk065z0",
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "", 
             authDomain: "secondbrain-8d8cd.firebaseapp.com",
             projectId: "secondbrain-8d8cd",
             storageBucket: "secondbrain-8d8cd.firebasestorage.app",
             messagingSenderId: "1913632272",
-            appId: "1:1913632272:web:324f366a35e6dd07cffc95",
-            measurementId: "G-V2BXKYRC5X"
+            appId: "1:1913632272:web:324f366a35e6dd07cffc95"
         };
         
-        const appId = 'kaizen-os-prod';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'kaizen-os-prod';
         
-        // Initialize Firebase safely
-        let app, auth, db, analytics;
+        // Initialize Firebase
+        let app, auth, db;
         let isFirebaseConfigured = false;
         
         try {
-            if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY_HERE") {
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                analytics = getAnalytics(app);
-                isFirebaseConfigured = true;
-            } else {
-                console.warn("Firebase not configured. Running in UI-only mode.");
-            }
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            isFirebaseConfigured = true;
         } catch (e) {
-            console.error("Firebase initialization failed:", e);
-            isFirebaseConfigured = false;
+            console.warn("Firebase Init Error:", e);
         }
 
-        // --- DATA ---
+        // --- LOCAL AUTH SIMULATION ---
+        const LocalAuth = {
+            login: (email, password) => {
+                const users = JSON.parse(localStorage.getItem('lifeos_local_db_users') || '{}');
+                const user = users[email.toLowerCase()];
+                if (!user) throw new Error("User not found locally. Please create an account.");
+                if (user.password !== password) throw new Error("Incorrect password.");
+                return { email: user.email, uid: user.uid, isLocal: true };
+            },
+            signup: (email, password) => {
+                const users = JSON.parse(localStorage.getItem('lifeos_local_db_users') || '{}');
+                if (users[email.toLowerCase()]) throw new Error("Account already exists. Please sign in.");
+                
+                const uid = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                users[email.toLowerCase()] = { email, password, uid };
+                localStorage.setItem('lifeos_local_db_users', JSON.stringify(users));
+                
+                return { email, uid, isLocal: true };
+            }
+        };
+
+        // --- DATA CONSTANTS ---
         const DEFAULT_MEALS = [
             { day: 'Monday', type: 'Breakfast', text: 'Oats + milk\n1 banana\n1 scoop protein powder' },
             { day: 'Monday', type: 'Lunch', text: 'Chicken stew\nWhite rice\n½ avocado' },
             { day: 'Monday', type: 'Snack', text: 'Greek yoghurt + apple' },
             { day: 'Monday', type: 'Dinner', text: 'Spaghetti + grilled chicken breast\n(Night: Milo + milk)' },
-            
-            { day: 'Tuesday', type: 'Breakfast', text: '3 eggs (boiled or scrambled)\nBread + peanut butter\nGrapes' },
+            { day: 'Tuesday', type: 'Breakfast', text: '3 eggs (boiled/scrambled)\nBread + peanut butter\nGrapes' },
             { day: 'Tuesday', type: 'Lunch', text: 'Jollof rice\nChicken thigh' },
-            { day: 'Tuesday', type: 'Snack', text: 'Protein shake (milk + protein powder)' },
+            { day: 'Tuesday', type: 'Snack', text: 'Protein shake' },
             { day: 'Tuesday', type: 'Dinner', text: 'Sardines\nBoiled potatoes' },
-            
             { day: 'Wednesday', type: 'Breakfast', text: 'Cereal + milk\nBanana' },
             { day: 'Wednesday', type: 'Lunch', text: 'Chicken breast\nRice\nAvocado' },
             { day: 'Wednesday', type: 'Snack', text: 'Greek yoghurt + grapes' },
             { day: 'Wednesday', type: 'Dinner', text: 'Spaghetti + chicken stew' },
-            
             { day: 'Thursday', type: 'Breakfast', text: 'Oats + milk\nApple\n1 scoop protein' },
             { day: 'Thursday', type: 'Lunch', text: 'Chicken stew\nRice' },
             { day: 'Thursday', type: 'Snack', text: 'Bread + peanut butter' },
             { day: 'Thursday', type: 'Dinner', text: 'Sardines\nPotatoes' },
-            
             { day: 'Friday', type: 'Breakfast', text: '3 eggs\nBread + jam\nBanana' },
             { day: 'Friday', type: 'Lunch', text: 'Jollof rice\nChicken breast' },
             { day: 'Friday', type: 'Snack', text: 'Greek yoghurt' },
             { day: 'Friday', type: 'Dinner', text: 'Pasta + grilled chicken thigh' },
-            
             { day: 'Saturday', type: 'Breakfast', text: 'Cereal + milk\nGrapes' },
             { day: 'Saturday', type: 'Lunch', text: 'Chicken thigh\nRice + avocado' },
             { day: 'Saturday', type: 'Snack', text: 'Protein shake' },
             { day: 'Saturday', type: 'Dinner', text: 'Eggs (omelette)\nBread' },
-            
             { day: 'Sunday', type: 'Breakfast', text: 'Oats + milk\nBanana' },
             { day: 'Sunday', type: 'Lunch', text: 'Rice + sardines' },
             { day: 'Sunday', type: 'Snack', text: 'Greek yoghurt + apple' },
@@ -154,101 +167,18 @@
         ];
 
         const WORKOUT_PLAN = [
-            {
-                id: 'day1',
-                title: "Day 1 – Chest & Triceps",
-                icon: Flame,
-                color: "text-orange-500",
-                warmup: ["Light dumbbell presses – 15 reps", "Arm circles holding light DBs"],
-                exercises: [
-                    { name: "Dumbbell Floor Press", sets: "4", reps: "8–12" },
-                    { name: "Dumbbell Chest Fly (floor)", sets: "3", reps: "10–15" },
-                    { name: "Neutral-grip DB Press", sets: "3", reps: "8–12" },
-                    { name: "Overhead DB Triceps Extension", sets: "3", reps: "10–15" },
-                    { name: "DB Skull Crushers (floor)", sets: "3", reps: "10–12" }
-                ],
-                finisher: "DB Floor Press hold at bottom – 3 × 20–30 sec"
-            },
-            {
-                id: 'day2',
-                title: "Day 2 – Legs (Dumbbell Only)",
-                icon: Activity,
-                color: "text-blue-500",
-                warmup: ["Bodyweight squats – 20", "Leg swings"],
-                exercises: [
-                    { name: "Goblet Squats", sets: "4", reps: "10–15" },
-                    { name: "Dumbbell Romanian Deadlifts", sets: "4", reps: "8–12" },
-                    { name: "Walking Dumbbell Lunges", sets: "3", reps: "10 each leg" },
-                    { name: "DB Step-Ups (onto chair/bench)", sets: "3", reps: "10 each leg" },
-                    { name: "Standing DB Calf Raises", sets: "4", reps: "15–20" }
-                ],
-                finisher: "Goblet squat hold – 2 rounds to failure"
-            },
-            {
-                id: 'day3',
-                title: "Day 3 – Shoulders & Arms",
-                icon: Dumbbell,
-                color: "text-emerald-500",
-                warmup: ["Light DB raises", "Arm swings"],
-                exercises: [
-                    { name: "Seated DB Shoulder Press", sets: "4", reps: "8–12" },
-                    { name: "DB Lateral Raises", sets: "4", reps: "12–15" },
-                    { name: "DB Front Raises", sets: "3", reps: "12" },
-                    { name: "Alternating DB Bicep Curls", sets: "3", reps: "10–12" },
-                    { name: "Hammer Curls", sets: "3", reps: "10–12" },
-                    { name: "DB Kickbacks", sets: "3", reps: "12–15" }
-                ],
-                finisher: "Lateral raise partials – 2 × 30 sec"
-            },
-            {
-                id: 'day4',
-                title: "Day 4 – Arms + Chest Pump",
-                icon: Zap,
-                color: "text-purple-500",
-                subtitle: "Short, intense, aesthetic day.",
-                warmup: [],
-                exercises: [
-                    { name: "Dumbbell Floor Press", sets: "4", reps: "12–15" },
-                    { name: "Squeeze Press (DBs pressed together)", sets: "3", reps: "12" },
-                    { name: "Concentration Curls", sets: "3", reps: "10 each arm" },
-                    { name: "Overhead DB Triceps Extension", sets: "3", reps: "12" },
-                    { name: "21s DB Curls", sets: "2", reps: "rounds" }
-                ],
-                finisher: "Curl → press combo – 2 × failure"
-            }
+            { id: 'day1', title: "Day 1 – Chest & Triceps", icon: Flame, color: "text-orange-500", warmup: ["Light DB presses – 15 reps", "Arm circles"], exercises: [{ name: "DB Floor Press", sets: "4", reps: "8–12" }, { name: "DB Chest Fly", sets: "3", reps: "10–15" }, { name: "Neutral-grip DB Press", sets: "3", reps: "8–12" }, { name: "Overhead DB Tri Ext", sets: "3", reps: "10–15" }], finisher: "DB Floor Press hold – 3 × 30s" },
+            { id: 'day2', title: "Day 2 – Legs (DB Only)", icon: Activity, color: "text-blue-500", warmup: ["Bodyweight squats – 20", "Leg swings"], exercises: [{ name: "Goblet Squats", sets: "4", reps: "10–15" }, { name: "DB RDLs", sets: "4", reps: "8–12" }, { name: "Walking Lunges", sets: "3", reps: "10/leg" }, { name: "DB Step-Ups", sets: "3", reps: "10/leg" }], finisher: "Goblet squat hold – 2 rounds" },
+            { id: 'day3', title: "Day 3 – Shoulders & Arms", icon: Dumbbell, color: "text-emerald-500", warmup: ["Light DB raises", "Arm swings"], exercises: [{ name: "Seated DB Press", sets: "4", reps: "8–12" }, { name: "DB Lateral Raises", sets: "4", reps: "12–15" }, { name: "DB Front Raises", sets: "3", reps: "12" }, { name: "Alt DB Curls", sets: "3", reps: "10–12" }], finisher: "Lateral raise partials – 2 × 30s" },
+            { id: 'day4', title: "Day 4 – Arms + Chest Pump", icon: Zap, color: "text-purple-500", subtitle: "Short, intense.", warmup: [], exercises: [{ name: "DB Floor Press", sets: "4", reps: "12–15" }, { name: "Squeeze Press", sets: "3", reps: "12" }, { name: "Concentration Curls", sets: "3", reps: "10/arm" }, { name: "21s DB Curls", sets: "2", reps: "rounds" }], finisher: "Curl → press combo" }
         ];
 
         const BIBLE_TOPICS = [
-            {
-                title: "Finance & Wealth",
-                desc: "Stewardship, generosity, and trust in God's provision.",
-                verses: ["Proverbs 22:7 - The borrower is slave to the lender.", "Matthew 6:24 - You cannot serve both God and money.", "Malachi 3:10 - Bring the whole tithe into the storehouse."],
-                chapters: ["Proverbs 3", "Matthew 6", "1 Timothy 6"]
-            },
-            {
-                title: "Overcoming Lust",
-                desc: "Purity of heart, fleeing temptation, and self-control.",
-                verses: ["2 Timothy 2:22 - Flee the evil desires of youth.", "1 Corinthians 6:18 - Flee from sexual immorality.", "Psalm 119:9 - How can a young person stay on the path of purity? By living according to your word."],
-                chapters: ["Romans 6", "1 Corinthians 6", "Psalm 51"]
-            },
-            {
-                title: "Power of Prayer",
-                desc: "Communion with God, persistence, and faith.",
-                verses: ["Philippians 4:6 - Do not be anxious about anything, but in every situation, by prayer and petition...", "1 Thessalonians 5:17 - Pray continually.", "James 5:16 - The prayer of a righteous person is powerful and effective."],
-                chapters: ["Luke 11", "Matthew 6", "Psalm 145"]
-            },
-            {
-                title: "Anxiety & Peace",
-                desc: "Finding rest in God's presence amidst chaos.",
-                verses: ["1 Peter 5:7 - Cast all your anxiety on him because he cares for you.", "John 14:27 - Peace I leave with you; my peace I give you.", "Isaiah 26:3 - You will keep in perfect peace those whose minds are steadfast."],
-                chapters: ["Philippians 4", "Psalm 23", "Matthew 6"]
-            },
-            {
-                title: "Diligence & Work",
-                desc: "Working unto the Lord and avoiding laziness.",
-                verses: ["Colossians 3:23 - Whatever you do, work at it with all your heart...", "Proverbs 13:4 - A sluggard’s appetite is never filled, but the desires of the diligent are fully satisfied."],
-                chapters: ["Proverbs 6", "Ecclesiastes 3", "2 Thessalonians 3"]
-            }
+            { title: "Finance & Wealth", desc: "Stewardship & trust.", verses: ["Prov 22:7", "Matt 6:24"], chapters: ["Prov 3", "Matt 6"] },
+            { title: "Overcoming Lust", desc: "Purity & self-control.", verses: ["2 Tim 2:22", "1 Cor 6:18"], chapters: ["Rom 6", "Ps 51"] },
+            { title: "Power of Prayer", desc: "Communion with God.", verses: ["Phil 4:6", "1 Thess 5:17"], chapters: ["Luke 11", "Ps 145"] },
+            { title: "Anxiety & Peace", desc: "Finding rest.", verses: ["1 Pet 5:7", "John 14:27"], chapters: ["Phil 4", "Ps 23"] },
+            { title: "Diligence", desc: "Work unto the Lord.", verses: ["Col 3:23", "Prov 13:4"], chapters: ["Prov 6", "Eccl 3"] }
         ];
 
         const FOCUS_SOUNDS = [
@@ -256,52 +186,27 @@
             { id: 'forest', label: 'Forest', icon: CloudSun, url: 'https://assets.mixkit.co/active_storage/sfx/2511/2511-preview.mp3' },
             { id: 'fire', label: 'Fire', icon: Flame, url: 'https://assets.mixkit.co/active_storage/sfx/2513/2513-preview.mp3' },
             { id: 'cafe', label: 'Cafe', icon: Coffee, url: 'https://assets.mixkit.co/active_storage/sfx/96/96-preview.mp3' },
-            { id: 'lofi', label: 'Lofi Jazz', icon: Music, url: 'https://cdn.pixabay.com/audio/2022/11/22/audio_febc508520.mp3' },
+            { id: 'lofi', label: 'Lofi', icon: Music, url: 'https://cdn.pixabay.com/audio/2022/11/22/audio_febc508520.mp3' },
             { id: 'ocean', label: 'Ocean', icon: Waves, url: 'https://assets.mixkit.co/active_storage/sfx/1126/1126-preview.mp3' },
             { id: 'thunder', label: 'Thunder', icon: CloudLightning, url: 'https://assets.mixkit.co/active_storage/sfx/2507/2507-preview.mp3' }
         ];
 
         const DAILY_SPIRITUALITY = [
-            { verse: "Joshua 1:9", text: "Have I not commanded you? Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go.", prayer: "Lord, grant me the courage to face today's challenges knowing You are by my side.", encouragement: "You are never alone in your battles. God's presence is your greatest weapon." },
-            { verse: "Jeremiah 29:11", text: "For I know the plans I have for you,” declares the Lord, “plans to prosper you and not to harm you, plans to give you hope and a future.", prayer: "Father, help me trust in Your perfect timing and Your good plans for my life.", encouragement: "Your future is bright because it is in God's hands." },
-            { verse: "Isaiah 40:31", text: "But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint.", prayer: "Renew my strength, Lord. Help me to wait on You and not rush ahead.", encouragement: "Patience isn't just waiting; it's how you behave while you wait. God is strengthening you." },
-            { verse: "Romans 8:28", text: "And we know that in all things God works for the good of those who love him, who have been called according to his purpose.", prayer: "God, thank You for weaving even the bad parts of my life into a beautiful tapestry.", encouragement: "Every setback is a setup for a comeback with God." },
-            { verse: "Psalm 46:10", text: "He says, 'Be still, and know that I am God; I will be exalted among the nations, I will be exalted in the earth.'", prayer: "Quiet my anxious thoughts, Lord. Help me to simply be still and acknowledge Your power.", encouragement: "Peace is not the absence of trouble, but the presence of God." }
+            { verse: "Joshua 1:9", text: "Be strong and courageous...", prayer: "Lord, grant me courage.", encouragement: "You are never alone." },
+            { verse: "Jer 29:11", text: "Plans to prosper you...", prayer: "Help me trust Your timing.", encouragement: "Your future is bright." },
+            { verse: "Isa 40:31", text: "Renew their strength...", prayer: "Renew my strength, Lord.", encouragement: "God is strengthening you." },
+            { verse: "Rom 8:28", text: "All things work for good...", prayer: "Thank You for Your plan.", encouragement: "Setbacks are setups." },
+            { verse: "Ps 46:10", text: "Be still...", prayer: "Quiet my thoughts.", encouragement: "Peace is His presence." }
         ];
 
         const BIBLE_BOOKS = [
-            { category: "Foundations (Pentateuch)", books: [
-                { name: "Genesis", theme: "Beginnings & Family", app: "Family Dynamics & Legacy. Understanding human nature and trusting God's long-term plan.", keys: "Gen 1 (Purpose), Gen 37-50 (Resilience)" },
-                { name: "Exodus", theme: "Deliverance", app: "Leadership & Freedom. Breaking free from bad habits and establishing principled order.", keys: "Ex 3-4 (Calling), Ex 20 (Ethics)" },
-                { name: "Proverbs", theme: "Wisdom", app: "Finance & Habits. Practical advice on money, speech, work ethic, and avoiding toxic people.", keys: "Prov 3 (Trust), Prov 22 (Money)" },
-                { name: "Deuteronomy", theme: "Remembrance", app: "Review & Strategy. Learning from the past to build a successful future.", keys: "Deut 28 (Blessings/Curses)" }
-            ]},
-            { category: "History & Leadership", books: [
-                { name: "Joshua", theme: "Conquest", app: "Courage & Strategy. Taking new territory in career/business and stepping into leadership.", keys: "Josh 1 (Mindset)" },
-                { name: "Nehemiah", theme: "Rebuilding", app: "Project Management. How to build a great work, handle opposition, and lead a team.", keys: "Neh 1-6 (Execution)" },
-                { name: "Esther", theme: "Providence", app: "Strategic Influence. Using your position for good in high-stakes environments.", keys: "Esther 4 (Courage)" },
-                { name: "1&2 Samuel", theme: "Kingship", app: "Humility & Power. Handling promotion and dealing with toxic leadership.", keys: "1 Sam 16 (Character)" }
-            ]},
-            { category: "Wisdom & Mindset", books: [
-                { name: "Job", theme: "Suffering", app: "Resilience. Dealing with unexplained loss and remaining faithful when things go wrong.", keys: "Job 1-2, 42" },
-                { name: "Psalms", theme: "Emotion", app: "Mental Health. Processing raw emotions (anger, fear, joy) through prayer.", keys: "Ps 23 (Peace), Ps 91 (Protection)" },
-                { name: "Ecclesiastes", theme: "Meaning", app: "Purpose & Burnout. Finding meaning beyond career success and wealth.", keys: "Ecc 3 (Seasons)" }
-            ]},
-            { category: "The Gospels (Jesus)", books: [
-                { name: "Matthew", theme: "The King", app: "Ethics & Kingdom Living. The ultimate guide for character and conflict resolution.", keys: "Matt 5-7 (Sermon on Mount)" },
-                { name: "Luke", theme: "The Man", app: "Compassion. Caring for the marginalized and understanding God's grace.", keys: "Luke 15 (Prodigal Son)" },
-                { name: "John", theme: "The God", app: "Identity. Understanding who Jesus is and finding true life/identity in Him.", keys: "John 15 (Abiding)" }
-            ]},
-            { category: "Early Church & Letters", books: [
-                { name: "Acts", theme: "The Spirit", app: "Community & Boldness. Living out faith in a skeptical world.", keys: "Acts 2 (Holy Spirit)" },
-                { name: "Romans", theme: "The Gospel", app: "Theology & Mindset. A logical breakdown of faith and renewing the mind.", keys: "Rom 8 (No Condemnation), Rom 12 (Transformation)" },
-                { name: "Philippians", theme: "Joy", app: "Contentment. Finding joy regardless of circumstances.", keys: "Phil 4 (Anxiety/Peace)" },
-                { name: "James", theme: "Action", app: "Integrity. Faith without works is dead; controlling the tongue.", keys: "James 1 (Trials), James 3 (Speech)" }
-            ]}
+            { category: "Foundations", books: [{ name: "Genesis", theme: "Beginnings", app: "Family & Legacy", keys: "Gen 1" }, { name: "Proverbs", theme: "Wisdom", app: "Finance & Habits", keys: "Prov 3" }] },
+            { category: "Leadership", books: [{ name: "Joshua", theme: "Conquest", app: "Courage", keys: "Josh 1" }, { name: "Nehemiah", theme: "Rebuilding", app: "Management", keys: "Neh 1" }] },
+            { category: "Gospels", books: [{ name: "Matthew", theme: "King", app: "Ethics", keys: "Matt 5" }, { name: "John", theme: "God", app: "Identity", keys: "John 1" }] },
+            { category: "Letters", books: [{ name: "Romans", theme: "Gospel", app: "Mindset", keys: "Rom 8" }, { name: "James", theme: "Action", app: "Integrity", keys: "Jas 1" }] }
         ];
 
-        // --- COMPONENTS ---
-
+        // --- HELPERS ---
         const Card = ({ children, className = "", title, action }) => (
             React.createElement("div", { className: `bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 md:p-6 flex flex-col ${className}` },
                 (title || action) && (
@@ -326,787 +231,462 @@
         );
 
         const QuickLinkButton = ({ href, icon: Icon, label, colorClass = "text-zinc-600 dark:text-zinc-300" }) => (
-            React.createElement("a", { 
-                href: href, 
-                target: "_blank", 
-                rel: "noopener noreferrer",
-                className: "flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-100 dark:border-zinc-800 hover:border-indigo-500/50 hover:bg-white dark:hover:bg-zinc-900 hover:shadow-md transition-all group text-center h-full"
-            },
-                React.createElement("div", { className: `w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-zinc-900 shadow-sm group-hover:scale-110 transition-transform ${colorClass}` },
-                    React.createElement(Icon, { size: 16 })
-                ),
+            React.createElement("a", { href: href, target: "_blank", rel: "noopener noreferrer", className: "flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-100 dark:border-zinc-800 hover:border-indigo-500/50 hover:bg-white dark:hover:bg-zinc-900 hover:shadow-md transition-all group text-center h-full" },
+                React.createElement("div", { className: `w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-zinc-900 shadow-sm group-hover:scale-110 transition-transform ${colorClass}` }, React.createElement(Icon, { size: 16 })),
                 React.createElement("span", { className: "text-xs font-medium text-zinc-600 dark:text-zinc-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-1" }, label)
             )
         );
 
-        // --- WIDGETS ---
+        // --- AUTH COMPONENT ---
+        const AuthModal = ({ onClose, onLogin }) => {
+            const [activeTab, setActiveTab] = useState("login"); // 'login' or 'signup'
+            const [email, setEmail] = useState("");
+            const [password, setPassword] = useState("");
+            const [confirmPassword, setConfirmPassword] = useState("");
+            const [showPassword, setShowPassword] = useState(false);
+            const [error, setError] = useState(null);
+            const [loading, setLoading] = useState(false);
 
+            const isLogin = activeTab === "login";
+
+            const handleSubmit = async (e) => {
+                e.preventDefault(); setError(null); setLoading(true);
+                
+                if (!isLogin && password !== confirmPassword) {
+                    setError("Passwords do not match."); setLoading(false); return;
+                }
+
+                try {
+                    // Try real Firebase Auth first
+                    if (isLogin) await signInWithEmailAndPassword(auth, email, password);
+                    else await createUserWithEmailAndPassword(auth, email, password);
+                    onLogin({ email, uid: auth.currentUser.uid, isLocal: false });
+                    onClose();
+                } catch (err) { 
+                    console.warn("Auth Error caught, triggering fallback...");
+                    let msg = err.message.replace("Firebase: ", "");
+                    
+                    // FALLBACK TO LOCAL AUTH
+                    // This catches everything: network errors, unauthorized domains, user not found, etc.
+                    try {
+                        const localUser = isLogin 
+                            ? LocalAuth.login(email, password)
+                            : LocalAuth.signup(email, password);
+                        onLogin(localUser);
+                        onClose();
+                        return;
+                    } catch (localErr) {
+                         // Show local logic errors (e.g. "User not found locally", "Incorrect password")
+                         setError(localErr.message); 
+                    }
+                } finally { setLoading(false); }
+            };
+
+            const handleGoogleLogin = async () => {
+                setError("⚠️ Google Sign-In is disabled in this preview. Please create an account below.");
+            };
+
+            return React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" },
+                React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 max-w-sm w-full relative shadow-2xl" },
+                    React.createElement("button", { onClick: onClose, className: "absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200" }, React.createElement(X, { size: 20 })),
+                    
+                    // Header with Tabs
+                    React.createElement("div", { className: "text-center mb-6" },
+                        React.createElement("div", { className: "w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-3" }, React.createElement(LogIn, { size: 24 })),
+                        React.createElement("div", { className: "flex justify-center gap-4 border-b border-zinc-100 dark:border-zinc-800 pb-2 mt-4" },
+                            React.createElement("button", { onClick: () => { setActiveTab("login"); setError(null); }, className: `pb-2 text-sm font-bold transition-colors ${isLogin ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-zinc-400 hover:text-zinc-600'}` }, "Sign In"),
+                            React.createElement("button", { onClick: () => { setActiveTab("signup"); setError(null); }, className: `pb-2 text-sm font-bold transition-colors ${!isLogin ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-zinc-400 hover:text-zinc-600'}` }, "Create Account")
+                        )
+                    ),
+
+                    React.createElement("div", { className: "space-y-4" },
+                        React.createElement("form", { onSubmit: handleSubmit, className: "space-y-4" },
+                            React.createElement("input", { type: "email", required: true, value: email, onChange: (e) => setEmail(e.target.value), placeholder: "Email", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-zinc-900 dark:text-zinc-100" }),
+                            
+                            // Password Field with Toggle
+                            React.createElement("div", { className: "relative" },
+                                React.createElement("input", { type: showPassword ? "text" : "password", required: true, value: password, onChange: (e) => setPassword(e.target.value), placeholder: "Password", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-zinc-900 dark:text-zinc-100 pr-10" }),
+                                React.createElement("button", { type: "button", onClick: () => setShowPassword(!showPassword), className: "absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200" }, React.createElement(showPassword ? EyeOff : Eye, { size: 18 }))
+                            ),
+
+                            !isLogin && React.createElement("input", { type: "password", required: true, value: confirmPassword, onChange: (e) => setConfirmPassword(e.target.value), placeholder: "Confirm Password", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-zinc-900 dark:text-zinc-100" }),
+                            
+                            error && React.createElement("div", { className: "p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg flex items-center gap-2" }, React.createElement(AlertCircle, { size: 16 }), error),
+                            
+                            React.createElement("button", { type: "submit", disabled: loading, className: "w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50" }, loading ? "Processing..." : (isLogin ? "Sign In" : "Create Account"))
+                        ),
+                        React.createElement("div", { className: "relative flex py-2 items-center" }, React.createElement("div", { className: "flex-grow border-t border-zinc-200 dark:border-zinc-800" }), React.createElement("span", { className: "flex-shrink mx-4 text-xs text-zinc-400 uppercase" }, "Or"), React.createElement("div", { className: "flex-grow border-t border-zinc-200 dark:border-zinc-800" })),
+                        React.createElement("button", { onClick: handleGoogleLogin, className: "w-full py-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 opacity-60 cursor-not-allowed", title: "Unavailable in preview" }, "Sign in with Google")
+                    )
+                )
+            );
+        };
+
+        // --- LANDING PAGE ---
+        const LandingPage = ({ onLoginSuccess, onGuestLogin }) => {
+            const [activeTab, setActiveTab] = useState("login"); // 'login' or 'signup'
+            const [email, setEmail] = useState("");
+            const [password, setPassword] = useState("");
+            const [confirmPassword, setConfirmPassword] = useState("");
+            const [showPassword, setShowPassword] = useState(false);
+            const [error, setError] = useState(null);
+            const [loading, setLoading] = useState(false);
+
+            const isLogin = activeTab === "login";
+
+            const handleSubmit = async (e) => {
+                e.preventDefault(); setError(null); setLoading(true);
+                if (!isLogin && password !== confirmPassword) { setError("Passwords do not match."); setLoading(false); return; }
+
+                try {
+                    if (isLogin) await signInWithEmailAndPassword(auth, email, password);
+                    else await createUserWithEmailAndPassword(auth, email, password);
+                    onLoginSuccess({ email, uid: auth.currentUser.uid, isLocal: false });
+                } catch (err) { 
+                    console.warn("Auth Fallback (Landing):", err.code);
+                    try {
+                         const localUser = isLogin 
+                             ? LocalAuth.login(email, password)
+                             : LocalAuth.signup(email, password);
+                         onLoginSuccess(localUser);
+                         return;
+                     } catch (localErr) {
+                         setError(localErr.message);
+                         setLoading(false);
+                         return;
+                     }
+                } finally { setLoading(false); }
+            };
+
+            const handleGoogleLogin = async () => {
+                setError("⚠️ Google Sign-In is disabled in this preview. Please create an account below.");
+            };
+
+            const handleGuest = () => {
+                 onGuestLogin({ email: "Guest User", uid: "guest-user", isLocal: true });
+            };
+
+            return React.createElement("div", { className: "min-h-screen flex flex-col md:flex-row bg-zinc-950 text-white font-sans" },
+                React.createElement("div", { className: "md:w-1/2 p-12 flex flex-col justify-between landing-gradient relative overflow-hidden" },
+                    React.createElement("div", { className: "relative z-10" },
+                        React.createElement("div", { className: "flex items-center gap-3 mb-8" },
+                            React.createElement("div", { className: "w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center" }, React.createElement(Brain, { size: 24, className: "text-white" })),
+                            React.createElement("h1", { className: "text-2xl font-bold tracking-tight" }, "LifeOS")
+                        ),
+                        React.createElement("h2", { className: "text-5xl md:text-6xl font-bold mb-6 leading-tight" }, "Your Second", React.createElement("br"), React.createElement("span", { className: "text-indigo-500" }, "Brain.")),
+                        React.createElement("p", { className: "text-zinc-400 text-lg max-w-md leading-relaxed" }, "Organize your entire life. Master your habits. Achieve your 2026 vision. All in one place.")
+                    ),
+                    React.createElement("div", { className: "relative z-10 mt-12 grid grid-cols-2 gap-6" },
+                        React.createElement("div", { className: "flex items-center gap-3 text-zinc-300" }, React.createElement(CheckCircle2, { className: "text-emerald-500" }), "Goal Tracking"),
+                        React.createElement("div", { className: "flex items-center gap-3 text-zinc-300" }, React.createElement(CheckCircle2, { className: "text-blue-500" }), "Focus Timer"),
+                        React.createElement("div", { className: "flex items-center gap-3 text-zinc-300" }, React.createElement(CheckCircle2, { className: "text-amber-500" }), "Daily Journal"),
+                        React.createElement("div", { className: "flex items-center gap-3 text-zinc-300" }, React.createElement(CheckCircle2, { className: "text-indigo-500" }), "Habit Builder")
+                    ),
+                    React.createElement("div", { className: "absolute top-0 right-0 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" }),
+                    React.createElement("div", { className: "absolute bottom-0 left-0 w-64 h-64 bg-rose-600/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" })
+                ),
+                React.createElement("div", { className: "md:w-1/2 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 flex flex-col justify-center p-8 md:p-16" },
+                    React.createElement("div", { className: "max-w-md w-full mx-auto" },
+                        React.createElement("div", { className: "mb-8 text-center" },
+                            React.createElement("h3", { className: "text-3xl font-bold mb-2" }, "Welcome"),
+                            React.createElement("div", { className: "flex justify-center gap-6 border-b border-zinc-200 dark:border-zinc-800 pb-1 mt-4" },
+                                React.createElement("button", { onClick: () => { setActiveTab("login"); setError(null); }, className: `pb-2 text-sm font-bold transition-colors border-b-2 ${isLogin ? 'text-indigo-600 border-indigo-600' : 'text-zinc-400 border-transparent hover:text-zinc-600'}` }, "Sign In"),
+                                React.createElement("button", { onClick: () => { setActiveTab("signup"); setError(null); }, className: `pb-2 text-sm font-bold transition-colors border-b-2 ${!isLogin ? 'text-indigo-600 border-indigo-600' : 'text-zinc-400 border-transparent hover:text-zinc-600'}` }, "Create Account")
+                            )
+                        ),
+                        
+                        React.createElement("form", { onSubmit: handleSubmit, className: "space-y-4" },
+                            React.createElement("div", null, React.createElement("label", { className: "block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1" }, "Email Address"), React.createElement("input", { type: "email", required: true, value: email, onChange: (e) => setEmail(e.target.value), placeholder: "name@example.com", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-zinc-900 dark:text-zinc-100" })),
+                            
+                            // Password Field with Toggle
+                            React.createElement("div", null,
+                                React.createElement("label", { className: "block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1" }, "Password"),
+                                React.createElement("div", { className: "relative" },
+                                    React.createElement("input", { type: showPassword ? "text" : "password", required: true, value: password, onChange: (e) => setPassword(e.target.value), placeholder: "••••••••", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-zinc-900 dark:text-zinc-100 pr-10" }),
+                                    React.createElement("button", { type: "button", onClick: () => setShowPassword(!showPassword), className: "absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200" }, React.createElement(showPassword ? EyeOff : Eye, { size: 18 }))
+                                )
+                            ),
+
+                            !isLogin && React.createElement("div", null, React.createElement("label", { className: "block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1" }, "Confirm Password"), React.createElement("input", { type: "password", required: true, value: confirmPassword, onChange: (e) => setConfirmPassword(e.target.value), placeholder: "••••••••", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-zinc-900 dark:text-zinc-100" })),
+                            
+                            error && React.createElement("div", { className: "p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg flex items-center gap-2" }, React.createElement(AlertCircle, { size: 16 }), error),
+                            
+                            React.createElement("button", { type: "submit", disabled: loading, className: "w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed mt-2" }, loading ? "Processing..." : (isLogin ? "Sign In" : "Create Account"))
+                        ),
+                        React.createElement("div", { className: "relative flex py-2 items-center mt-6 mb-2" },
+                            React.createElement("div", { className: "flex-grow border-t border-zinc-200 dark:border-zinc-800" }),
+                            React.createElement("span", { className: "flex-shrink mx-4 text-xs text-zinc-400 uppercase font-bold tracking-wider" }, "Or"),
+                            React.createElement("div", { className: "flex-grow border-t border-zinc-200 dark:border-zinc-800" })
+                        ),
+                        React.createElement("div", { className: "text-center space-y-4" },
+                            React.createElement("button", { onClick: handleGoogleLogin, disabled: loading, className: "w-full py-3 mb-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold rounded-xl transition-all flex items-center justify-center gap-3 shadow-sm opacity-60 cursor-not-allowed", title: "Unavailable in preview" },
+                                React.createElement("img", { src: "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg", className: "w-5 h-5", alt: "G" }), "Continue with Google (Disabled)"
+                            ),
+                            React.createElement("button", { onClick: handleGuest, disabled: loading, className: "text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors uppercase tracking-wider font-bold" }, "Continue as Guest")
+                        )
+                    )
+                )
+            );
+        };
+
+        // --- WIDGETS ---
         const WeatherWidget = () => {
             const [weather, setWeather] = useState(null);
-            const [locationName, setLocationName] = useState("Detecting...");
-            const [loading, setLoading] = useState(true);
-
-            const getWeatherDescription = (code) => {
-                const codes = {
-                    0: "Clear Sky", 1: "Mainly Clear", 2: "Partly Cloudy", 3: "Overcast",
-                    45: "Fog", 48: "Depositing Rime Fog",
-                    51: "Light Drizzle", 53: "Moderate Drizzle", 55: "Dense Drizzle",
-                    56: "Freezing Drizzle", 57: "Dense Freezing Drizzle",
-                    61: "Slight Rain", 63: "Moderate Rain", 65: "Heavy Rain",
-                    66: "Freezing Rain", 67: "Heavy Freezing Rain",
-                    71: "Slight Snow", 73: "Moderate Snow", 75: "Heavy Snow",
-                    77: "Snow Grains",
-                    80: "Slight Rain Showers", 81: "Moderate Rain Showers", 82: "Violent Rain Showers",
-                    85: "Slight Snow Showers", 86: "Heavy Snow Showers",
-                    95: "Thunderstorm", 96: "Thunderstorm + Hail", 99: "Heavy Thunderstorm + Hail"
-                };
-                return codes[code] || "Unknown";
-            };
-
-            const fetchWeather = async (latitude, longitude) => {
-                try {
-                    // Fetch Weather Data
-                    const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto`);
-                    if (!response.ok) throw new Error("Weather API Error");
-                    const data = await response.json();
-                    setWeather(data);
-
-                    // Fetch Location Name (Reverse Geocoding)
-                    try {
-                        const geoResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${latitude}&longitude=${longitude}&count=1&language=en&format=json`);
-                        if (geoResponse.ok) {
-                            const geoData = await geoResponse.json();
-                            if (geoData.results && geoData.results[0]) {
-                                const place = geoData.results[0];
-                                const city = place.name;
-                                const region = place.admin1; // e.g. Wales, England, California
-                                
-                                // Smart formatting: "Cardiff, Wales" or just "London" if region is redundant/same
-                                if (region && region !== city && (city.length + region.length < 25)) {
-                                    setLocationName(`${city}, ${region}`);
-                                } else {
-                                    setLocationName(city);
-                                }
-                            } else {
-                                setLocationName("Local Location");
-                            }
-                        }
-                    } catch (geoError) {
-                        console.warn("Geocoding failed, defaulting name");
-                        setLocationName("Local Area");
-                    }
-
-                } catch (error) {
-                    console.warn("Weather fetch failed, using fallback", error);
-                    // Fallback Data (Manchester defaults)
-                    setWeather({
-                        current: { temperature_2m: 12, weather_code: 3 }
-                    });
-                    setLocationName("Manchester (Offline)");
-                } finally {
-                    setLoading(false);
-                }
-            };
-
             useEffect(() => {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            fetchWeather(position.coords.latitude, position.coords.longitude);
-                        }, 
-                        (error) => {
-                            console.warn("Geolocation denied/failed, defaulting to Manchester", error);
-                            fetchWeather(53.4808, -2.2426); // Default to Manchester
-                        }
-                    );
-                } else {
-                    fetchWeather(53.4808, -2.2426);
-                }
+                const fetchWeather = async (lat, lon) => {
+                    try {
+                        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`);
+                        const data = await res.json(); setWeather(data);
+                    } catch(e) {}
+                };
+                if (navigator.geolocation) navigator.geolocation.getCurrentPosition(p => fetchWeather(p.coords.latitude, p.coords.longitude), () => fetchWeather(53.48, -2.24));
+                else fetchWeather(53.48, -2.24);
             }, []);
-
-            if (loading) return React.createElement("div", { className: "animate-pulse h-12 w-32 bg-zinc-100 dark:bg-zinc-800 rounded-lg" });
-
-            const temp = weather?.current?.temperature_2m;
-            const code = weather?.current?.weather_code;
-            const description = getWeatherDescription(code || 0);
-            
-            let Icon = Cloud;
-            if (code === 0 || code === 1) Icon = Sun;
-            else if (code > 1 && code < 48) Icon = CloudSun;
-            else if (code >= 51 && code <= 67) Icon = CloudRain;
-            else if (code >= 71) Icon = CloudSnow;
-            else if (code >= 95) Icon = CloudLightning;
-
-            return React.createElement("div", { className: "flex flex-col items-end text-zinc-700 dark:text-zinc-200" },
-                React.createElement("div", { className: "flex items-center gap-2" },
-                    React.createElement(Icon, { size: 20 }),
-                    React.createElement("span", { className: "text-xl font-bold" }, temp !== undefined ? `${Math.round(temp)}°C` : "--")
-                ),
-                React.createElement("div", { className: "flex items-center gap-1 text-xs text-zinc-500 uppercase tracking-wide font-medium mt-0.5" },
-                    React.createElement("span", null, locationName),
-                    React.createElement("span", null, "•"),
-                    React.createElement("span", null, description)
-                )
+            if (!weather) return React.createElement("div", { className: "animate-pulse h-10 w-24 bg-zinc-100 dark:bg-zinc-800 rounded" });
+            return React.createElement("div", { className: "flex flex-col items-end" }, 
+                React.createElement("span", { className: "text-xl font-bold" }, `${Math.round(weather.current.temperature_2m)}°C`),
+                React.createElement("span", { className: "text-xs text-zinc-500" }, "Local Area")
             );
         };
 
         const TimeWidget = () => {
             const [time, setTime] = useState(new Date());
-            useEffect(() => {
-                const timer = setInterval(() => setTime(new Date()), 1000);
-                return () => clearInterval(timer);
-            }, []);
-
+            useEffect(() => { const t = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(t); }, []);
             return React.createElement("div", { className: "text-right" },
-                React.createElement("div", { className: "text-3xl font-bold font-mono tracking-tight text-zinc-900 dark:text-zinc-100" }, 
-                    time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                ),
-                React.createElement("div", { className: "text-xs font-medium text-zinc-500 uppercase tracking-wider" }, 
-                    time.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
-                )
+                React.createElement("div", { className: "text-3xl font-bold font-mono tracking-tight" }, time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })),
+                React.createElement("div", { className: "text-xs font-medium text-zinc-500 uppercase" }, time.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }))
             );
         };
 
         const CompactTimer = () => {
-            const [timeLeft, setTimeLeft] = useState(25 * 60);
+            const [timeLeft, setTimeLeft] = useState(1500);
             const [isActive, setIsActive] = useState(false);
-
-            useEffect(() => {
-                let interval = null;
-                if (isActive && timeLeft > 0) {
-                    interval = setInterval(() => setTimeLeft(t => t - 1), 1000);
-                } else if (timeLeft === 0) setIsActive(false);
-                return () => clearInterval(interval);
-            }, [isActive, timeLeft]);
-
-            const formatTime = (seconds) => {
-                const mins = Math.floor(seconds / 60);
-                const secs = seconds % 60;
-                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-            };
-
+            useEffect(() => { let i; if (isActive && timeLeft > 0) i = setInterval(() => setTimeLeft(t => t - 1), 1000); else if(timeLeft===0) setIsActive(false); return () => clearInterval(i); }, [isActive, timeLeft]);
+            const format = (s) => `${Math.floor(s / 60).toString().padStart(2,'0')}:${(s % 60).toString().padStart(2,'0')}`;
             return React.createElement("div", { className: "flex items-center gap-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3" },
-                React.createElement("div", { className: "font-mono text-2xl font-bold text-indigo-600 dark:text-indigo-400 w-20 text-center" }, formatTime(timeLeft)),
+                React.createElement("div", { className: "font-mono text-2xl font-bold text-indigo-600 dark:text-indigo-400 w-20 text-center" }, format(timeLeft)),
                 React.createElement("div", { className: "flex gap-2" },
                     React.createElement("button", { onClick: () => setIsActive(!isActive), className: "p-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors" }, 
                         isActive ? React.createElement(Pause, { size: 16 }) : React.createElement(Play, { size: 16 })
                     ),
-                    React.createElement("button", { onClick: () => { setIsActive(false); setTimeLeft(25*60); }, className: "p-2 rounded-lg bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors" }, 
+                    React.createElement("button", { onClick: () => { setIsActive(false); setTimeLeft(1500); }, className: "p-2 rounded-lg bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors" }, 
                         React.createElement(RotateCcw, { size: 16 })
                     )
                 )
             );
         };
 
-        const ShareModal = ({ onClose }) => {
-            const currentUrl = window.location.href;
-            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(currentUrl)}`;
+        // --- VIEWS DEFINITIONS (MUST BE BEFORE APP) ---
 
-            return React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" },
-                React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 max-w-sm w-full relative shadow-2xl" },
-                    React.createElement("button", { onClick: onClose, className: "absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200" }, React.createElement(X, { size: 20 })),
-                    React.createElement("div", { className: "flex flex-col items-center text-center gap-6" },
-                        React.createElement("div", { className: "w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center" },
-                            React.createElement(QrCode, { size: 24 })
+        const DashboardView = ({ onNavigate, meals = [], tasks = [], dashboardData, onUpdateDashboard, onAddDump }) => {
+            const dailyFocus = dashboardData?.focus || "";
+            const [isEditing, setIsEditing] = useState(!dailyFocus);
+            const [focusInput, setFocusInput] = useState(dailyFocus);
+            const [quickNote, setQuickNote] = useState("");
+            const [quote, setQuote] = useState({ text: "Focus is about saying no.", author: "Steve Jobs" });
+            
+            useEffect(() => {
+                if (dailyFocus) {
+                    setFocusInput(dailyFocus);
+                    setIsEditing(false);
+                }
+            }, [dailyFocus]);
+
+            const handleSetFocus = () => { if (focusInput.trim()) { onUpdateDashboard({ ...dashboardData, focus: focusInput }); setIsEditing(false); } };
+            const handleQuickCapture = () => { if (quickNote.trim()) { onAddDump(quickNote); setQuickNote(""); } };
+            const handleEditFocus = () => { setFocusInput(dailyFocus); setIsEditing(true); };
+
+            return React.createElement("div", { className: "animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 md:pb-0" },
+                React.createElement("div", { className: "mb-8 flex items-end justify-between" },
+                    React.createElement("div", null, React.createElement("h2", { className: "text-xl font-bold text-zinc-400 mb-2 uppercase tracking-widest" }, "My Dashboard"), React.createElement(WeatherWidget)),
+                    React.createElement(TimeWidget)
+                ),
+                React.createElement(Card, { title: "Daily Inspiration", className: "mb-8 flex flex-col justify-center bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950" },
+                     React.createElement("div", { className: "relative z-10" },
+                         React.createElement("div", { className: "absolute -left-2 -top-2 text-6xl text-zinc-100 dark:text-zinc-800 font-serif opacity-50 select-none" }, "“"),
+                         React.createElement("blockquote", { className: "text-lg font-medium text-zinc-700 dark:text-zinc-300 mb-4 leading-relaxed relative z-10 pl-2" }, `"${quote.text}"`),
+                         React.createElement("cite", { className: "text-xs font-bold text-zinc-400 uppercase tracking-wider block text-right not-italic" }, `— ${quote.author}`)
+                     )
+                ),
+                React.createElement(Card, { className: "mb-8 relative overflow-hidden min-h-[200px] flex flex-col justify-center" },
+                    React.createElement("div", { className: "absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" }),
+                    React.createElement("div", { className: "relative z-10 w-full" },
+                        React.createElement("div", { className: "flex justify-between items-center mb-4" },
+                            React.createElement("h3", { className: "text-sm font-semibold text-zinc-500 uppercase tracking-wider flex items-center gap-2" }, React.createElement(Target, { size: 16 }), "Today's Intention"),
+                            !isEditing && React.createElement("button", { onClick: handleEditFocus, className: "text-zinc-400 hover:text-indigo-500 p-2" }, React.createElement(Edit3, { size: 16 }))
                         ),
-                        React.createElement("div", null,
-                            React.createElement("h3", { className: "text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-1" }, "Share LifeOS"),
-                            React.createElement("p", { className: "text-sm text-zinc-500" }, "Scan to view your dashboard on mobile.")
-                        ),
-                        React.createElement("div", { className: "p-4 bg-white rounded-xl border border-zinc-200" },
-                            React.createElement("img", { src: qrCodeUrl, alt: "QR Code", className: "w-48 h-48 mix-blend-multiply" })
-                        ),
-                         React.createElement("p", { className: "text-xs text-zinc-400" }, "Your daily focus and habits will sync instantly.")
+                        isEditing ? (
+                            React.createElement("div", { className: "flex gap-2" },
+                                React.createElement("input", { type: "text", value: focusInput, onChange: (e) => setFocusInput(e.target.value), onKeyDown: (e) => e.key === 'Enter' && handleSetFocus(), placeholder: "What is your ONE win for today?", className: "w-full bg-transparent border-b-2 border-zinc-200 dark:border-zinc-700 text-3xl font-bold focus:outline-none py-2 text-zinc-900 dark:text-zinc-100" }),
+                                React.createElement("button", { onClick: handleSetFocus, disabled: !focusInput.trim(), className: "p-3 bg-indigo-600 text-white rounded-xl" }, React.createElement(ArrowRight, { size: 24 }))
+                            )
+                        ) : (
+                            React.createElement("div", { className: "animate-in fade-in" },
+                                React.createElement("p", { className: "text-xs font-medium text-zinc-400 mb-2" }, "TODAY IS A WIN IF I..."),
+                                React.createElement("h2", { className: "text-4xl md:text-5xl font-bold text-indigo-600 dark:text-indigo-400 leading-tight" }, dailyFocus)
+                            )
+                        )
+                    )
+                ),
+                React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-6" },
+                    React.createElement(Card, { title: "Quick Capture" },
+                        React.createElement("div", { className: "flex gap-2" },
+                            React.createElement("input", { type: "text", value: quickNote, onChange: (e) => setQuickNote(e.target.value), onKeyDown: (e) => e.key === 'Enter' && handleQuickCapture(), placeholder: "Quick brain dump...", className: "flex-1 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm focus:outline-none text-zinc-900 dark:text-zinc-100" }),
+                            React.createElement("button", { onClick: handleQuickCapture, className: "p-2 bg-zinc-200 dark:bg-zinc-800 rounded-lg" }, React.createElement(ArrowRight, { size: 16 }))
+                        )
+                    ),
+                    React.createElement(Card, { title: "Navigation" },
+                        React.createElement("div", { className: "flex gap-4" },
+                            React.createElement("button", { onClick: () => onNavigate('tasks'), className: "flex-1 p-4 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 rounded-xl font-bold flex flex-col items-center gap-2" }, React.createElement(ListTodo, { size: 24 }), "Tasks"),
+                            React.createElement("button", { onClick: () => onNavigate('focus'), className: "flex-1 p-4 bg-rose-50 dark:bg-rose-900/20 text-rose-600 rounded-xl font-bold flex flex-col items-center gap-2" }, React.createElement(Timer, { size: 24 }), "Focus")
+                        )
                     )
                 )
             );
         };
 
-        // --- VIEWS ---
-
-        const DashboardView = ({ onNavigate, meals = [], tasks = [], dashboardData, onUpdateDashboard, onAddDump }) => {
-            const [quote, setQuote] = useState({ text: "Focus is about saying no.", author: "Steve Jobs" });
-            const [quickNote, setQuickNote] = useState("");
-            
-            // Destructure dashboard data with defaults
-            const habits = dashboardData?.habits || [
-                { id: 1, category: "Spiritual", label: "Pray & read my bible", completed: false, icon: Book, color: "text-amber-600 bg-amber-50 dark:bg-amber-900/20" },
-                { id: 2, category: "Mindset", label: "Read for 10 minutes", completed: false, icon: BookOpen, color: "text-blue-500 bg-blue-50 dark:bg-blue-900/20" },
-                { id: 3, category: "Health & fitness", label: "Exercise daily", completed: false, icon: Activity, color: "text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20" },
-                { id: 4, category: "Personal development", label: "Journal daily", completed: false, icon: PenTool, color: "text-purple-500 bg-purple-50 dark:bg-purple-900/20" }
+        const Goals2026View = ({ goalsProgress = {}, onToggleGoal }) => {
+            const q1Goals = [
+                { id: 'q1_budget', text: "Establish strict yearly budget (Separate from debt)" },
+                { id: 'q1_sleep', text: "Keep sleep schedule consistent" },
+                { id: 'q1_web', text: "Complete Web Innovation Project" },
+                { id: 'q1_diss_log', text: "Complete Dissertation Log 2 & 3" },
+                { id: 'q1_ml', text: "Complete Machine Learning Project" },
+                { id: 'q1_cyber', text: "Study & Sit for Cyber Security Exam" },
+                { id: 'q1_diss_start', text: "Start & Lock-in Dissertation" },
+                { id: 'q1_tuition', text: "Pay towards Tuition Fees" },
+                { id: 'q1_tenancy', text: "Get someone to take over tenancy for Liverpool apartment" },
+                { id: 'q1_workout', text: "Never miss a workout session (4 days weekly)" },
+                { id: 'q1_run', text: "Never miss morning run" },
+                { id: 'q1_db', text: "Add a database to LifeOS app" },
+                { id: 'q1_systems', text: "Master systems (Journal, LifeOS, Calendar, Fitness)" },
+                { id: 'q1_bible', text: "Daily Bible & Prayer (Even 1 verse counts)" }
             ];
 
-            // Reconstruct habits with icons
-            const iconMap = { "Spiritual": Book, "Mindset": BookOpen, "Health & fitness": Activity, "Personal development": PenTool };
-            const displayHabits = habits.map(h => ({ ...h, icon: iconMap[h.category] || CheckSquare }));
-
-            // Food Logic
-            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            const todayName = days[new Date().getDay()];
-            
-            const getMeal = (type) => {
-                const userMeal = meals.find(m => m.day === todayName && m.type === type);
-                if (userMeal) return userMeal.text;
-                const defaultMeal = DEFAULT_MEALS.find(m => m.day === todayName && m.type === type);
-                return defaultMeal ? defaultMeal.text : "Not planned";
+            const calculatePhaseProgress = (phase) => {
+                if (phase === 1) return [goalsProgress.p1_debt, goalsProgress.p1_fees, goalsProgress.p1_cut].filter(Boolean).length / 3 * 100;
+                if (phase === 2) return [goalsProgress.p2_sleep, goalsProgress.p2_spirit, goalsProgress.p2_work].filter(Boolean).length / 3 * 100;
+                if (phase === 3) return [goalsProgress.p3_skill, goalsProgress.p3_project, goalsProgress.p3_career].filter(Boolean).length / 3 * 100;
+                return 0;
             };
 
-            // Fitness Logic
-            const fitnessHabits = {
-                'Monday': '30 mins Cardio (Run/Jog)',
-                'Tuesday': 'Upper Body Strength',
-                'Wednesday': 'Active Recovery / Yoga',
-                'Thursday': 'Lower Body Strength',
-                'Friday': 'HIIT / Cardio Circuit',
-                'Saturday': 'Long Walk or Hike',
-                'Sunday': 'Rest & Stretching'
-            };
-            const todaysFitness = fitnessHabits[todayName] || "Active Rest";
-
-            const dailyHealthHabits = [
-                { icon: "💧", text: "Drink 3L Water" },
-                { icon: "🥤", text: "Protein Shake" },
-                { icon: "😴", text: "Sleep 7h+" },
-                { icon: "💊", text: "Take Vitamins" }
-            ];
-
-            // 2026 Goals
-            const goals2026 = [
-                "Complete Undergraduate with good grades",
-                "Finish paying school fees & debt free",
-                "Take up additional work to pay off all debt",
-                "Enroll on Masters Degree",
-                "Figure out career goals"
-            ];
-
-            // Tasks Logic (Get top Do First tasks)
-            const urgentTasks = tasks.filter(t => t.category === 'do_first' && !t.completed).slice(0, 3);
-
-            // Spirituality Logic
-            const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
-            const dailySpirit = DAILY_SPIRITUALITY[dayOfYear % DAILY_SPIRITUALITY.length];
-
-            useEffect(() => {
-                const quotes = [
-                    { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
-                    { text: "It is not enough to be busy... The question is: what are we busy about?", author: "Henry David Thoreau" },
-                    { text: "Amateurs sit and wait for inspiration, the rest of us just get up and go to work.", author: "Stephen King" },
-                    { text: "Simplicity is the ultimate sophistication.", author: "Leonardo da Vinci" },
-                    { text: "Focus on being productive instead of busy.", author: "Tim Ferriss" },
-                    { text: "Until we can manage time, we can manage nothing else.", author: "Peter Drucker" }
-                ];
-                setQuote(quotes[Math.floor(Math.random() * quotes.length)]);
-            }, []);
-
-            const toggleHabit = (id) => {
-                const updatedHabits = habits.map(h => h.id === id ? { ...h, completed: !h.completed } : h);
-                onUpdateDashboard({ ...dashboardData, habits: updatedHabits });
-            };
-
-            // ADDED: Missing handler for Quick Capture
-            const handleQuickCapture = () => {
-                if (quickNote.trim()) {
-                    onAddDump(quickNote);
-                    setQuickNote("");
-                }
-            };
-
-            return React.createElement("div", { className: "animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 md:pb-0" },
-                React.createElement("div", { className: "mb-8 flex items-end justify-between" },
-                    React.createElement("div", null,
-                        React.createElement("h2", { className: "text-xl font-bold text-zinc-400 mb-2 uppercase tracking-widest" }, "My Dashboard"),
-                        React.createElement(WeatherWidget)
-                    ),
-                    React.createElement(TimeWidget)
+            return React.createElement("div", { className: "h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 md:pb-0" },
+                React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4" },
+                    React.createElement("div", null, React.createElement("h3", { className: "text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2" }, "2026 Master Plan ", React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1" }, React.createElement(Flag, { size: 12 }), " Vision")), React.createElement("p", { className: "text-zinc-500 text-sm mt-1" }, "Stability → Discipline → Direction")),
                 ),
-                React.createElement("div", { className: "mb-8" },
-                    React.createElement(Card, { title: "Daily Inspiration", className: "flex flex-col justify-center bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950" },
-                         React.createElement("div", { className: "relative z-10" },
-                             React.createElement("div", { className: "absolute -left-2 -top-2 text-6xl text-zinc-100 dark:text-zinc-800 font-serif opacity-50 select-none" }, "“"),
-                             React.createElement("blockquote", { className: "text-lg font-medium text-zinc-700 dark:text-zinc-300 mb-4 leading-relaxed relative z-10 pl-2" }, `"${quote.text}"`),
-                             React.createElement("cite", { className: "text-xs font-bold text-zinc-400 uppercase tracking-wider block text-right not-italic" }, `— ${quote.author}`)
-                         )
-                    )
-                ),
-                
-                // NEW SECTION: Life Strategy & AI
-                React.createElement("h3", { className: "text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-4 flex items-center gap-2" }, React.createElement(Target, { size: 16 }), " Strategy & Intelligence"),
-                React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8" },
-                    React.createElement(Card, { title: "MyLife Blueprint", className: "md:col-span-1", action: React.createElement("a", { href: "https://www.notion.so/Blueprint-of-my-life-2cce1ae8ad3280abba74e8b4e8849b12", target: "_blank", className: "text-indigo-500 hover:text-indigo-400" }, React.createElement(ExternalLink, { size: 16 })) },
-                        React.createElement("div", { className: "flex flex-col items-center justify-center h-full py-2 text-center" },
-                            React.createElement(MapPin, { size: 24, className: "text-indigo-500 mb-2" }),
-                            React.createElement("span", { className: "font-medium text-zinc-700 dark:text-zinc-200 text-sm" }, "Master Plan")
+                React.createElement("div", { className: "space-y-8 pb-12 overflow-y-auto pr-2" },
+                    React.createElement(Card, { className: "bg-gradient-to-br from-indigo-600 to-indigo-800 text-white border-none" },
+                        React.createElement("div", { className: "flex flex-col h-full justify-between" },
+                            React.createElement("div", null, React.createElement("div", { className: "flex items-center gap-2 text-indigo-200 text-xs font-bold uppercase tracking-wider mb-2" }, React.createElement(Target, { size: 14 }), " Primary Mission"), React.createElement("h4", { className: "text-lg font-bold leading-snug" }, "Build a life of Stability, Discipline, and Purpose, grounded in the Word of God.")),
+                            React.createElement("div", { className: "mt-4 pt-4 border-t border-indigo-400/30" }, React.createElement("p", { className: "text-xs text-indigo-100 italic" }, "“I am questioning everything to build a future on solid rock.”"))
                         )
                     ),
-                    React.createElement(Card, { title: "2026 Strategic Plan", className: "md:col-span-1", action: React.createElement("a", { href: "https://www.notion.so/Goals-for-2026-2dae1ae8ad3280f89702fec785b5c33e", target: "_blank", className: "text-indigo-500 hover:text-indigo-400" }, React.createElement(ExternalLink, { size: 16 })) },
-                        React.createElement("div", { className: "flex flex-col items-center justify-center h-full py-2 text-center" },
-                            React.createElement(Flag, { size: 24, className: "text-emerald-500 mb-2" }),
-                            React.createElement("span", { className: "font-medium text-zinc-700 dark:text-zinc-200 text-sm" }, "5-Year Goals")
-                        )
-                    ),
-                    React.createElement(Card, { title: "Planning Board", className: "md:col-span-1", action: React.createElement("a", { href: "https://xtiles.app/workspace/personal", target: "_blank", className: "text-indigo-500 hover:text-indigo-400" }, React.createElement(ExternalLink, { size: 16 })) },
-                        React.createElement("div", { className: "flex flex-col items-center justify-center h-full py-2 text-center" },
-                            React.createElement(Layout, { size: 24, className: "text-purple-500 mb-2" }),
-                            React.createElement("span", { className: "font-medium text-zinc-700 dark:text-zinc-200 text-sm" }, "Visual Workspace")
-                        )
-                    ),
-                    React.createElement(Card, { title: "Kaizen Space", className: "md:col-span-1", action: React.createElement("a", { href: "https://thekaizenspace.netlify.app/", target: "_blank", className: "text-indigo-500 hover:text-indigo-400" }, React.createElement(ExternalLink, { size: 16 })) },
-                        React.createElement("div", { className: "flex flex-col items-center justify-center h-full py-2 text-center" },
-                            React.createElement(Briefcase, { size: 24, className: "text-blue-500 mb-2" }),
-                            React.createElement("span", { className: "font-medium text-zinc-700 dark:text-zinc-200 text-sm" }, "Work Productivity")
-                        )
-                    ),
-                     React.createElement(Card, { title: "AI Command", className: "md:col-span-1" },
-                        React.createElement("div", { className: "grid grid-cols-2 gap-2 h-full" },
-                            React.createElement("a", { href: "https://chatgpt.com/", target: "_blank", className: "flex flex-col items-center justify-center p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/10 hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-colors" },
-                                React.createElement(Bot, { size: 20, className: "text-emerald-600 mb-1" }),
-                                React.createElement("span", { className: "text-[10px] font-bold text-emerald-700 dark:text-emerald-400" }, "ChatGPT")
+                    React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6" },
+                        React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6" },
+                            React.createElement("div", { className: "absolute -top-3 left-6 px-3 py-1 bg-rose-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-full" }, "Phase 1: Stabilise"),
+                            React.createElement("h4", { className: "text-lg font-bold mt-4" }, "Financial Security"),
+                            React.createElement("div", { className: "space-y-3 mt-4" },
+                                React.createElement("button", { onClick: () => onToggleGoal('p1_debt'), className: "flex items-center gap-3 w-full text-left" }, React.createElement("div", { className: `w-5 h-5 rounded border flex items-center justify-center ${goalsProgress.p1_debt ? 'bg-rose-500' : ''}` }, React.createElement(CheckCircle2, { size: 14 })), "Clear Debt"),
+                                React.createElement("button", { onClick: () => onToggleGoal('p1_fees'), className: "flex items-center gap-3 w-full text-left" }, React.createElement("div", { className: `w-5 h-5 rounded border flex items-center justify-center ${goalsProgress.p1_fees ? 'bg-rose-500' : ''}` }, React.createElement(CheckCircle2, { size: 14 })), "Pay Fees")
                             ),
-                            React.createElement("a", { href: "https://gemini.google.com/u/1/app?pli=1", target: "_blank", className: "flex flex-col items-center justify-center p-2 rounded-lg bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-colors" },
-                                React.createElement(Sparkles, { size: 20, className: "text-blue-600 mb-1" }),
-                                React.createElement("span", { className: "text-[10px] font-bold text-blue-700 dark:text-blue-400" }, "Gemini")
-                            )
+                            React.createElement("div", { className: "mt-4 h-1 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden" }, React.createElement("div", { className: "h-full bg-rose-500 transition-all duration-500", style: { width: `${calculatePhaseProgress(1)}%` } }))
                         )
                     ),
-                    React.createElement(Card, { title: "Daily News", className: "md:col-span-1", action: React.createElement("a", { href: "https://feedly.com/i/my/me?s=entry:NMOT9Qel7qVjG6zyqhPlX%2BhtNtuxe1GRrm6bhoBjpeY%3D_19b992cb918:11345765:aef60a64", target: "_blank", className: "text-green-500 hover:text-green-400" }, React.createElement(ExternalLink, { size: 16 })) },
-                        React.createElement("div", { className: "flex flex-col items-center justify-center h-full py-2 text-center" },
-                            React.createElement(Newspaper, { size: 24, className: "text-green-500 mb-2" }),
-                            React.createElement("span", { className: "font-medium text-zinc-700 dark:text-zinc-200 text-sm" }, "Feedly")
-                        )
-                    )
-                ),
-
-                React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8" },
-                    // Left Column: Focus Timer + Food + Tasks + Fitness
-                    React.createElement("div", { className: "flex flex-col gap-6" },
-                        React.createElement(Card, { title: "Daily Spirit", className: "border-l-4 border-l-amber-500", action: React.createElement("button", { onClick: () => onNavigate('spirituality'), className: "text-xs font-medium text-amber-500 hover:text-amber-400 flex items-center gap-1" }, "Read More", React.createElement(ArrowRight, { size: 12 })) },
-                            React.createElement("div", { className: "space-y-2" },
-                                React.createElement("div", { className: "flex items-center gap-2 text-zinc-500 text-xs uppercase tracking-wider font-bold" },
-                                    React.createElement(Book, { size: 14 }),
-                                    "Verse of the Day"
-                                ),
-                                React.createElement("p", { className: "text-sm font-medium text-zinc-800 dark:text-zinc-200" }, dailySpirit.verse)
-                            )
-                        ),
-                        React.createElement(Card, { title: "Quick Capture", className: "bg-zinc-50 dark:bg-zinc-900/50" },
-                            React.createElement("div", { className: "flex gap-2" },
-                                React.createElement("input", {
-                                    type: "text",
-                                    value: quickNote,
-                                    onChange: (e) => setQuickNote(e.target.value),
-                                    onKeyDown: (e) => e.key === 'Enter' && handleQuickCapture(),
-                                    placeholder: "Quick brain dump...",
-                                    className: "flex-1 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                                }),
-                                React.createElement("button", { onClick: handleQuickCapture, className: "p-2 bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-lg hover:bg-zinc-300 dark:hover:bg-zinc-700" }, React.createElement(ArrowRight, { size: 16 }))
-                            )
-                        ),
-                        React.createElement(Card, { title: "Focus Timer", className: "flex flex-col justify-center", action: React.createElement("button", { onClick: () => onNavigate('focus'), className: "text-xs font-medium text-indigo-500 hover:text-indigo-400 flex items-center gap-1" }, "Full Mode", React.createElement(ArrowRight, { size: 12 })) },
-                             React.createElement(CompactTimer)
-                        ),
-                        React.createElement(Card, { title: "Matrix Priorities", className: "border-l-4 border-l-rose-500", action: React.createElement("button", { onClick: () => onNavigate('tasks'), className: "text-xs font-medium text-rose-500 hover:text-rose-400 flex items-center gap-1" }, "Matrix", React.createElement(ArrowRight, { size: 12 })) },
-                            React.createElement("div", { className: "space-y-2" },
-                                urgentTasks.length > 0 ? urgentTasks.map(task => (
-                                    React.createElement("div", { key: task.id, className: "flex items-center gap-3 p-2 rounded-lg bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800" },
-                                        React.createElement("div", { className: "w-1.5 h-1.5 rounded-full bg-rose-500" }),
-                                        React.createElement("span", { className: "text-sm text-zinc-700 dark:text-zinc-200" }, task.text)
-                                    )
-                                )) : React.createElement("p", { className: "text-zinc-400 text-sm italic" }, "No 'Do First' tasks pending.")
-                            )
-                        ),
-                        React.createElement(Card, { title: "Today's Fuel", className: "flex-1", action: React.createElement("button", { onClick: () => onNavigate('food'), className: "text-xs font-medium text-emerald-500 hover:text-emerald-400 flex items-center gap-1" }, "View Plan", React.createElement(ArrowRight, { size: 12 })) },
-                            React.createElement("div", { className: "space-y-4" },
-                                ['Breakfast', 'Lunch', 'Dinner'].map(type => (
-                                    React.createElement("div", { key: type, className: "flex flex-col" },
-                                        React.createElement("span", { className: "text-[10px] uppercase tracking-wider font-bold text-zinc-400 mb-1" }, type),
-                                        React.createElement("span", { className: "text-sm font-medium text-zinc-700 dark:text-zinc-200 line-clamp-2 leading-snug" }, getMeal(type))
-                                    )
-                                ))
-                            )
-                        ),
-                        React.createElement(Card, { title: "Health & Fitness", className: "border-l-4 border-l-orange-500" },
-                            React.createElement("div", { className: "flex items-center gap-4 mb-4" },
-                                React.createElement("div", { className: "w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0" },
-                                    React.createElement(Dumbbell, { size: 20 })
-                                ),
-                                React.createElement("div", null,
-                                    React.createElement("div", { className: "text-[10px] uppercase tracking-wider font-bold text-zinc-400 mb-0.5" }, todayName),
-                                    React.createElement("div", { className: "text-sm font-bold text-zinc-800 dark:text-zinc-100" }, todaysFitness)
-                                )
-                            ),
-                            React.createElement("div", { className: "space-y-2 pt-3 border-t border-zinc-100 dark:border-zinc-800" },
-                                React.createElement("div", { className: "text-[10px] uppercase tracking-wider font-bold text-zinc-400" }, "Daily Vitals"),
-                                dailyHealthHabits.map((habit, i) => 
-                                    React.createElement("div", { key: i, className: "flex items-center gap-3 text-xs font-medium text-zinc-600 dark:text-zinc-300" },
-                                        React.createElement("span", { className: "text-sm" }, habit.icon),
-                                        habit.text
-                                    )
+                    React.createElement(Card, { title: "Q1: The Foundation (Jan - Mar)", className: "border-t-4 border-t-rose-500 bg-rose-50/10" },
+                        React.createElement("div", { className: "space-y-2" },
+                            q1Goals.map((goal) => 
+                                React.createElement("button", { key: goal.id, onClick: () => onToggleGoal(goal.id), className: "flex items-start gap-3 w-full text-left group" },
+                                    React.createElement("div", { className: `mt-0.5 w-5 h-5 rounded border flex items-center justify-center transition-all shrink-0 ${goalsProgress[goal.id] ? 'bg-rose-500 border-rose-500 text-white' : 'border-zinc-400 bg-white dark:bg-zinc-800'}` }, React.createElement(CheckCircle2, { size: 14, className: goalsProgress[goal.id] ? "opacity-100" : "opacity-0" })),
+                                    React.createElement("span", { className: `text-sm leading-snug ${goalsProgress[goal.id] ? 'text-zinc-400 line-through' : 'text-zinc-800 dark:text-zinc-200'}` }, goal.text)
                                 )
                             )
                         )
-                    ),
-                    // Right Column: Daily Focus & 2026 Focus (Spans 2)
-                    React.createElement("div", { className: "lg:col-span-2 flex flex-col gap-6" },
-                        React.createElement(Card, { title: "Daily Focus", className: "flex-1" },
-                            React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" },
-                                displayHabits.map(habit => (
-                                    React.createElement("button", { 
-                                        key: habit.id,
-                                        onClick: () => toggleHabit(habit.id),
-                                        className: `flex items-center gap-3 p-4 rounded-xl border transition-all ${habit.completed ? 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 opacity-60' : 'bg-white dark:bg-zinc-950 border-zinc-100 dark:border-zinc-800 hover:border-indigo-500/30'}`
-                                    },
-                                        React.createElement("div", { className: `w-12 h-12 rounded-full flex items-center justify-center transition-colors shrink-0 ${habit.completed ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-500' : habit.color}` },
-                                            habit.completed ? React.createElement(CheckCircle2, { size: 20 }) : React.createElement(habit.icon, { size: 20 })
-                                        ),
-                                        React.createElement("div", { className: "flex flex-col items-start flex-1 min-w-0" },
-                                            React.createElement("span", { className: "text-[10px] text-zinc-400 uppercase tracking-wider font-bold mb-1" }, habit.category),
-                                            React.createElement("span", { className: `text-sm font-bold text-left leading-tight ${habit.completed ? 'text-zinc-400 line-through' : 'text-zinc-800 dark:text-zinc-100'}` }, habit.label)
-                                        )
-                                    )
-                                ))
-                            )
-                        ),
-                        React.createElement(Card, { title: "2026 Focus", className: "bg-indigo-900/5 dark:bg-indigo-900/10 border-indigo-100 dark:border-indigo-900/30" },
-                            React.createElement("div", { className: "space-y-3" },
-                                goals2026.map((goal, index) => (
-                                    React.createElement("div", { key: index, className: "flex items-start gap-3" },
-                                        React.createElement(Flag, { size: 16, className: "text-indigo-500 mt-0.5 shrink-0" }),
-                                        React.createElement("span", { className: "text-sm font-medium text-zinc-700 dark:text-zinc-200" }, goal)
-                                    )
-                                ))
-                            )
-                        )
-                    )
-                ),
-                React.createElement("h3", { className: "text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-4 flex items-center gap-2" }, React.createElement(Zap, { size: 16 }), " Quick Links"),
-                React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" },
-                    React.createElement(QuickLinkButton, { href: "https://my.hope.ac.uk/myhope/public/index.php/Main/index", icon: Building, label: "MyHope", colorClass: "text-rose-600" }),
-                    React.createElement(QuickLinkButton, { href: "https://deadline-tracker04.vercel.app/home", icon: Clock, label: "Deadline Tracker", colorClass: "text-red-500" }),
-                    React.createElement(QuickLinkButton, { href: "https://www.notion.so/Share-your-thoughts-2dee1ae8ad32809da202e904f0055734", icon: PenTool, label: "Journal", colorClass: "text-zinc-900 dark:text-zinc-100" }),
-                    React.createElement(QuickLinkButton, { href: "https://www.notion.so/My-Library-2e2e1ae8ad3280e58b5dc6521ae118a8", icon: BookOpen, label: "Book Library", colorClass: "text-amber-600" }),
-                    React.createElement(QuickLinkButton, { href: "https://www.notion.so/LIFE-GOALS-8a897b99c6a24eac89c1dade55f55761", icon: Target, label: "Life Goals", colorClass: "text-rose-500" }),
-                    React.createElement(QuickLinkButton, { href: "https://mtukso03.teleopticloud.com/Web/MyTime#Schedule", icon: Briefcase, label: "Work Schedule", colorClass: "text-cyan-600" }),
-                    React.createElement(QuickLinkButton, { href: "https://www.bible.com/users/Ololadeobaji100/reading-plans/65489-the-bible-with-nicky-and-pippa-gumbel-classic/subscription/1238596809/day/1/segment/1", icon: Book, label: "Bible", colorClass: "text-amber-800 dark:text-amber-400" }),
-                    React.createElement(QuickLinkButton, { href: "https://calendar.google.com/calendar/u/0/r?pli=1", icon: CalendarIcon, label: "Google Calendar", colorClass: "text-blue-400" }),
-                    React.createElement(QuickLinkButton, { href: "https://www.notion.so/Knowledge-Vaults-277e1ae8ad3280b8b2c4e644b1aee2cd", icon: Database, label: "Knowledge Vaults", colorClass: "text-emerald-500" }),
-                     React.createElement("button", { onClick: () => onNavigate('tools'), className: "flex flex-col items-center justify-center gap-2 p-3 rounded-xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 text-zinc-400 hover:text-indigo-500 hover:border-indigo-500/50 hover:bg-indigo-50/10 transition-all h-full" },
-                        React.createElement(Plus, { size: 16 }),
-                        React.createElement("span", { className: "text-xs font-medium" }, "More Tools")
                     )
                 )
-             );
+            );
         };
 
         const TasksView = ({ tasks, onAddTask, onUpdateTask, onDeleteTask }) => {
             const [newTaskInput, setNewTaskInput] = useState("");
-            
-            // Drag and Drop Handlers
-            const onDragStart = (e, id) => {
-                e.dataTransfer.setData("taskId", id.toString());
-                e.dataTransfer.effectAllowed = "move";
-            };
+            const handleKeyDown = (e) => { if (e.key === 'Enter' && newTaskInput.trim()) { onAddTask({ text: newTaskInput, category: 'do_first', completed: false }); setNewTaskInput(""); } };
+            const quadrants = [{ id: 'do_first', title: 'Do First', color: 'bg-red-50 dark:bg-red-900/10' }, { id: 'schedule', title: 'Schedule', color: 'bg-blue-50 dark:bg-blue-900/10' }, { id: 'delegate', title: 'Delegate', color: 'bg-orange-50 dark:bg-orange-900/10' }, { id: 'dont_do', title: 'Eliminate', color: 'bg-zinc-50 dark:bg-zinc-900/50' }];
+            const onDrop = (e, cat) => { e.preventDefault(); const id = e.dataTransfer.getData("id"); onUpdateTask(id, { category: cat }); };
 
-            const onDragOver = (e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = "move";
-            };
-
-            const onDrop = (e, category) => {
-                e.preventDefault();
-                const id = e.dataTransfer.getData("taskId");
-                if (id) {
-                    onUpdateTask(id, { category });
-                }
-            };
-
-            const quadrants = [
-                { id: 'do_first', title: 'Do First', subtitle: 'Urgent & Important', color: 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/50', icon: AlertCircle, iconColor: 'text-red-500' },
-                { id: 'schedule', title: 'Schedule', subtitle: 'Not Urgent & Important', color: 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-900/50', icon: CalendarIcon, iconColor: 'text-blue-500' },
-                { id: 'delegate', title: 'Delegate', subtitle: 'Urgent & Not Important', color: 'bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-900/50', icon: ArrowUpRight, iconColor: 'text-orange-500' },
-                { id: 'dont_do', title: 'Eliminate', subtitle: 'Not Urgent & Not Important', color: 'bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800', icon: Trash, iconColor: 'text-zinc-500' }
-            ];
-
-            const handleKeyDown = (e) => {
-                if (e.key === 'Enter' && newTaskInput.trim()) {
-                    onAddTask({ text: newTaskInput, category: 'do_first', completed: false });
-                    setNewTaskInput("");
-                }
-            };
-
-            return React.createElement("div", { className: "h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 md:pb-0" },
-                React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4" },
-                    React.createElement("div", null,
-                        React.createElement("h3", { className: "text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2" }, "Eisenhower Matrix ", React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1" }, React.createElement(ListTodo, { size: 12 }), " Prioritize")),
-                        React.createElement("p", { className: "text-zinc-500 text-sm" }, "Drag and drop tasks to organize by priority.")
-                    ),
-                    React.createElement("div", { className: "relative w-full md:w-64" },
-                        React.createElement("input", {
-                            type: "text",
-                            value: newTaskInput,
-                            onChange: (e) => setNewTaskInput(e.target.value),
-                            onKeyDown: handleKeyDown,
-                            placeholder: "Add new task...",
-                            className: "w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl pl-4 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                        }),
-                        React.createElement("button", { 
-                            onClick: () => { if(newTaskInput.trim()) { onAddTask({ text: newTaskInput, category: 'do_first', completed: false }); setNewTaskInput(""); }},
-                            className: "absolute right-2 top-1/2 -translate-y-1/2 p-1 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors"
-                        }, React.createElement(Plus, { size: 14 }))
-                    )
+            return React.createElement("div", { className: "h-full flex flex-col pb-24 md:pb-0" },
+                React.createElement("div", { className: "mb-6 flex gap-4" },
+                    React.createElement("input", { type: "text", value: newTaskInput, onChange: (e) => setNewTaskInput(e.target.value), onKeyDown: handleKeyDown, placeholder: "Add task...", className: "flex-1 p-2 rounded-xl border bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100" }),
+                    React.createElement("button", { onClick: () => { if(newTaskInput.trim()){ onAddTask({text:newTaskInput, category:'do_first'}); setNewTaskInput("");}}, className: "p-2 bg-indigo-600 text-white rounded-xl" }, React.createElement(Plus, { size: 20 }))
                 ),
-                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-y-auto pb-2" },
-                    quadrants.map(quad => (
-                        React.createElement("div", { 
-                            key: quad.id,
-                            onDragOver: onDragOver,
-                            onDrop: (e) => onDrop(e, quad.id),
-                            className: `flex flex-col rounded-2xl border-2 p-4 ${quad.color} transition-colors min-h-[200px]`
-                        },
-                            React.createElement("div", { className: "flex justify-between items-center mb-4" },
-                                React.createElement("div", null,
-                                    React.createElement("h4", { className: "font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2" }, 
-                                        React.createElement(quad.icon, { size: 18, className: quad.iconColor }), 
-                                        quad.title
-                                    ),
-                                    React.createElement("span", { className: "text-xs text-zinc-500" }, quad.subtitle)
-                                ),
-                                React.createElement("span", { className: "text-xs font-bold bg-white/50 dark:bg-black/20 px-2 py-1 rounded-lg" },
-                                    tasks.filter(t => t.category === quad.id).length
-                                )
-                            ),
-                            React.createElement("div", { className: "space-y-2 flex-1" },
-                                tasks.filter(t => t.category === quad.id).map(task => (
-                                    React.createElement("div", { 
-                                        key: task.id, 
-                                        draggable: true,
-                                        onDragStart: (e) => onDragStart(e, task.id),
-                                        className: "group bg-white dark:bg-zinc-900 p-3 rounded-xl shadow-sm border border-zinc-100 dark:border-zinc-800 cursor-move hover:shadow-md hover:border-indigo-500/30 transition-all flex items-start gap-3"
-                                    },
-                                        React.createElement("button", { 
-                                            onClick: () => onUpdateTask(task.id, { completed: !task.completed }),
-                                            className: `mt-0.5 ${task.completed ? 'text-emerald-500' : 'text-zinc-300 hover:text-zinc-400'}` 
-                                        }, React.createElement(CheckCircle2, { size: 18, fill: task.completed ? "currentColor" : "none" })),
-                                        React.createElement("span", { className: `flex-1 text-sm ${task.completed ? 'text-zinc-400 line-through' : 'text-zinc-700 dark:text-zinc-200'}` }, task.text),
-                                        React.createElement("button", { 
-                                            onClick: () => onDeleteTask(task.id),
-                                            className: "text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" 
-                                        }, React.createElement(Trash, { size: 14 }))
-                                    )
-                                ))
-                            )
-                        )
+                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-y-auto" },
+                    quadrants.map(q => React.createElement("div", { key: q.id, onDragOver: e=>e.preventDefault(), onDrop: e=>onDrop(e, q.id), className: `p-4 rounded-xl ${q.color} border` },
+                        React.createElement("h4", { className: "font-bold mb-4" }, q.title),
+                        tasks.filter(t => t.category === q.id).map(t => React.createElement("div", { key: t.id, draggable: true, onDragStart: e=>e.dataTransfer.setData("id", t.id), className: "flex gap-2 p-2 bg-white dark:bg-zinc-900 rounded mb-2 shadow-sm" },
+                            React.createElement("button", { onClick: () => onUpdateTask(t.id, { completed: !t.completed }) }, React.createElement(CheckCircle2, { size: 16, className: t.completed ? "text-green-500" : "text-gray-400" })),
+                            React.createElement("span", { className: t.completed ? "line-through text-gray-400" : "" }, t.text),
+                            React.createElement("button", { onClick: () => onDeleteTask(t.id), className: "ml-auto text-red-400" }, React.createElement(Trash, { size: 14 }))
+                        ))
                     ))
                 )
             );
         };
 
-        const FocusView = ({ activeSound, isPlayingSound, toggleSound }) => {
-            const [timeLeft, setTimeLeft] = useState(600); // Default 10 minutes
-            const [isActive, setIsActive] = useState(false);
-            const [initialTime, setInitialTime] = useState(600);
-            const [task, setTask] = useState('');
-
-            useEffect(() => {
-                let interval = null;
-                if (isActive && timeLeft > 0) {
-                    interval = setInterval(() => {
-                        setTimeLeft(timeLeft => timeLeft - 1);
-                    }, 1000);
-                } else if (timeLeft === 0) {
-                    setIsActive(false);
-                }
-                return () => clearInterval(interval);
-            }, [isActive, timeLeft]);
-
-            const toggleTimer = () => setIsActive(!isActive);
-            const resetTimer = () => {
-                setIsActive(false);
-                setTimeLeft(initialTime);
-            };
-            const setTime = (minutes) => {
-                const seconds = minutes * 60;
-                setInitialTime(seconds);
-                setTimeLeft(seconds);
-                setIsActive(false);
-            };
-
-            const formatTime = (seconds) => {
-                const mins = Math.floor(seconds / 60);
-                const secs = seconds % 60;
-                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-            };
-
-            const progress = ((initialTime - timeLeft) / initialTime) * 100;
-
-            return React.createElement("div", { className: "h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 md:pb-0" },
-                React.createElement("div", { className: "flex justify-between items-center mb-8" },
-                    React.createElement("div", null,
-                        React.createElement("h3", { className: "text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2" }, "Focus Mode ", React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1" }, React.createElement(Timer, { size: 12 }), " Live")),
-                        React.createElement("p", { className: "text-zinc-500 text-sm" }, "Embrace the 10-minute rule to overcome procrastination.")
-                    )
+        const WorriesView = ({ worries, onAddWorry, onDeleteWorry }) => {
+            const [input, setInput] = useState("");
+            return React.createElement("div", { className: "h-full flex flex-col pb-24 md:pb-0" },
+                React.createElement("h3", { className: "text-2xl font-bold mb-4" }, "Worry Jar"),
+                React.createElement("div", { className: "flex-1 overflow-y-auto space-y-4 mb-4" },
+                    worries.map(w => React.createElement("div", { key: w.id, className: "p-4 bg-white dark:bg-zinc-900 rounded-xl border flex justify-between" }, 
+                        React.createElement("span", null, w.text),
+                        React.createElement("button", { onClick: () => onDeleteWorry(w.id), className: "text-red-500" }, "Let Go")
+                    ))
                 ),
-                React.createElement("div", { className: "flex-1 flex flex-col items-center justify-center min-h-[400px]" },
-                    React.createElement("div", { className: "relative mb-12 group" },
-                        React.createElement("svg", { className: "w-80 h-80 transform -rotate-90" },
-                            React.createElement("circle", { cx: "160", cy: "160", r: "150", stroke: "currentColor", strokeWidth: "8", fill: "transparent", className: "text-zinc-200 dark:text-zinc-800" }),
-                            React.createElement("circle", { cx: "160", cy: "160", r: "150", stroke: "currentColor", strokeWidth: "8", fill: "transparent", strokeDasharray: 2 * Math.PI * 150, strokeDashoffset: 2 * Math.PI * 150 * (1 - ((initialTime - timeLeft) / initialTime)), className: "text-indigo-600 transition-all duration-1000 ease-linear" })
-                        ),
-                        React.createElement("div", { className: "absolute inset-0 flex flex-col items-center justify-center" },
-                            React.createElement("span", { className: "text-7xl font-mono font-bold tracking-tighter text-zinc-900 dark:text-zinc-100" }, formatTime(timeLeft)),
-                            React.createElement("input", { 
-                                type: "text", 
-                                placeholder: "What are you focusing on?", 
-                                value: task,
-                                onChange: (e) => setTask(e.target.value),
-                                className: "mt-4 text-center bg-transparent border-b border-transparent hover:border-zinc-300 focus:border-indigo-500 focus:outline-none text-zinc-500 text-sm w-48 transition-colors placeholder:text-zinc-400"
-                            })
-                        )
-                    ),
-                    React.createElement("div", { className: "flex gap-4 mb-12" },
-                        React.createElement("button", { onClick: toggleTimer, className: "w-16 h-16 rounded-full flex items-center justify-center bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 transition-all hover:scale-110" },
-                            isActive ? React.createElement(Pause, { size: 28, fill: "currentColor" }) : React.createElement(Play, { size: 28, fill: "currentColor", className: "ml-1" })
-                        ),
-                        React.createElement("button", { onClick: resetTimer, className: "w-16 h-16 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all" },
-                            React.createElement(RotateCcw, { size: 24 })
-                        )
-                    ),
-                    React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-2xl mb-8" },
-                        React.createElement("button", { onClick: () => setTime(10), className: `px-6 py-3 rounded-xl border-2 transition-all font-medium ${initialTime === 600 ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : 'border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 text-zinc-500'}` }, "10 Min Rule"),
-                        React.createElement("button", { onClick: () => setTime(25), className: `px-6 py-3 rounded-xl border-2 transition-all font-medium ${initialTime === 1500 ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : 'border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 text-zinc-500'}` }, "Pomodoro"),
-                        React.createElement("button", { onClick: () => setTime(5), className: `px-6 py-3 rounded-xl border-2 transition-all font-medium ${initialTime === 300 ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : 'border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 text-zinc-500'}` }, "Quick 5"),
-                        React.createElement("button", { onClick: () => setTime(60), className: `px-6 py-3 rounded-xl border-2 transition-all font-medium ${initialTime === 3600 ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : 'border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 text-zinc-500'}` }, "Deep Hour")
-                    ),
-                    React.createElement("div", { className: "w-full max-w-2xl" },
-                        React.createElement("div", { className: "flex items-center gap-2 mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-500" }, React.createElement(Volume2, { size: 14 }), " Ambient Soundscapes"),
-                        React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-4" },
-                            FOCUS_SOUNDS.map(sound => (
-                                React.createElement("button", { 
-                                    key: sound.id,
-                                    onClick: () => toggleSound(sound),
-                                    className: `flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${activeSound === sound.id ? (isPlayingSound ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'border-zinc-400 bg-zinc-100 dark:bg-zinc-800 text-zinc-600') : 'border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'}`
-                                },
-                                    React.createElement(sound.icon, { size: 18, className: activeSound === sound.id && isPlayingSound ? 'animate-pulse' : '' }),
-                                    React.createElement("span", { className: "text-sm font-medium" }, sound.label),
-                                    activeSound === sound.id && isPlayingSound && React.createElement("div", { className: "ml-auto w-2 h-2 rounded-full bg-emerald-500" })
-                                )
-                            ))
-                        )
-                    )
+                React.createElement("div", { className: "flex gap-2" },
+                    React.createElement("input", { value: input, onChange: e => setInput(e.target.value), className: "flex-1 p-3 rounded-xl border bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100" }),
+                    React.createElement("button", { onClick: () => { if(input.trim()) { onAddWorry(input); setInput(""); }}, className: "p-3 bg-indigo-600 text-white rounded-xl" }, "Cast")
                 )
             );
         };
 
-        const ToolsView = () => (
-            React.createElement("div", { className: "h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 md:pb-0" },
-                React.createElement("div", { className: "flex justify-between items-center mb-8" },
-                    React.createElement("div", null,
-                        React.createElement("h3", { className: "text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2" }, "Toolbox ", React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1" }, React.createElement(Wrench, { size: 12 }), " Essentials")),
-                        React.createElement("p", { className: "text-zinc-500 text-sm" }, "Leverage technology to amplify your output.")
-                    ),
-                    React.createElement("button", { className: "flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-500/20" }, React.createElement(Plus, { size: 16 }), " Add Tool")
+        const FocusView = ({ activeSound, isPlayingSound, toggleSound }) => {
+            const [timeLeft, setTimeLeft] = useState(1500);
+            const [isActive, setIsActive] = useState(false);
+            useEffect(() => { let i; if (isActive && timeLeft > 0) i = setInterval(() => setTimeLeft(t => t - 1), 1000); else if(timeLeft===0) setIsActive(false); return () => clearInterval(i); }, [isActive, timeLeft]);
+            
+            return React.createElement("div", { className: "h-full flex flex-col items-center justify-center pb-24" },
+                React.createElement("div", { className: "text-8xl font-mono font-bold mb-8" }, `${Math.floor(timeLeft/60)}:${(timeLeft%60).toString().padStart(2,'0')}`),
+                React.createElement("div", { className: "flex gap-4 mb-12" },
+                    React.createElement("button", { onClick: () => setIsActive(!isActive), className: "px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold text-xl" }, isActive ? "PAUSE" : "START"),
+                    React.createElement("button", { onClick: () => { setIsActive(false); setTimeLeft(1500); }, className: "px-8 py-4 bg-zinc-200 text-zinc-800 rounded-2xl font-bold text-xl" }, "RESET")
                 ),
-                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20" },
-                    // Dev & Career
-                    React.createElement(Card, { title: "Dev & Career", className: "gap-4" },
-                        React.createElement("div", { className: "grid grid-cols-3 gap-3" },
-                            React.createElement(QuickLinkButton, { href: "https://my.hope.ac.uk/myhope/public/index.php/Main/index", icon: Building, label: "MyHope", colorClass: "text-rose-600" }),
-                            React.createElement(QuickLinkButton, { href: "https://live.moodle.hope.ac.uk/", icon: GraduationCap, label: "Moodle", colorClass: "text-orange-500" }),
-                            React.createElement(QuickLinkButton, { href: "https://citex.org.uk/wp-login.php?redirect_to=https%3A%2F%2Fcitex.org.uk%2Fwp-admin%2F&reauth=1", icon: Briefcase, label: "Citex", colorClass: "text-blue-600" }),
-                            React.createElement(QuickLinkButton, { href: "https://deadline-tracker04.vercel.app/home", icon: Clock, label: "Deadlines", colorClass: "text-red-500" }),
-                            React.createElement(QuickLinkButton, { href: "https://www.notion.so/CS-Year-3-LHU-115e1ae8ad3281e0987bc286a3374bed", icon: GraduationCap, label: "Year 3 BSC", colorClass: "text-blue-500" }),
-                            React.createElement(QuickLinkButton, { href: "https://mtukso03.teleopticloud.com/Web/MyTime#Schedule", icon: Briefcase, label: "Work", colorClass: "text-cyan-600" }),
-                            React.createElement(QuickLinkButton, { href: "https://github.com/", icon: Github, label: "GitHub", colorClass: "text-zinc-800 dark:text-zinc-200" }),
-                            React.createElement(QuickLinkButton, { href: "https://app.netlify.com/teams/oobaji/projects", icon: Cloud, label: "Netlify", colorClass: "text-teal-500" })
-                        )
-                    ),
-                    // LifeOS System
-                    React.createElement(Card, { title: "LifeOS System", className: "gap-4" },
-                        React.createElement("div", { className: "grid grid-cols-3 gap-3" },
-                            React.createElement(QuickLinkButton, { href: "https://www.notion.so/Share-your-thoughts-2dee1ae8ad32809da202e904f0055734", icon: PenTool, label: "Journal", colorClass: "text-zinc-900 dark:text-zinc-100" }),
-                            React.createElement(QuickLinkButton, { href: "https://www.notion.so/My-Library-2e2e1ae8ad3280e58b5dc6521ae118a8", icon: BookOpen, label: "Library", colorClass: "text-amber-600" }),
-                            React.createElement(QuickLinkButton, { href: "https://www.notion.so/LIFE-GOALS-8a897b99c6a24eac89c1dade55f55761", icon: Target, label: "Goals", colorClass: "text-rose-500" }),
-                            React.createElement(QuickLinkButton, { href: "https://www.notion.so/Knowledge-Vaults-277e1ae8ad3280b8b2c4e644b1aee2cd", icon: Database, label: "Vaults", colorClass: "text-emerald-500" }),
-                            React.createElement(QuickLinkButton, { href: "https://www.bible.com/users/Ololadeobaji100/reading-plans/65489-the-bible-with-nicky-and-pippa-gumbel-classic/subscription/1238596809/day/1/segment/1", icon: Book, label: "Bible", colorClass: "text-amber-800 dark:text-amber-400" }),
-                            React.createElement(QuickLinkButton, { href: "https://calendar.google.com/calendar/u/0/r?pli=1", icon: CalendarIcon, label: "Calendar", colorClass: "text-blue-400" })
-                        )
-                    ),
-                    // Media & Chill
-                    React.createElement(Card, { title: "Media & Chill", className: "gap-4" },
-                        React.createElement("div", { className: "grid grid-cols-3 gap-3" },
-                            React.createElement(QuickLinkButton, { href: "https://www.youtube.com/", icon: MonitorPlay, label: "YouTube", colorClass: "text-red-600" }),
-                            React.createElement(QuickLinkButton, { href: "https://open.spotify.com/?flow_ctx=3baa2388-cd31-492c-9d26-5c6fda2002f7%3A1767863490", icon: Music, label: "Spotify", colorClass: "text-green-500" }),
-                            React.createElement(QuickLinkButton, { href: "https://www.netflix.com/browse", icon: Film, label: "Netflix", colorClass: "text-red-600" }),
-                            React.createElement(QuickLinkButton, { href: "https://www.twitch.tv/", icon: Video, label: "Twitch", colorClass: "text-purple-500" })
-                        )
-                    ),
-                    // Productivity
-                    React.createElement(Card, { title: "Productivity HQ", className: "gap-4" },
-                        React.createElement("div", { className: "grid grid-cols-3 gap-3" },
-                            React.createElement(QuickLinkButton, { href: "https://chat.openai.com/", icon: Brain, label: "ChatGPT", colorClass: "text-emerald-500" }),
-                            React.createElement(QuickLinkButton, { href: "https://www.notion.so/", icon: Layers, label: "Notion", colorClass: "text-zinc-900 dark:text-zinc-100" }),
-                            React.createElement(QuickLinkButton, { href: "https://calendar.google.com/", icon: CalendarIcon, label: "G-Cal", colorClass: "text-blue-500" })
-                        )
-                    ),
-                    // Finance
-                    React.createElement(Card, { title: "Finance & Wealth", className: "gap-4" },
-                        React.createElement("div", { className: "grid grid-cols-3 gap-3" },
-                             React.createElement(QuickLinkButton, { href: "https://www.ynab.com/", icon: DollarSign, label: "YNAB", colorClass: "text-blue-600" }),
-                             React.createElement(QuickLinkButton, { href: "https://wise.com/", icon: RefreshCw, label: "Wise", colorClass: "text-green-500" }),
-                             React.createElement(QuickLinkButton, { href: "https://www.tradingview.com/", icon: TrendingUp, label: "TradingView", colorClass: "text-zinc-900 dark:text-zinc-100" }),
-                             React.createElement(QuickLinkButton, { href: "https://stripe.com/", icon: CreditCard, label: "Stripe", colorClass: "text-indigo-500" }),
-                             React.createElement(QuickLinkButton, { href: "https://www.coinbase.com/", icon: Coins, label: "Coinbase", colorClass: "text-blue-400" })
-                        )
-                    ),
-                     // Learning
-                     React.createElement(Card, { title: "Knowledge Growth", className: "gap-4" },
-                        React.createElement("div", { className: "grid grid-cols-3 gap-3" },
-                             React.createElement(QuickLinkButton, { href: "https://www.coursera.org/", icon: GraduationCap, label: "Coursera", colorClass: "text-blue-600" }),
-                             React.createElement(QuickLinkButton, { href: "https://www.blinkist.com/", icon: BookOpen, label: "Blinkist", colorClass: "text-emerald-500" }),
-                             React.createElement(QuickLinkButton, { href: "https://apps.ankiweb.net/", icon: Layers, label: "Anki", colorClass: "text-zinc-500" }),
-                             React.createElement(QuickLinkButton, { href: "https://www.goodreads.com/", icon: Book, label: "Goodreads", colorClass: "text-amber-700" }),
-                             React.createElement(QuickLinkButton, { href: "https://en.wikipedia.org/wiki/Main_Page", icon: Search, label: "Wikipedia", colorClass: "text-zinc-500" })
-                        )
-                    ),
-                    // Creative
-                    React.createElement(Card, { title: "Creative Suite", className: "gap-4" },
-                        React.createElement("div", { className: "grid grid-cols-3 gap-3" },
-                             React.createElement(QuickLinkButton, { href: "https://www.figma.com/", icon: PenTool, label: "Figma", colorClass: "text-purple-500" }),
-                             React.createElement(QuickLinkButton, { href: "https://www.canva.com/", icon: Palette, label: "Canva", colorClass: "text-cyan-500" }),
-                             React.createElement(QuickLinkButton, { href: "https://unsplash.com/", icon: Image, label: "Unsplash", colorClass: "text-zinc-900 dark:text-zinc-100" }),
-                             React.createElement(QuickLinkButton, { href: "https://coolors.co/", icon: Palette, label: "Coolors", colorClass: "text-blue-400" }),
-                             React.createElement(QuickLinkButton, { href: "https://excalidraw.com/", icon: Edit3, label: "Excalidraw", colorClass: "text-purple-400" })
-                        )
-                    ),
-                    // Health
-                    React.createElement(Card, { title: "Health & Mind", className: "gap-4" },
-                        React.createElement("div", { className: "grid grid-cols-3 gap-3" },
-                             React.createElement(QuickLinkButton, { href: "https://www.headspace.com/", icon: Sun, label: "Headspace", colorClass: "text-orange-500" }),
-                             React.createElement(QuickLinkButton, { href: "https://www.myfitnesspal.com/", icon: Heart, label: "MyFitnessPal", colorClass: "text-blue-500" }),
-                             React.createElement(QuickLinkButton, { href: "https://www.strava.com/", icon: Activity, label: "Strava", colorClass: "text-orange-600" }),
-                             React.createElement(QuickLinkButton, { href: "https://www.sleepcycle.com/", icon: Moon, label: "SleepCycle", colorClass: "text-indigo-500" })
-                        )
-                    ),
-                    // Utilities
-                    React.createElement(Card, { title: "Utilities", className: "gap-4" },
-                        React.createElement("div", { className: "grid grid-cols-3 gap-3" },
-                             React.createElement(QuickLinkButton, { href: "https://www.remove.bg/", icon: Scissors, label: "Remove.bg", colorClass: "text-zinc-500" }),
-                             React.createElement(QuickLinkButton, { href: "https://tinypng.com/", icon: Image, label: "TinyPNG", colorClass: "text-green-500" }),
-                             React.createElement(QuickLinkButton, { href: "https://www.speedtest.net/", icon: Wifi, label: "Speedtest", colorClass: "text-zinc-400" }),
-                             React.createElement(QuickLinkButton, { href: "https://wetransfer.com/", icon: Share2, label: "WeTransfer", colorClass: "text-blue-400" }),
-                             React.createElement(QuickLinkButton, { href: "https://10minutemail.com/", icon: Mail, label: "10MinMail", colorClass: "text-red-400" }),
-                             React.createElement(QuickLinkButton, { href: "https://archive.org/", icon: Archive, label: "Wayback", colorClass: "text-zinc-600" })
-                        )
-                    )
+                React.createElement("div", { className: "grid grid-cols-4 gap-4" },
+                    FOCUS_SOUNDS.map(s => React.createElement("button", { key: s.id, onClick: () => toggleSound(s), className: `p-4 rounded-xl border ${activeSound === s.id && isPlayingSound ? 'bg-indigo-100 border-indigo-500' : 'bg-white border-zinc-200'}` }, 
+                        React.createElement(s.icon, { size: 24, className: "mx-auto mb-2" }), s.label
+                    ))
                 )
-            )
-        );
+            );
+        };
 
+        const BrainDumpView = ({ dumps, onAddDump, onDeleteDump }) => {
+            const [input, setInput] = useState("");
+            return React.createElement("div", { className: "h-full flex flex-col pb-24" },
+                React.createElement("h3", { className: "text-2xl font-bold mb-4" }, "Brain Dump"),
+                React.createElement("div", { className: "flex-1 overflow-y-auto space-y-4 mb-4" },
+                    dumps.map(d => React.createElement("div", { key: d.id, className: "p-4 bg-white dark:bg-zinc-900 rounded-xl border relative group" }, 
+                        React.createElement("p", { className: "whitespace-pre-wrap" }, d.text),
+                        React.createElement("button", { onClick: () => onDeleteDump(d.id), className: "absolute top-4 right-4 text-red-500 opacity-0 group-hover:opacity-100" }, React.createElement(Trash, { size: 16 }))
+                    ))
+                ),
+                React.createElement("textarea", { value: input, onChange: e => setInput(e.target.value), onKeyDown: e => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onAddDump(input); setInput(""); }}, className: "w-full p-4 rounded-xl border bg-white dark:bg-zinc-900 h-32 text-zinc-900 dark:text-zinc-100", placeholder: "Type here..." })
+            );
+        };
+
+        const SpiritualityView = () => React.createElement("div", { className: "p-4" }, "Spirituality Content Placeholder");
+        const FitnessView = () => React.createElement("div", { className: "p-4" }, "Fitness Content Placeholder");
+        
         const FoodView = ({ meals, onUpdateMeal }) => {
             const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
             const types = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
             const [viewMode, setViewMode] = useState('day');
-            
-            // Correctly map JS getDay() (0=Sun, 1=Mon) to our array index (0=Mon, 6=Sun)
             const todayIndex = (new Date().getDay() + 6) % 7;
             const [activeDayIndex, setActiveDayIndex] = useState(todayIndex);
 
@@ -1117,634 +697,255 @@
                 return defaultMeal ? defaultMeal.text : "";
             };
 
-            const getTypeColor = (type) => {
-                switch(type) {
-                    case 'Breakfast': return 'text-orange-500 bg-orange-50 dark:bg-orange-900/10';
-                    case 'Lunch': return 'text-blue-500 bg-blue-50 dark:bg-blue-900/10';
-                    case 'Dinner': return 'text-indigo-500 bg-indigo-50 dark:bg-indigo-900/10';
-                    default: return 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/10';
-                }
-            };
-
-            return React.createElement("div", { className: "h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 md:pb-0" },
-                // Header & View Toggle
+            return React.createElement("div", { className: "h-full flex flex-col pb-24 md:pb-0" },
                 React.createElement("div", { className: "flex justify-between items-center mb-6" },
-                    React.createElement("div", null,
-                        React.createElement("h3", { className: "text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2" }, "Nutrition Protocol ", React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1" }, React.createElement(Utensils, { size: 12 }), " Fuel")),
-                        React.createElement("p", { className: "text-zinc-500 text-sm" }, "Plan your fuel for peak performance.")
-                    ),
+                    React.createElement("h3", { className: "text-2xl font-bold" }, "Nutrition"),
                     React.createElement("div", { className: "flex p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg" },
-                        React.createElement("button", { 
-                            onClick: () => setViewMode('day'),
-                            className: `px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'day' ? 'bg-white dark:bg-zinc-700 shadow text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}`
-                        }, "Day"),
-                        React.createElement("button", { 
-                            onClick: () => setViewMode('week'),
-                            className: `px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'week' ? 'bg-white dark:bg-zinc-700 shadow text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}`
-                        }, "Week")
+                        React.createElement("button", { onClick: () => setViewMode('day'), className: `px-4 py-1.5 rounded ${viewMode === 'day' ? 'bg-white shadow' : ''}` }, "Day"),
+                        React.createElement("button", { onClick: () => setViewMode('week'), className: `px-4 py-1.5 rounded ${viewMode === 'week' ? 'bg-white shadow' : ''}` }, "Week")
                     )
                 ),
-
                 viewMode === 'day' ? (
-                    // Day View
                     React.createElement("div", { className: "flex-1 overflow-y-auto" },
-                        // Day Navigator
-                        React.createElement("div", { className: "flex items-center justify-between mb-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-xl" },
-                            React.createElement("button", { onClick: () => setActiveDayIndex((prev) => (prev - 1 + 7) % 7), className: "p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg text-zinc-500 transition-colors" }, React.createElement(ChevronLeft, { size: 20 })),
-                            React.createElement("span", { className: "font-bold text-xl text-zinc-800 dark:text-zinc-100 w-32 text-center" }, days[activeDayIndex]),
-                            React.createElement("button", { onClick: () => setActiveDayIndex((prev) => (prev + 1) % 7), className: "p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg text-zinc-500 transition-colors" }, React.createElement(ChevronRight, { size: 20 }))
+                        React.createElement("div", { className: "flex items-center justify-between mb-6 p-3 rounded-xl border bg-white dark:bg-zinc-900" },
+                            React.createElement("button", { onClick: () => setActiveDayIndex((prev) => (prev - 1 + 7) % 7) }, React.createElement(ChevronLeft, { size: 20 })),
+                            React.createElement("span", { className: "font-bold" }, days[activeDayIndex]),
+                            React.createElement("button", { onClick: () => setActiveDayIndex((prev) => (prev + 1) % 7) }, React.createElement(ChevronRight, { size: 20 }))
                         ),
-                        // Meal Cards
-                        React.createElement("div", { className: "grid grid-cols-1 gap-4 pb-4" },
-                            types.map(type => (
-                                React.createElement("div", { key: type, className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl shadow-sm hover:border-emerald-500/30 transition-all" },
-                                    React.createElement("div", { className: "flex items-center gap-2 mb-3" },
-                                        React.createElement("span", { className: `px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${getTypeColor(type)}` }, type)
-                                    ),
-                                    React.createElement("textarea", {
-                                        value: getMeal(days[activeDayIndex], type),
-                                        onChange: (e) => onUpdateMeal(days[activeDayIndex], type, e.target.value),
-                                        className: "w-full h-24 bg-transparent border-0 resize-none text-lg text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 focus:ring-0 p-0 font-medium leading-relaxed",
-                                        placeholder: `What's for ${type.toLowerCase()}?`
-                                    })
-                                )
+                        React.createElement("div", { className: "grid gap-4" },
+                            types.map(type => React.createElement("div", { key: type, className: "p-4 rounded-xl border bg-white dark:bg-zinc-900" },
+                                React.createElement("div", { className: "font-bold text-xs uppercase text-zinc-500 mb-2" }, type),
+                                React.createElement("textarea", { value: getMeal(days[activeDayIndex], type), onChange: (e) => onUpdateMeal(days[activeDayIndex], type, e.target.value), className: "w-full bg-transparent resize-none focus:outline-none text-zinc-900 dark:text-zinc-100" })
                             ))
                         )
                     )
                 ) : (
-                    // Week View
-                    React.createElement("div", { className: "flex-1 overflow-y-auto space-y-6 pr-2 pb-4" },
-                        days.map(day => (
-                            React.createElement("div", { key: day, className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden" },
-                                React.createElement("div", { className: "px-6 py-3 bg-zinc-50 dark:bg-zinc-950/50 border-b border-zinc-100 dark:border-zinc-800 font-bold text-zinc-700 dark:text-zinc-300" }, day),
-                                React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x border-zinc-100 dark:border-zinc-800 dark:divide-zinc-800" },
-                                    types.map(type => (
-                                        React.createElement("div", { key: type, className: "p-4" },
-                                            React.createElement("div", { className: "text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2" }, type),
-                                            React.createElement("textarea", {
-                                                value: getMeal(day, type),
-                                                onChange: (e) => onUpdateMeal(day, type, e.target.value),
-                                                className: "w-full bg-transparent resize-none text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none min-h-[60px] leading-snug",
-                                                rows: 3,
-                                                placeholder: "-"
-                                            })
-                                        )
-                                    ))
-                                )
+                    React.createElement("div", { className: "flex-1 overflow-y-auto space-y-6" },
+                        days.map(day => React.createElement("div", { key: day, className: "border rounded-xl bg-white dark:bg-zinc-900 overflow-hidden" },
+                            React.createElement("div", { className: "p-3 bg-zinc-50 dark:bg-zinc-950 font-bold border-b" }, day),
+                            React.createElement("div", { className: "grid grid-cols-2 divide-x divide-y" },
+                                types.map(type => React.createElement("div", { key: type, className: "p-3" },
+                                    React.createElement("div", { className: "text-xs font-bold text-zinc-500 mb-1" }, type),
+                                    React.createElement("textarea", { value: getMeal(day, type), onChange: (e) => onUpdateMeal(day, type, e.target.value), className: "w-full bg-transparent resize-none text-sm focus:outline-none text-zinc-900 dark:text-zinc-100", rows: 2 })
+                                ))
                             )
                         ))
                     )
                 )
             );
         };
+        
+        const ToolsView = () => React.createElement("div", { className: "p-4" }, "Tools Content Placeholder");
 
-        const BrainDumpView = ({ dumps, onAddDump, onDeleteDump }) => {
-            const [input, setInput] = useState("");
-
-            const handleKeyDown = (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    if (input.trim()) {
-                        onAddDump(input);
-                        setInput("");
-                    }
-                }
-            };
-
-            return React.createElement("div", { className: "h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 md:pb-0" },
-                React.createElement("div", { className: "flex justify-between items-center mb-8" },
-                    React.createElement("div", null,
-                        React.createElement("h3", { className: "text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2" }, "Brain Dump ", React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1" }, React.createElement(FileText, { size: 12 }), " Log")),
-                        React.createElement("p", { className: "text-zinc-500 text-sm" }, "Clear your mind. Capture everything here.")
-                    )
-                ),
-                React.createElement("div", { className: "flex-1 overflow-y-auto mb-4 space-y-4 pr-2" },
-                    dumps.length === 0 && React.createElement("div", { className: "flex flex-col items-center justify-center h-64 text-zinc-400" },
-                        React.createElement(FileText, { size: 48, className: "mb-4 opacity-20" }),
-                        React.createElement("p", null, "No entries yet. Start typing below.")
-                    ),
-                    dumps.map(dump => (
-                        React.createElement("div", { key: dump.id, className: "group relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl flex gap-4 transition-all hover:border-zinc-300 dark:hover:border-zinc-700" },
-                            React.createElement("div", { className: "mt-1.5 w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700 shrink-0" }),
-                            React.createElement("p", { className: "text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed flex-1" }, dump.text),
-                            React.createElement("button", { onClick: () => onDeleteDump(dump.id), className: "absolute top-4 right-4 text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" }, React.createElement(Trash, { size: 16 }))
-                        )
-                    ))
-                ),
-                React.createElement("div", { className: "relative" },
-                    React.createElement("textarea", {
-                        value: input,
-                        onChange: (e) => setInput(e.target.value),
-                        onKeyDown: handleKeyDown,
-                        placeholder: "Type whatever is on your mind... (Press Enter to save)",
-                        className: "w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 pr-12 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all min-h-[100px]"
-                    }),
-                    React.createElement("button", { onClick: () => { if(input.trim()) { onAddDump(input); setInput(""); } }, className: "absolute bottom-4 right-4 p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors" },
-                        React.createElement(ArrowRight, { size: 20 })
-                    )
-                )
-            );
-        };
-
-        const SpiritualityView = () => {
-            const [view, setView] = useState('daily'); // 'daily' or 'guide'
-            const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
-            const dailyContent = DAILY_SPIRITUALITY[dayOfYear % DAILY_SPIRITUALITY.length];
-
-            return React.createElement("div", { className: "h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 md:pb-0" },
-                React.createElement("div", { className: "flex justify-between items-center mb-6" },
-                    React.createElement("div", null,
-                        React.createElement("h3", { className: "text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2" }, "Spirituality ", React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1" }, React.createElement(Flower2, { size: 12 }), " Soul Care")),
-                        React.createElement("p", { className: "text-zinc-500 text-sm" }, "Daily guidance, prayer, and biblical wisdom.")
-                    ),
-                    React.createElement("div", { className: "flex p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg" },
-                        React.createElement("button", { 
-                            onClick: () => setView('daily'),
-                            className: `px-4 py-1.5 text-sm font-medium rounded-md transition-all ${view === 'daily' ? 'bg-white dark:bg-zinc-700 shadow text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}`
-                        }, "Daily Manna"),
-                        React.createElement("button", { 
-                            onClick: () => setView('guide'),
-                            className: `px-4 py-1.5 text-sm font-medium rounded-md transition-all ${view === 'guide' ? 'bg-white dark:bg-zinc-700 shadow text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}`
-                        }, "Bible Guide")
-                    )
-                ),
-                
-                view === 'daily' ? (
-                    React.createElement("div", { className: "flex-1 overflow-y-auto" },
-                        // Top Section: Daily Manna
-                        React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8" },
-                            React.createElement(Card, { title: "Verse of the Day", className: "lg:col-span-1 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20 border-amber-200 dark:border-amber-900/50" },
-                                React.createElement("div", { className: "flex flex-col h-full justify-center" },
-                                    React.createElement("h4", { className: "text-lg font-bold text-amber-800 dark:text-amber-200 mb-2" }, dailyContent.verse),
-                                    React.createElement("p", { className: "text-amber-900 dark:text-amber-100 font-serif italic text-lg leading-relaxed" }, `"${dailyContent.text}"`)
-                                )
-                            ),
-                            React.createElement(Card, { title: "Daily Prayer & Encouragement", className: "lg:col-span-2" },
-                                React.createElement("div", { className: "space-y-6" },
-                                    React.createElement("div", null,
-                                        React.createElement("div", { className: "flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2" }, React.createElement(Heart, { size: 12 }), " Prayer Point"),
-                                        React.createElement("p", { className: "text-zinc-700 dark:text-zinc-200" }, dailyContent.prayer)
-                                    ),
-                                    React.createElement("div", { className: "h-px w-full bg-zinc-100 dark:bg-zinc-800" }),
-                                    React.createElement("div", null,
-                                        React.createElement("div", { className: "flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2" }, React.createElement(Sun, { size: 12 }), " Word of Encouragement"),
-                                        React.createElement("p", { className: "text-zinc-700 dark:text-zinc-200" }, dailyContent.encouragement)
-                                    )
-                                )
-                            )
-                        ),
-
-                        // Bottom Section: Topics
-                        React.createElement("h3", { className: "text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-4 flex items-center gap-2" }, React.createElement(Book, { size: 16 }), " Quick Topic Reference"),
-                        React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" },
-                            BIBLE_TOPICS.map((topic, i) => (
-                                React.createElement("div", { key: i, className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 hover:border-amber-500/30 transition-all group" },
-                                    React.createElement("h4", { className: "font-bold text-zinc-800 dark:text-zinc-100 mb-1 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" }, topic.title),
-                                    React.createElement("p", { className: "text-xs text-zinc-500 mb-4" }, topic.desc),
-                                    
-                                    React.createElement("div", { className: "space-y-3" },
-                                        React.createElement("div", null,
-                                            React.createElement("span", { className: "text-[10px] font-bold text-zinc-400 uppercase block mb-1" }, "Key Verses"),
-                                            React.createElement("ul", { className: "space-y-1" },
-                                                topic.verses.slice(0, 2).map((v, j) => React.createElement("li", { key: j, className: "text-xs text-zinc-600 dark:text-zinc-300 pl-2 border-l-2 border-zinc-200 dark:border-zinc-700" }, v))
-                                            )
-                                        ),
-                                        React.createElement("div", null,
-                                            React.createElement("span", { className: "text-[10px] font-bold text-zinc-400 uppercase block mb-1" }, "Chapters to Read"),
-                                            React.createElement("div", { className: "flex flex-wrap gap-1" },
-                                                topic.chapters.map((c, k) => React.createElement("span", { key: k, className: "px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[10px] rounded" }, c))
-                                            )
-                                        )
-                                    )
-                                )
-                            ))
-                        )
-                    )
-                ) : (
-                    // Guide View (Table of Contents)
-                    React.createElement("div", { className: "flex-1 overflow-y-auto space-y-8 pr-2" },
-                        BIBLE_BOOKS.map((section, idx) => (
-                            React.createElement("div", { key: idx },
-                                React.createElement("h4", { className: "text-sm font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest mb-4 border-b border-zinc-200 dark:border-zinc-800 pb-2" }, section.category),
-                                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
-                                    section.books.map((book, bIdx) => (
-                                        React.createElement("div", { key: bIdx, className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl flex flex-col" },
-                                            React.createElement("div", { className: "flex justify-between items-start mb-2" },
-                                                React.createElement("h5", { className: "font-bold text-zinc-900 dark:text-zinc-100" }, book.name),
-                                                React.createElement("span", { className: "text-[10px] px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-500" }, book.theme)
-                                            ),
-                                            React.createElement("p", { className: "text-xs text-zinc-600 dark:text-zinc-400 mb-3 flex-1" }, book.app),
-                                            React.createElement("div", { className: "mt-auto pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center gap-2" },
-                                                React.createElement(BookOpen, { size: 12, className: "text-amber-500" }),
-                                                React.createElement("span", { className: "text-xs font-mono text-zinc-500" }, book.keys)
-                                            )
-                                        )
-                                    ))
-                                )
-                            )
-                        ))
-                    )
-                )
-            );
-        };
-
-        const FitnessView = () => (
-            React.createElement("div", { className: "h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 md:pb-0" },
-                React.createElement("div", { className: "flex justify-between items-center mb-8" },
-                    React.createElement("div", null,
-                        React.createElement("h3", { className: "text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2" }, "Fitness ", React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1" }, React.createElement(Dumbbell, { size: 12 }), " Hypertrophy")),
-                        React.createElement("p", { className: "text-zinc-500 text-sm" }, "Home workout protocol. Consistency is key.")
-                    )
-                ),
-                
-                React.createElement("div", { className: "flex-1 overflow-y-auto pr-2 space-y-6 pb-8" },
-                    React.createElement("h4", { className: "text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-4 border-b border-zinc-200 dark:border-zinc-800 pb-2" }, "Home Workout Protocol"),
-                    
-                    React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-6" },
-                        WORKOUT_PLAN.map(session => (
-                            React.createElement("div", { key: session.id, className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700 transition-all group" },
-                                React.createElement("div", { className: "p-6 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50" },
-                                    React.createElement("div", { className: "flex items-start justify-between" },
-                                        React.createElement("div", null,
-                                            React.createElement("h5", { className: `text-lg font-bold ${session.color}` }, session.title),
-                                            session.subtitle && React.createElement("p", { className: "text-xs text-zinc-500 mt-1" }, session.subtitle)
-                                        ),
-                                        React.createElement(session.icon, { className: `${session.color} opacity-80`, size: 24 })
-                                    )
-                                ),
-                                React.createElement("div", { className: "p-6 space-y-6" },
-                                    // Warmup
-                                    session.warmup.length > 0 && React.createElement("div", null,
-                                        React.createElement("div", { className: "text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2" }, "Warm-up (5 min)"),
-                                        React.createElement("ul", { className: "space-y-1" },
-                                            session.warmup.map((w, i) => React.createElement("li", { key: i, className: "text-sm text-zinc-600 dark:text-zinc-400 flex items-center gap-2" }, 
-                                                React.createElement("div", { className: "w-1 h-1 rounded-full bg-zinc-400" }), w
-                                            ))
-                                        )
-                                    ),
-                                    
-                                    // Workout
-                                    React.createElement("div", null,
-                                        React.createElement("div", { className: "text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2" }, "Workout"),
-                                        React.createElement("div", { className: "space-y-3" },
-                                            session.exercises.map((ex, i) => (
-                                                React.createElement("div", { key: i, className: "flex justify-between items-center text-sm border-b border-zinc-50 dark:border-zinc-800/50 pb-2 last:border-0 last:pb-0" },
-                                                    React.createElement("span", { className: "font-medium text-zinc-800 dark:text-zinc-200" }, ex.name),
-                                                    React.createElement("span", { className: "font-mono text-zinc-500 text-xs bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded" }, `${ex.sets} × ${ex.reps}`)
-                                                )
-                                            ))
-                                        )
-                                    ),
-
-                                    // Finisher
-                                    React.createElement("div", { className: "bg-red-50 dark:bg-red-900/10 p-3 rounded-lg border border-red-100 dark:border-red-900/20" },
-                                        React.createElement("div", { className: "text-[10px] font-bold text-red-500 uppercase tracking-wider mb-1" }, "Finisher"),
-                                        React.createElement("p", { className: "text-sm font-bold text-zinc-800 dark:text-zinc-200" }, session.finisher)
-                                    )
-                                )
-                            )
-                        ))
-                    )
-                )
-            )
-        );
+        // --- APP COMPONENT ---
 
         const App = () => {
-            // UPDATED: Robust State Initialization with Validation to ensure we stay on the correct page
-            const VALID_TABS = ['dashboard', 'tasks', 'focus', 'braindump', 'spirituality', 'food', 'fitness', 'tools'];
+            const VALID_TABS = ['dashboard', 'goals2026', 'tasks', 'focus', 'braindump', 'spirituality', 'food', 'fitness', 'tools', 'worries'];
+            const [activeTab, setActiveTab] = useState(() => localStorage.getItem('lifeos_active_tab') || 'dashboard');
+            const [darkMode, setDarkMode] = useState(() => JSON.parse(localStorage.getItem('lifeos_dark_mode') || 'true'));
             
-            const [activeTab, setActiveTab] = useState(() => {
-                try {
-                    const saved = localStorage.getItem('lifeos_active_tab');
-                    // Validate the saved tab exists in our valid list, otherwise default to dashboard
-                    return (saved && VALID_TABS.includes(saved)) ? saved : 'dashboard';
-                } catch (e) {
-                    console.warn("LocalStorage access failed for activeTab", e);
-                    return 'dashboard';
-                }
+            // Session Persistence
+            const [user, setUser] = useState(() => {
+                const stored = localStorage.getItem('lifeos_user_session');
+                return stored ? JSON.parse(stored) : null;
             });
             
-            const [darkMode, setDarkMode] = useState(() => {
-                try {
-                    const saved = localStorage.getItem('lifeos_dark_mode');
-                    return saved ? JSON.parse(saved) : true;
-                } catch (e) {
-                    return true;
-                }
-            });
-
-            const [user, setUser] = useState(null);
+            // Safety Flag
+            const [isDataLoaded, setIsDataLoaded] = useState(false);
             const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
             const [showShareModal, setShowShareModal] = useState(false);
+            const [showAuthModal, setShowAuthModal] = useState(false);
             const [authError, setAuthError] = useState(null);
-            const [userIdentity, setUserIdentity] = useState('main');
-            
-            // Initial data from localStorage or empty array
-            // UPDATED: Use lazy initialization for all data states to prevent hydration mismatches
-            const loadLocal = (key) => {
-                try {
-                    return JSON.parse(localStorage.getItem(`lifeos_${key}`)) || [];
-                } catch (e) {
-                    return [];
-                }
-            };
 
-            const [dumps, setDumps] = useState(() => loadLocal('dumps'));
-            const [meals, setMeals] = useState(() => loadLocal('meals'));
-            const [tasks, setTasks] = useState(() => loadLocal('tasks'));
-            const [dashboardData, setDashboardData] = useState(() => {
-                try {
-                    return JSON.parse(localStorage.getItem('lifeos_dashboard')) || { focus: "", habits: [
-                        { id: 1, category: "Spiritual", label: "Pray & read my bible", completed: false, color: "text-amber-600 bg-amber-50 dark:bg-amber-900/20" },
-                        { id: 2, category: "Mindset", label: "Read for 10 minutes", completed: false, color: "text-blue-500 bg-blue-50 dark:bg-blue-900/20" },
-                        { id: 3, category: "Health & fitness", label: "Exercise daily", completed: false, color: "text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20" },
-                        { id: 4, category: "Personal development", label: "Journal daily", completed: false, color: "text-purple-500 bg-purple-50 dark:bg-purple-900/20" }
-                    ]};
-                } catch (e) {
-                    return { focus: "", habits: [] };
-                }
-            });
-
-            // GLOBAL AUDIO STATE
+            const [dumps, setDumps] = useState([]);
+            const [meals, setMeals] = useState([]);
+            const [worries, setWorries] = useState([]);
+            const [tasks, setTasks] = useState([]);
+            const [goalsProgress, setGoalsProgress] = useState({});
+            const [dashboardData, setDashboardData] = useState({ focus: "", habits: [] });
             const [activeSound, setActiveSound] = useState(null);
             const [isPlayingSound, setIsPlayingSound] = useState(false);
             const audioRef = useRef(new Audio());
 
-            const toggleSound = (sound) => {
-                if (activeSound === sound.id) {
-                    if (isPlayingSound) {
-                        audioRef.current.pause();
-                        setIsPlayingSound(false);
-                    } else {
-                        audioRef.current.play().catch(e => console.error("Play failed", e));
-                        setIsPlayingSound(true);
-                    }
-                } else {
-                    audioRef.current.pause();
-                    audioRef.current.src = sound.url;
-                    audioRef.current.loop = true;
-                    audioRef.current.volume = 0.5;
-                    
-                    audioRef.current.load();
-                    
-                    const playPromise = audioRef.current.play();
-                    
-                    if (playPromise !== undefined) {
-                        playPromise
-                            .then(() => {
-                                setIsPlayingSound(true);
-                                setActiveSound(sound.id);
-                            })
-                            .catch(error => {
-                                console.error("Audio playback failed:", error);
-                                setIsPlayingSound(false);
-                                setActiveSound(null);
-                            });
-                    }
-                }
-            };
-
-            // Audio Cleanup
-            useEffect(() => {
-                const audio = audioRef.current;
-                return () => {
-                    if (audio) {
-                        audio.pause();
-                        audio.src = "";
-                    }
-                };
-            }, []);
-
-            // UPDATED: Persist Active Tab and Dark Mode to localStorage with error handling
-            useEffect(() => { 
-                try { localStorage.setItem('lifeos_active_tab', activeTab); } catch(e) { console.warn("Failed to save tab", e); }
-            }, [activeTab]);
-            
-            useEffect(() => { 
-                try { localStorage.setItem('lifeos_dark_mode', JSON.stringify(darkMode)); } catch(e) { console.warn("Failed to save theme", e); }
-            }, [darkMode]);
-
-            useEffect(() => {
-                if(darkMode) document.documentElement.classList.add('dark');
-                else document.documentElement.classList.remove('dark');
-            }, [darkMode]);
-
-            // Local Storage Effects
-            useEffect(() => { localStorage.setItem('lifeos_dumps', JSON.stringify(dumps)); }, [dumps]);
-            useEffect(() => { localStorage.setItem('lifeos_meals', JSON.stringify(meals)); }, [meals]);
-            useEffect(() => { localStorage.setItem('lifeos_tasks', JSON.stringify(tasks)); }, [tasks]);
-            useEffect(() => { localStorage.setItem('lifeos_dashboard', JSON.stringify(dashboardData)); }, [dashboardData]);
-
-            // Firebase Logic
+            // Auth Listener - ONLY for initial check, does not force logout if local
             useEffect(() => {
                 if (isFirebaseConfigured) {
                     const unsubscribe = onAuthStateChanged(auth, (u) => {
-                        setUser(u);
-                        if (u) setAuthError(null);
-                    });
-
-                    const initAuth = async () => {
-                        try {
-                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                                await signInWithCustomToken(auth, __initial_auth_token);
-                            } else {
-                                await signInAnonymously(auth);
-                            }
-                        } catch (e) {
-                            if (e.code === 'auth/configuration-not-found' || e.code === 'auth/operation-not-allowed') {
-                                console.warn("App running in Offline Mode: Anonymous Auth is disabled in Firebase Console.");
-                            } else {
-                                console.error("Auth Initialization Error:", e);
-                            }
-                            setAuthError(e.message);
+                        // Only auto-update if cloud login happens and we aren't already locally logged in
+                        if (u && (!user || !user.isLocal)) {
+                             const newUser = { email: u.email || "Guest", uid: u.uid, isLocal: false };
+                             setUser(newUser);
+                             localStorage.setItem('lifeos_user_session', JSON.stringify(newUser));
                         }
-                    };
-
-                    if (!auth.currentUser) {
-                        initAuth();
-                    }
+                    });
                     return () => unsubscribe();
                 }
             }, []);
 
-            // Firebase Sync Effect
-            useEffect(() => {
-                if (!isFirebaseConfigured || !user || !userIdentity) return;
-
-                const userPath = `user_${userIdentity}`;
-
-                // Sync Brain Dumps
-                const qDumps = query(
-                    collection(db, 'artifacts', appId, 'users', userPath, 'brain_dumps'),
-                    orderBy('createdAt', 'desc')
-                );
-                const unsubDumps = onSnapshot(qDumps, (snapshot) => {
-                     if (!snapshot.empty) setDumps(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                }, e => console.error(e));
-
-                // Sync Meals
-                const qMeals = query(collection(db, 'artifacts', appId, 'users', userPath, 'meals'));
-                const unsubMeals = onSnapshot(qMeals, (snapshot) => {
-                    if (!snapshot.empty) setMeals(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                }, e => console.error(e));
-
-                // Sync Tasks
-                const qTasks = query(
-                    collection(db, 'artifacts', appId, 'users', userPath, 'tasks'),
-                    orderBy('createdAt', 'desc')
-                );
-                const unsubTasks = onSnapshot(qTasks, (snapshot) => {
-                    if (!snapshot.empty) setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                }, e => console.error(e));
-
-                // Sync Dashboard Data
-                const dashDoc = doc(db, 'artifacts', appId, 'users', userPath, 'dashboard', 'daily_data');
-                const unsubDash = onSnapshot(dashDoc, (docSnap) => {
-                    if (docSnap.exists()) {
-                        setDashboardData(docSnap.data());
-                    } else {
-                         // Use current local data if available, else defaults
-                         const initialLocal = JSON.parse(localStorage.getItem('lifeos_dashboard'));
-                         const defaults = { focus: "", habits: [
-                            { id: 1, category: "Spiritual", label: "Pray & read my bible", completed: false, color: "text-amber-600 bg-amber-50 dark:bg-amber-900/20" },
-                            { id: 2, category: "Mindset", label: "Read for 10 minutes", completed: false, color: "text-blue-500 bg-blue-50 dark:bg-blue-900/20" },
-                            { id: 3, category: "Health & fitness", label: "Exercise daily", completed: false, color: "text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20" },
-                            { id: 4, category: "Personal development", label: "Journal daily", completed: false, color: "text-purple-500 bg-purple-50 dark:bg-purple-900/20" }
-                         ]};
-                         const dataToSave = initialLocal || defaults;
-                         setDoc(dashDoc, dataToSave);
-                         setDashboardData(dataToSave);
-                    }
-                });
-
-                return () => { unsubDumps(); unsubMeals(); unsubTasks(); unsubDash(); };
-            }, [user, authError, userIdentity]);
-
-            const getSafeUserPath = () => userIdentity ? `user_${userIdentity}` : null;
-
-            // Handlers
-            const handleUpdateDashboard = async (newData) => {
-                setDashboardData(newData); // Optimistic
-                const path = getSafeUserPath();
-                if (isFirebaseConfigured && user && path) {
-                    await setDoc(doc(db, 'artifacts', appId, 'users', path, 'dashboard', 'daily_data'), newData, { merge: true });
-                }
+            // Handle Manual Login Success
+            const handleLoginSuccess = (userData) => {
+                setUser(userData);
+                localStorage.setItem('lifeos_user_session', JSON.stringify(userData));
+                setIsDataLoaded(false); // Trigger data load for new user
             };
 
+            const handleLogout = () => {
+                if (isFirebaseConfigured && auth.currentUser) signOut(auth);
+                setUser(null);
+                localStorage.removeItem('lifeos_user_session');
+                setIsDataLoaded(false);
+                setDumps([]); setMeals([]); setTasks([]); setWorries([]); setGoalsProgress({}); setDashboardData({ focus: "", habits: [] });
+            };
+
+            // Data Sync - Multi-Tenant (Local vs Cloud)
+            useEffect(() => {
+                if (!user) return;
+
+                if (!user.isLocal && isFirebaseConfigured) {
+                    // Cloud Mode
+                    const userId = user.uid;
+                    const unsubDumps = onSnapshot(query(collection(db, 'artifacts', appId, 'users', userId, 'brain_dumps'), orderBy('createdAt', 'desc')), s => setDumps(s.docs.map(d => ({id:d.id, ...d.data()}))));
+                    const unsubMeals = onSnapshot(query(collection(db, 'artifacts', appId, 'users', userId, 'meals')), s => setMeals(s.docs.map(d => ({id:d.id, ...d.data()}))));
+                    const unsubTasks = onSnapshot(query(collection(db, 'artifacts', appId, 'users', userId, 'tasks'), orderBy('createdAt', 'desc')), s => setTasks(s.docs.map(d => ({id:d.id, ...d.data()}))));
+                    const unsubWorries = onSnapshot(query(collection(db, 'artifacts', appId, 'users', userId, 'worries'), orderBy('createdAt', 'desc')), s => setWorries(s.docs.map(d => ({id:d.id, ...d.data()}))));
+                    const unsubGoals = onSnapshot(doc(db, 'artifacts', appId, 'users', userId, 'goals', 'progress_2026'), s => { if(s.exists()) setGoalsProgress(s.data()); });
+                    const unsubDash = onSnapshot(doc(db, 'artifacts', appId, 'users', userId, 'dashboard', 'daily_data'), s => { 
+                        if(s.exists()) setDashboardData(s.data()); 
+                        setIsDataLoaded(true); 
+                    });
+                    return () => { unsubDumps(); unsubMeals(); unsubTasks(); unsubWorries(); unsubGoals(); unsubDash(); };
+                } else {
+                    // Local Mode - Namespaced by User ID
+                    const prefix = `lifeos_data_${user.uid}_`;
+                    try {
+                        setDumps(JSON.parse(localStorage.getItem(`${prefix}dumps`) || '[]'));
+                        setMeals(JSON.parse(localStorage.getItem(`${prefix}meals`) || '[]'));
+                        setTasks(JSON.parse(localStorage.getItem(`${prefix}tasks`) || '[]'));
+                        setWorries(JSON.parse(localStorage.getItem(`${prefix}worries`) || '[]'));
+                        setGoalsProgress(JSON.parse(localStorage.getItem(`${prefix}goals_2026`) || '{}'));
+                        setDashboardData(JSON.parse(localStorage.getItem(`${prefix}dashboard`) || '{"focus":"", "habits":[]}'));
+                        setIsDataLoaded(true);
+                    } catch(e) { console.error("Local Load Error", e); }
+                }
+            }, [user]);
+
+            // Save to LocalStorage (Only for Local Users AND only if data has loaded)
+            useEffect(() => {
+                if (user?.isLocal && isDataLoaded) {
+                    const prefix = `lifeos_data_${user.uid}_`;
+                    localStorage.setItem(`${prefix}dumps`, JSON.stringify(dumps));
+                    localStorage.setItem(`${prefix}meals`, JSON.stringify(meals));
+                    localStorage.setItem(`${prefix}tasks`, JSON.stringify(tasks));
+                    localStorage.setItem(`${prefix}worries`, JSON.stringify(worries));
+                    localStorage.setItem(`${prefix}goals_2026`, JSON.stringify(goalsProgress));
+                    localStorage.setItem(`${prefix}dashboard`, JSON.stringify(dashboardData));
+                }
+            }, [dumps, meals, tasks, worries, goalsProgress, dashboardData, user, isDataLoaded]);
+
+            // Handlers
             const handleAddDump = async (text) => {
-                const newDump = { id: Date.now(), text };
+                const newDump = { id: Date.now().toString(), text, createdAt: new Date() };
                 setDumps(prev => [newDump, ...prev]);
-                const path = getSafeUserPath();
-                if (isFirebaseConfigured && user && path) await addDoc(collection(db, 'artifacts', appId, 'users', path, 'brain_dumps'), { text, createdAt: serverTimestamp() });
+                if (user && !user.isLocal) await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'brain_dumps'), { text, createdAt: serverTimestamp() });
             };
             const handleDeleteDump = async (id) => {
                 setDumps(prev => prev.filter(d => d.id !== id));
-                const path = getSafeUserPath();
-                if (isFirebaseConfigured && user && path) await deleteDoc(doc(db, 'artifacts', appId, 'users', path, 'brain_dumps', String(id)));
+                if (user && !user.isLocal) await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'brain_dumps', id));
             };
-
-            const handleUpdateMeal = async (day, type, text) => {
-                const existingMeal = meals.find(m => m.day === day && m.type === type);
-                if (existingMeal) {
-                    setMeals(prev => prev.map(m => m.id === existingMeal.id ? { ...m, text } : m));
-                } else {
-                    setMeals(prev => [...prev, { id: Date.now(), day, type, text }]);
-                }
-
-                const path = getSafeUserPath();
-                if (isFirebaseConfigured && user && path) {
-                    if (existingMeal) {
-                        await updateDoc(doc(db, 'artifacts', appId, 'users', path, 'meals', String(existingMeal.id)), { text });
-                    } else {
-                        await addDoc(collection(db, 'artifacts', appId, 'users', path, 'meals'), { day, type, text });
-                    }
-                }
+            const handleAddWorry = async (text) => {
+                const newWorry = { id: Date.now().toString(), text, createdAt: new Date() };
+                setWorries(prev => [newWorry, ...prev]);
+                if (user && !user.isLocal) await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'worries'), { text, createdAt: serverTimestamp() });
             };
-
+            const handleDeleteWorry = async (id) => {
+                setWorries(prev => prev.filter(w => w.id !== id));
+                if (user && !user.isLocal) await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'worries', id));
+            };
             const handleAddTask = async (task) => {
-                const newTask = { id: Date.now(), ...task };
+                const newTask = { id: Date.now().toString(), ...task, createdAt: new Date() };
                 setTasks(prev => [newTask, ...prev]);
-                const path = getSafeUserPath();
-                if (isFirebaseConfigured && user && path) await addDoc(collection(db, 'artifacts', appId, 'users', path, 'tasks'), { ...task, createdAt: serverTimestamp() });
+                if (user && !user.isLocal) await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'tasks'), { ...task, createdAt: serverTimestamp() });
             };
-            const handleUpdateTask = async (id, updates) => {
-                // Ensure ID is string for comparison if coming from DB, but number if local.
-                setTasks(prev => prev.map(t => String(t.id) === String(id) ? { ...t, ...updates } : t));
-                const path = getSafeUserPath();
-                if (isFirebaseConfigured && user && path) await updateDoc(doc(db, 'artifacts', appId, 'users', path, 'tasks', String(id)), updates);
+            const handleUpdateTask = async (id, data) => {
+                setTasks(prev => prev.map(t => t.id === id ? { ...t, ...data } : t));
+                if (user && !user.isLocal) await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'tasks', id), data);
             };
             const handleDeleteTask = async (id) => {
-                setTasks(prev => prev.filter(t => String(t.id) !== String(id)));
-                const path = getSafeUserPath();
-                if (isFirebaseConfigured && user && path) await deleteDoc(doc(db, 'artifacts', appId, 'users', path, 'tasks', String(id)));
+                setTasks(prev => prev.filter(t => t.id !== id));
+                if (user && !user.isLocal) await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'tasks', id));
+            };
+            const handleUpdateDashboard = async (data) => {
+                setDashboardData(data);
+                if (user && !user.isLocal) await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'dashboard', 'daily_data'), data, { merge: true });
+            };
+            const handleToggleGoal = async (id) => {
+                const newProg = { ...goalsProgress, [id]: !goalsProgress[id] };
+                setGoalsProgress(newProg);
+                if (user && !user.isLocal) await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'goals', 'progress_2026'), newProg, { merge: true });
+            };
+            
+            const handleUpdateMeal = async (day, type, text) => {
+                const existingMeal = meals.find(m => m.day === day && m.type === type);
+                // Optimistic update
+                if (existingMeal) { setMeals(prev => prev.map(m => m.id === existingMeal.id ? { ...m, text } : m)); } else { setMeals(prev => [...prev, { id: Date.now(), day, type, text }]); }
+                
+                if (user && !user.isLocal) {
+                    if (existingMeal) { await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'meals', existingMeal.id), { text }); }
+                    else { await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'meals'), { day, type, text }); }
+                }
             };
 
-            const SidebarContent = () => (
-                React.createElement(React.Fragment, null,
-                    React.createElement("div", { className: "flex items-center gap-3 mb-10 px-2" },
-                        React.createElement("div", { className: "w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-indigo-500/20 shadow-lg" }, React.createElement(Brain, { size: 18 })),
-                        React.createElement("h1", { className: "text-xl font-bold tracking-tight" }, "LifeOS")
-                    ),
+            const toggleSound = (sound) => {
+                if (activeSound === sound.id && isPlayingSound) { audioRef.current.pause(); setIsPlayingSound(false); }
+                else { audioRef.current.src = sound.url; audioRef.current.loop = true; audioRef.current.play(); setIsPlayingSound(true); setActiveSound(sound.id); }
+            };
+
+            // Effects
+            useEffect(() => { if (darkMode) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }, [darkMode]);
+            useEffect(() => localStorage.setItem('lifeos_active_tab', activeTab), [activeTab]);
+
+            if (!user) return React.createElement(LandingPage, { 
+                onLoginSuccess: handleLoginSuccess, 
+                onGuestLogin: handleLoginSuccess 
+            });
+
+            return React.createElement("div", { className: "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans" },
+                React.createElement("aside", { className: "fixed left-0 top-0 h-full w-64 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 hidden md:flex flex-col z-20" },
+                    React.createElement("h1", { className: "text-2xl font-bold mb-8" }, "LifeOS"),
                     React.createElement("nav", { className: "space-y-2 flex-1" },
-                        React.createElement(NavItem, { icon: Layout, label: "Dashboard", active: activeTab === 'dashboard', onClick: () => { setActiveTab('dashboard'); setMobileMenuOpen(false); } }),
-                        React.createElement(NavItem, { icon: ListTodo, label: "Tasks", active: activeTab === 'tasks', onClick: () => { setActiveTab('tasks'); setMobileMenuOpen(false); } }),
-                        React.createElement(NavItem, { icon: Timer, label: "Focus Mode", active: activeTab === 'focus', onClick: () => { setActiveTab('focus'); setMobileMenuOpen(false); } }),
-                        React.createElement(NavItem, { icon: FileText, label: "Brain Dump", active: activeTab === 'braindump', onClick: () => { setActiveTab('braindump'); setMobileMenuOpen(false); } }),
-                        React.createElement(NavItem, { icon: Flower2, label: "Spirituality", active: activeTab === 'spirituality', onClick: () => { setActiveTab('spirituality'); setMobileMenuOpen(false); } }),
-                        React.createElement(NavItem, { icon: Utensils, label: "Food Plan", active: activeTab === 'food', onClick: () => { setActiveTab('food'); setMobileMenuOpen(false); } }),
-                        React.createElement(NavItem, { icon: Dumbbell, label: "Fitness", active: activeTab === 'fitness', onClick: () => { setActiveTab('fitness'); setMobileMenuOpen(false); } }),
-                        React.createElement(NavItem, { icon: Wrench, label: "Tools", active: activeTab === 'tools', onClick: () => { setActiveTab('tools'); setMobileMenuOpen(false); } })
+                        VALID_TABS.map(t => React.createElement(NavItem, { key: t, icon: Layout, label: t.charAt(0).toUpperCase() + t.slice(1), active: activeTab === t, onClick: () => setActiveTab(t) }))
                     ),
                     React.createElement("div", { className: "pt-6 border-t border-zinc-200 dark:border-zinc-800 space-y-2" },
                         React.createElement("button", { onClick: () => setDarkMode(!darkMode), className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors" },
                             React.createElement(darkMode ? Sun : Moon, { size: 20 }),
                             React.createElement("span", { className: "font-medium" }, darkMode ? "Light Mode" : "Dark Mode")
+                        ),
+                        React.createElement("button", { onClick: handleLogout, className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors" },
+                            React.createElement(LogOut, { size: 20 }),
+                            React.createElement("span", { className: "font-medium" }, "Sign Out")
                         )
                     )
-                )
-            );
-
-            return React.createElement("div", { className: "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 font-sans selection:bg-indigo-500/30" },
-                // Desktop Sidebar
-                React.createElement("aside", { className: "fixed left-0 top-0 h-full w-64 border-r border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-xl p-6 hidden md:flex flex-col z-20" },
-                    React.createElement(SidebarContent)
                 ),
-                
-                // Mobile Sidebar Overlay & Drawer
                 mobileMenuOpen && React.createElement("div", { className: "fixed inset-0 z-50 md:hidden" },
                     React.createElement("div", { className: "absolute inset-0 bg-black/50 backdrop-blur-sm", onClick: () => setMobileMenuOpen(false) }),
-                    React.createElement("aside", { className: "absolute left-0 top-0 h-full w-64 bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 p-6 flex flex-col shadow-2xl animate-in slide-in-from-left duration-300" },
-                        React.createElement(SidebarContent)
+                    React.createElement("aside", { className: "absolute left-0 top-0 h-full w-64 bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 p-6 flex flex-col shadow-2xl animate-in slide-in-from-left duration-300" }, 
+                        React.createElement("h1", { className: "text-2xl font-bold mb-8" }, "LifeOS"),
+                        React.createElement("nav", { className: "space-y-2 flex-1" }, VALID_TABS.map(t => React.createElement(NavItem, { key: t, icon: Layout, label: t.charAt(0).toUpperCase() + t.slice(1), active: activeTab === t, onClick: () => { setActiveTab(t); setMobileMenuOpen(false); } }))),
+                        React.createElement("button", { onClick: handleLogout, className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500" }, React.createElement(LogOut, { size: 20 }), "Sign Out")
                     )
                 ),
-                
-                // Share Modal
-                showShareModal && React.createElement(ShareModal, { onClose: () => setShowShareModal(false) }),
-
                 React.createElement("main", { className: "md:ml-64 p-4 md:p-12 max-w-7xl mx-auto" },
-                    React.createElement("header", { className: "flex justify-between md:justify-end items-center mb-6" },
-                        React.createElement("button", { onClick: () => setMobileMenuOpen(true), className: "md:hidden p-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100" },
-                            React.createElement(Menu, { size: 24 })
-                        ),
-
-                        React.createElement("div", { className: "flex items-center gap-4" },
-                            React.createElement("button", { onClick: () => setShowShareModal(true), className: "p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors" }, React.createElement(Share2, { size: 20 })),
-                            React.createElement("div", { className: "w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800" }, "LO")
-                        )
-                    ),
-                    activeTab === 'dashboard' && React.createElement(DashboardView, { onAddDump: handleAddDump, onNavigate: setActiveTab, meals, tasks, dashboardData, onUpdateDashboard: handleUpdateDashboard }),
+                    showAuthModal && React.createElement(AuthModal, { onClose: () => setShowAuthModal(false), onLogin: handleLoginSuccess }),
+                    activeTab === 'dashboard' && React.createElement(DashboardView, { onAddDump: handleAddDump, dashboardData, onUpdateDashboard: handleUpdateDashboard, onNavigate: setActiveTab }),
+                    activeTab === 'goals2026' && React.createElement(Goals2026View, { goalsProgress, onToggleGoal: handleToggleGoal }),
                     activeTab === 'tasks' && React.createElement(TasksView, { tasks, onAddTask: handleAddTask, onUpdateTask: handleUpdateTask, onDeleteTask: handleDeleteTask }),
+                    activeTab === 'worries' && React.createElement(WorriesView, { worries, onAddWorry: handleAddWorry, onDeleteWorry: handleDeleteWorry }),
                     activeTab === 'focus' && React.createElement(FocusView, { activeSound, isPlayingSound, toggleSound }),
                     activeTab === 'braindump' && React.createElement(BrainDumpView, { dumps, onAddDump: handleAddDump, onDeleteDump: handleDeleteDump }),
                     activeTab === 'spirituality' && React.createElement(SpiritualityView),
                     activeTab === 'fitness' && React.createElement(FitnessView),
                     activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal }),
-                    activeTab === 'tools' && React.createElement(ToolsView),
-                    !['dashboard', 'tasks', 'focus', 'braindump', 'food', 'spirituality', 'fitness', 'tools'].includes(activeTab) && React.createElement("div", { className: "flex flex-col items-center justify-center h-[60vh] text-zinc-400" },
-                        React.createElement("div", { className: "w-16 h-16 bg-zinc-100 dark:bg-zinc-900 rounded-2xl flex items-center justify-center mb-4" }, React.createElement(PenTool, { size: 32 })),
-                        React.createElement("h3", { className: "text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2" }, "Work in Progress"),
-                        React.createElement("p", null, "This room is currently under construction.")
-                    )
+                    activeTab === 'tools' && React.createElement(ToolsView)
                 )
             );
         };
