@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="overflow-x-hidden">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -23,8 +23,18 @@
                     colors: {
                         zinc: {
                             850: '#1f1f22',
+                            900: '#18181b',
                             950: '#09090b',
+                        },
+                        indigo: {
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            900: '#312e81',
                         }
+                    },
+                    boxShadow: {
+                        'glow': '0 0 15px rgba(79, 70, 229, 0.4)',
+                        'glow-sm': '0 0 10px rgba(79, 70, 229, 0.2)',
                     }
                 }
             }
@@ -35,40 +45,41 @@
         body { 
             -webkit-font-smoothing: antialiased; 
             touch-action: manipulation;
+            background-color: #050505;
+            color: #e4e4e7;
         }
-        /* Scrollbar styling */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #52525b; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #71717a; }
         
-        /* Hide scrollbar for Chrome, Safari and Opera */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        /* Hide scrollbar for IE, Edge and Firefox */
-        .no-scrollbar {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .glass-panel {
+            background: rgba(24, 24, 27, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        .animate-shake {
-            animation: shake 0.2s ease-in-out 2;
-        }
         .landing-gradient {
-            background: linear-gradient(135deg, #09090b 0%, #18181b 100%);
+            background: radial-gradient(circle at top right, #1e1b4b 0%, #000000 60%);
         }
-        .timer-progress {
-            transition: stroke-dashoffset 1s linear;
+        
+        .timer-progress { transition: stroke-dashoffset 1s linear; }
+
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        input:-webkit-autofill:active{
+            -webkit-box-shadow: 0 0 0 30px #09090b inset !important;
+            -webkit-text-fill-color: white !important;
         }
     </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 min-h-screen overflow-y-auto">
+<body class="bg-zinc-950 text-zinc-100 min-h-screen overflow-y-auto selection:bg-indigo-500/30 selection:text-indigo-200">
     <div id="root"></div>
 
     <!-- Application Logic -->
@@ -91,83 +102,47 @@
             List, Grid, Columns, Utensils, FileText, Trash, ShieldAlert, Flame, Volume2, ChevronLeft,
             ListTodo, ArrowUpRight, CheckSquare, Flower2, Dumbbell, Github, Bot, Newspaper, QrCode,
             Waves, Wind, Mountain, Footprints, Ban, ShieldCheck, Milestone, User, LogIn, ArrowLeft, Info,
-            Eye, EyeOff
+            Eye, EyeOff, Hourglass, AlertTriangle, Check
         } from "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0";
 
-        // --- FIREBASE IMPORTS ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { 
-            getAuth, 
-            signInWithCustomToken, 
-            signInAnonymously, 
-            onAuthStateChanged, 
-            signOut,
-            signInWithEmailAndPassword,
-            createUserWithEmailAndPassword,
-            GoogleAuthProvider,
-            signInWithPopup
-        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, query, orderBy, serverTimestamp, setDoc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        // --- SUPABASE IMPORT ---
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
         // --- CONFIGURATION ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "", 
-            authDomain: "secondbrain-8d8cd.firebaseapp.com",
-            projectId: "secondbrain-8d8cd",
-            storageBucket: "secondbrain-8d8cd.firebasestorage.app",
-            messagingSenderId: "1913632272",
-            appId: "1:1913632272:web:324f366a35e6dd07cffc95"
-        };
+        const SUPABASE_URL = "https://zcyzorbmlmcvjsgqlbmp.supabase.co"; 
+        const SUPABASE_ANON_KEY = "sb_publishable_6GuAbqCKLI0QOMhPrLHWag_ke5ahM8R";
         
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'kaizen-os-prod';
-        
-        // Initialize Firebase
-        let app, auth, db;
-        let isFirebaseConfigured = false;
-        
-        try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            isFirebaseConfigured = true;
-        } catch (e) {
-            console.warn("Firebase Init Error:", e);
+        let supabase = null;
+        let isSupabaseConfigured = false;
+
+        if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+            try {
+                supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                isSupabaseConfigured = true;
+            } catch(e) { 
+                console.error("Supabase Init Failed", e);
+            }
         }
 
-        // --- LOCAL AUTH SIMULATION ---
+        // --- LOCAL AUTH SIMULATION (Fallback) ---
         const LocalAuth = {
             login: (email, password) => {
                 const users = JSON.parse(localStorage.getItem('lifeos_local_db_users') || '{}');
                 const user = users[email.toLowerCase()];
                 if (!user) throw new Error("User not found locally. Please create an account.");
                 if (user.password !== password) throw new Error("Incorrect password.");
-                return { email: user.email, uid: user.uid, isLocal: true, displayName: user.displayName || user.email.split('@')[0] };
+                return { email: user.email, id: user.uid, isLocal: true, displayName: user.displayName || user.email.split('@')[0] };
             },
             signup: (email, password) => {
                 const users = JSON.parse(localStorage.getItem('lifeos_local_db_users') || '{}');
                 if (users[email.toLowerCase()]) throw new Error("Account already exists. Please sign in.");
-                
                 const uid = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                 const displayName = email.split('@')[0];
                 users[email.toLowerCase()] = { email, password, uid, displayName };
                 localStorage.setItem('lifeos_local_db_users', JSON.stringify(users));
-                
-                return { email, uid, isLocal: true, displayName };
+                return { email, id: uid, isLocal: true, displayName };
             }
         };
-
-        // --- DEFAULT TOOLS DATA ---
-        const DEFAULT_TOOLS = [
-            { id: 't1', category: 'Productivity HQ', name: 'ChatGPT', url: 'https://chat.openai.com/', icon: 'Bot' },
-            { id: 't2', category: 'Productivity HQ', name: 'Notion', url: 'https://www.notion.so/', icon: 'Layers' },
-            { id: 't3', category: 'Productivity HQ', name: 'G-Cal', url: 'https://calendar.google.com/', icon: 'CalendarIcon' },
-            { id: 't4', category: 'Dev & Career', name: 'GitHub', url: 'https://github.com/', icon: 'Github' },
-            { id: 't5', category: 'Dev & Career', name: 'LinkedIn', url: 'https://www.linkedin.com/', icon: 'Users' },
-            { id: 't6', category: 'Finance', name: 'TradingView', url: 'https://www.tradingview.com/', icon: 'TrendingUp' },
-            { id: 't7', category: 'Finance', name: 'Wise', url: 'https://wise.com/', icon: 'RefreshCw' },
-            { id: 't8', category: 'Utilities', name: 'Speedtest', url: 'https://www.speedtest.net/', icon: 'Wifi' },
-            { id: 't9', category: 'Utilities', name: 'WeTransfer', url: 'https://wetransfer.com/', icon: 'Share2' }
-        ];
 
         // --- DATA CONSTANTS ---
         const DEFAULT_GOALS_DATA = {
@@ -178,16 +153,7 @@
                     { id: 'p1_2', text: "School fees paid in full", completed: false },
                     { id: 'p1_3', text: "Expenses minimized (Survival mode)", completed: false }
                 ],
-                phase2: [
-                    { id: 'p2_1', text: "Consistent Wake/Sleep (21 days)", completed: false },
-                    { id: 'p2_2', text: "Established Prayer & Word Routine", completed: false },
-                    { id: 'p2_3', text: "Deep Work System Installed", completed: false }
-                ],
-                phase3: [
-                    { id: 'p3_1', text: "High-Income Skill Mastered", completed: false },
-                    { id: 'p3_2', text: "3+ Portfolio Projects Built", completed: false },
-                    { id: 'p3_3', text: "Secure Grad Role/Business", completed: false }
-                ]
+                phase2: [], phase3: []
             },
             quarters: {
                 q1: [
@@ -206,9 +172,7 @@
                     { id: 'q1_13', text: "Master systems (Journal, LifeOS, Calendar, Fitness)", completed: false },
                     { id: 'q1_14', text: "Daily Bible & Prayer (Even 1 verse counts)", completed: false }
                 ],
-                q2: [],
-                q3: [],
-                q4: []
+                q2: [], q3: [], q4: []
             },
             execution: {
                 weekly: [
@@ -229,147 +193,37 @@
         };
 
         const DEFAULT_MEALS = [
-            { day: 'Monday', type: 'Breakfast', text: 'Oats + milk\n1 banana\n1 scoop protein powder' },
-            { day: 'Monday', type: 'Lunch', text: 'Chicken stew\nWhite rice\n½ avocado' },
-            { day: 'Monday', type: 'Snack', text: 'Greek yoghurt + apple' },
-            { day: 'Monday', type: 'Dinner', text: 'Spaghetti + grilled chicken breast\n(Night: Milo + milk)' },
-            { day: 'Tuesday', type: 'Breakfast', text: '3 eggs (boiled/scrambled)\nBread + peanut butter\nGrapes' },
-            { day: 'Tuesday', type: 'Lunch', text: 'Jollof rice\nChicken thigh' },
-            { day: 'Tuesday', type: 'Snack', text: 'Protein shake' },
-            { day: 'Tuesday', type: 'Dinner', text: 'Sardines\nBoiled potatoes' },
-            { day: 'Wednesday', type: 'Breakfast', text: 'Cereal + milk\nBanana' },
-            { day: 'Wednesday', type: 'Lunch', text: 'Chicken breast\nRice\nAvocado' },
-            { day: 'Wednesday', type: 'Snack', text: 'Greek yoghurt + grapes' },
-            { day: 'Wednesday', type: 'Dinner', text: 'Spaghetti + chicken stew' },
-            { day: 'Thursday', type: 'Breakfast', text: 'Oats + milk\nApple\n1 scoop protein' },
-            { day: 'Thursday', type: 'Lunch', text: 'Chicken stew\nRice' },
-            { day: 'Thursday', type: 'Snack', text: 'Bread + peanut butter' },
-            { day: 'Thursday', type: 'Dinner', text: 'Sardines\nPotatoes' },
-            { day: 'Friday', type: 'Breakfast', text: '3 eggs\nBread + jam\nBanana' },
-            { day: 'Friday', type: 'Lunch', text: 'Jollof rice\nChicken breast' },
-            { day: 'Friday', type: 'Snack', text: 'Greek yoghurt' },
-            { day: 'Friday', type: 'Dinner', text: 'Pasta + grilled chicken thigh' },
-            { day: 'Saturday', type: 'Breakfast', text: 'Cereal + milk\nGrapes' },
-            { day: 'Saturday', type: 'Lunch', text: 'Chicken thigh\nRice + avocado' },
-            { day: 'Saturday', type: 'Snack', text: 'Protein shake' },
-            { day: 'Saturday', type: 'Dinner', text: 'Eggs (omelette)\nBread' },
-            { day: 'Sunday', type: 'Breakfast', text: 'Oats + milk\nBanana' },
-            { day: 'Sunday', type: 'Lunch', text: 'Rice + sardines' },
-            { day: 'Sunday', type: 'Snack', text: 'Greek yoghurt + apple' },
-            { day: 'Sunday', type: 'Dinner', text: 'Chicken stew\nPotatoes' }
-        ];
-
-        const WORKOUT_PLAN = [
-            { id: 'day1', title: "Day 1 – Chest & Triceps", icon: Flame, color: "text-orange-500", warmup: ["Light DB presses – 15 reps", "Arm circles"], exercises: [{ name: "DB Floor Press", sets: "4", reps: "8–12" }, { name: "DB Chest Fly", sets: "3", reps: "10–15" }, { name: "Neutral-grip DB Press", sets: "3", reps: "8–12" }, { name: "Overhead DB Tri Ext", sets: "3", reps: "10–15" }], finisher: "DB Floor Press hold – 3 × 30s" },
-            { id: 'day2', title: "Day 2 – Legs (DB Only)", icon: Activity, color: "text-blue-500", warmup: ["Bodyweight squats – 20", "Leg swings"], exercises: [{ name: "Goblet Squats", sets: "4", reps: "10–15" }, { name: "DB RDLs", sets: "4", reps: "8–12" }, { name: "Walking Lunges", sets: "3", reps: "10/leg" }, { name: "DB Step-Ups", sets: "3", reps: "10/leg" }], finisher: "Goblet squat hold – 2 rounds" },
-            { id: 'day3', title: "Day 3 – Shoulders & Arms", icon: Dumbbell, color: "text-emerald-500", warmup: ["Light DB raises", "Arm swings"], exercises: [{ name: "Seated DB Press", sets: "4", reps: "8–12" }, { name: "DB Lateral Raises", sets: "4", reps: "12–15" }, { name: "DB Front Raises", sets: "3", reps: "12" }, { name: "Alt DB Curls", sets: "3", reps: "10–12" }], finisher: "Lateral raise partials – 2 × 30s" },
-            { id: 'day4', title: "Day 4 – Arms + Chest Pump", icon: Zap, color: "text-purple-500", subtitle: "Short, intense.", warmup: [], exercises: [{ name: "DB Floor Press", sets: "4", reps: "12–15" }, { name: "Squeeze Press", sets: "3", reps: "12" }, { name: "Concentration Curls", sets: "3", reps: "10/arm" }, { name: "21s DB Curls", sets: "2", reps: "rounds" }], finisher: "Curl → press combo" }
+            { day: 'Monday', type: 'Breakfast', text: 'Oats + milk\n1 banana\n1 scoop protein powder' }
         ];
 
         const GYM_WORKOUT_PLAN = [
-            {
-                id: 'gym1',
-                title: "Day 1: Chest & Triceps",
-                icon: Flame,
-                color: "text-rose-500",
-                warmup: ["5min Treadmill", "Arm Circles", "Pushups"],
-                exercises: [
-                    { name: "Barbell Bench Press", sets: "4", reps: "8-10" },
-                    { name: "Incline Dumbbell Press", sets: "3", reps: "10-12" },
-                    { name: "Cable Flys", sets: "3", reps: "12-15" },
-                    { name: "Tricep Rope Pushdowns", sets: "4", reps: "12-15" },
-                    { name: "Skullcrushers (EZ Bar)", sets: "3", reps: "10-12" }
-                ],
-                finisher: "Pushup burnout (2 sets to failure)"
-            },
-            {
-                id: 'gym2',
-                title: "Day 2: Back & Biceps",
-                icon: Activity,
-                color: "text-blue-500",
-                warmup: ["5min Rower", "Band Pull-aparts"],
-                exercises: [
-                    { name: "Lat Pulldowns (Wide)", sets: "4", reps: "10-12" },
-                    { name: "Seated Cable Row", sets: "4", reps: "10-12" },
-                    { name: "Single Arm DB Row", sets: "3", reps: "10/side" },
-                    { name: "Barbell Bicep Curls", sets: "3", reps: "10-12" },
-                    { name: "Hammer Curls", sets: "3", reps: "12" }
-                ],
-                finisher: "Face Pulls 3x15"
-            },
-            {
-                id: 'gym3',
-                title: "Day 3: Legs",
-                icon: Dumbbell,
-                color: "text-emerald-500",
-                warmup: ["Bodyweight Squats", "Leg Swings"],
-                exercises: [
-                    { name: "Barbell Squats", sets: "4", reps: "6-8" },
-                    { name: "Leg Press", sets: "3", reps: "10-12" },
-                    { name: "Romanian Deadlifts", sets: "4", reps: "10" },
-                    { name: "Leg Extensions", sets: "3", reps: "15" },
-                    { name: "Seated Calf Raises", sets: "4", reps: "15-20" }
-                ],
-                finisher: "Walking Lunges (Bodyweight)"
-            },
-            {
-                id: 'gym4',
-                title: "Day 4: Shoulders & Abs",
-                icon: Zap,
-                color: "text-purple-500",
-                warmup: ["Shoulder dislocations (stick)", "Light DB press"],
-                exercises: [
-                    { name: "Overhead Barbell Press", sets: "4", reps: "8-10" },
-                    { name: "DB Lateral Raises", sets: "4", reps: "12-15" },
-                    { name: "Front Plate Raise", sets: "3", reps: "12" },
-                    { name: "Cable Crunches", sets: "4", reps: "15" },
-                    { name: "Hanging Leg Raises", sets: "3", reps: "12" }
-                ],
-                finisher: "Plank (3 x 1 min)"
-            }
+            { id: 'gym1', title: "Day 1: Chest & Triceps", icon: Flame, color: "text-rose-500", warmup: ["5min Treadmill", "Arm Circles"], exercises: [{ name: "Bench Press", sets: "4", reps: "8-10" }, { name: "Incline DB Press", sets: "3", reps: "10-12" }, { name: "Cable Flys", sets: "3", reps: "12-15" }, { name: "Tricep Pushdowns", sets: "4", reps: "12-15" }, { name: "Skullcrushers", sets: "3", reps: "10-12" }], finisher: "Pushup burnout" },
+            { id: 'gym2', title: "Day 2: Back & Biceps", icon: Activity, color: "text-blue-500", warmup: ["5min Rower", "Band Pull-aparts"], exercises: [{ name: "Lat Pulldowns", sets: "4", reps: "10-12" }, { name: "Seated Cable Row", sets: "4", reps: "10-12" }, { name: "DB Row", sets: "3", reps: "10/side" }, { name: "Barbell Curls", sets: "3", reps: "10-12" }, { name: "Hammer Curls", sets: "3", reps: "12" }], finisher: "Face Pulls 3x15" },
+            { id: 'gym3', title: "Day 3: Legs", icon: Dumbbell, color: "text-emerald-500", warmup: ["Bodyweight Squats", "Leg Swings"], exercises: [{ name: "Barbell Squats", sets: "4", reps: "6-8" }, { name: "Leg Press", sets: "3", reps: "10-12" }, { name: "RDLs", sets: "4", reps: "10" }, { name: "Leg Extensions", sets: "3", reps: "15" }, { name: "Calf Raises", sets: "4", reps: "15-20" }], finisher: "Walking Lunges" },
+            { id: 'gym4', title: "Day 4: Shoulders & Abs", icon: Zap, color: "text-purple-500", warmup: ["Dislocations", "Light DB press"], exercises: [{ name: "Overhead Press", sets: "4", reps: "8-10" }, { name: "Lateral Raises", sets: "4", reps: "12-15" }, { name: "Front Plate Raise", sets: "3", reps: "12" }, { name: "Cable Crunches", sets: "4", reps: "15" }, { name: "Leg Raises", sets: "3", reps: "12" }], finisher: "Plank (3 x 1 min)" }
         ];
 
-        const HOME_WORKOUT_PLAN = WORKOUT_PLAN; 
-
-        const BIBLE_TOPICS = [
-            { title: "Finance & Wealth", desc: "Stewardship & trust.", verses: ["Prov 22:7", "Matt 6:24"], chapters: ["Prov 3", "Matt 6"] },
-            { title: "Overcoming Lust", desc: "Purity & self-control.", verses: ["2 Tim 2:22", "1 Cor 6:18"], chapters: ["Rom 6", "Ps 51"] },
-            { title: "Power of Prayer", desc: "Communion with God.", verses: ["Phil 4:6", "1 Thess 5:17"], chapters: ["Luke 11", "Ps 145"] },
-            { title: "Anxiety & Peace", desc: "Finding rest.", verses: ["1 Pet 5:7", "John 14:27"], chapters: ["Phil 4", "Ps 23"] },
-            { title: "Diligence", desc: "Work unto the Lord.", verses: ["Col 3:23", "Prov 13:4"], chapters: ["Prov 6", "Eccl 3"] }
+        const HOME_WORKOUT_PLAN = [
+             { id: 'home1', title: "Day 1: Upper Push (DB)", icon: Flame, color: "text-orange-500", warmup: ["Jumping Jacks", "Arm Circles"], exercises: [{ name: "DB Floor Press", sets: "4", reps: "12" }, { name: "DB Flys", sets: "3", reps: "15" }, { name: "Shoulder Press", sets: "4", reps: "12" }, { name: "Lateral Raises", sets: "3", reps: "15" }, { name: "Tricep Ext", sets: "3", reps: "15" }], finisher: "Pushups to failure" },
+             { id: 'home2', title: "Day 2: Lower Body (DB)", icon: Activity, color: "text-blue-500", warmup: ["Squats", "Lunges"], exercises: [{ name: "Goblet Squats", sets: "4", reps: "15" }, { name: "DB RDL", sets: "4", reps: "12" }, { name: "Lunges", sets: "3", reps: "12/leg" }, { name: "Calf Raises", sets: "4", reps: "20" }], finisher: "Wall Sit" },
+             { id: 'home3', title: "Day 3: Upper Pull (DB)", icon: Dumbbell, color: "text-emerald-500", warmup: ["Arm Swings"], exercises: [{ name: "DB Rows", sets: "4", reps: "12" }, { name: "Rear Delt Fly", sets: "3", reps: "15" }, { name: "Bicep Curls", sets: "4", reps: "12" }, { name: "Hammer Curls", sets: "3", reps: "12" }, { name: "Shrugs", sets: "3", reps: "20" }], finisher: "Plank" },
+             { id: 'home4', title: "Day 4: Full Body", icon: Zap, color: "text-purple-500", warmup: ["Jumping Jacks"], exercises: [{ name: "Thrusters", sets: "4", reps: "10" }, { name: "Renegade Row", sets: "3", reps: "10" }, { name: "Glute Bridge", sets: "3", reps: "15" }, { name: "Russian Twist", sets: "3", reps: "20" }], finisher: "Burpees" }
         ];
 
-        const FOCUS_SOUNDS = [
-            { id: 'rain', label: 'Rain', icon: CloudRain, url: 'https://assets.mixkit.co/active_storage/sfx/2515/2515-preview.mp3' },
-            { id: 'forest', label: 'Forest', icon: CloudSun, url: 'https://assets.mixkit.co/active_storage/sfx/2511/2511-preview.mp3' },
-            { id: 'fire', label: 'Fire', icon: Flame, url: 'https://assets.mixkit.co/active_storage/sfx/2513/2513-preview.mp3' },
-            { id: 'cafe', label: 'Cafe', icon: Coffee, url: 'https://assets.mixkit.co/active_storage/sfx/96/96-preview.mp3' },
-            { id: 'lofi', label: 'Lofi', icon: Music, url: 'https://cdn.pixabay.com/audio/2022/11/22/audio_febc508520.mp3' },
-            { id: 'ocean', label: 'Ocean', icon: Waves, url: 'https://assets.mixkit.co/active_storage/sfx/1126/1126-preview.mp3' },
-            { id: 'thunder', label: 'Thunder', icon: CloudLightning, url: 'https://assets.mixkit.co/active_storage/sfx/2507/2507-preview.mp3' }
-        ];
-
-        const DAILY_SPIRITUALITY = [
-            { verse: "Joshua 1:9", text: "Be strong and courageous...", prayer: "Lord, grant me courage.", encouragement: "You are never alone." },
-            { verse: "Jer 29:11", text: "Plans to prosper you...", prayer: "Help me trust Your timing.", encouragement: "Your future is bright." },
-            { verse: "Isa 40:31", text: "Renew their strength...", prayer: "Renew my strength, Lord.", encouragement: "God is strengthening you." },
-            { verse: "Rom 8:28", text: "All things work for good...", prayer: "Thank You for Your plan.", encouragement: "Setbacks are setups." },
-            { verse: "Ps 46:10", text: "Be still...", prayer: "Quiet my thoughts.", encouragement: "Peace is His presence." }
-        ];
-
-        const BIBLE_BOOKS = [
-            { category: "Foundations", books: [{ name: "Genesis", theme: "Beginnings", app: "Family & Legacy", keys: "Gen 1" }, { name: "Proverbs", theme: "Wisdom", app: "Finance & Habits", keys: "Prov 3" }] },
-            { category: "Leadership", books: [{ name: "Joshua", theme: "Conquest", app: "Courage", keys: "Josh 1" }, { name: "Nehemiah", theme: "Rebuilding", app: "Management", keys: "Neh 1" }] },
-            { category: "Gospels", books: [{ name: "Matthew", theme: "King", app: "Ethics", keys: "Matt 5" }, { name: "John", theme: "God", app: "Identity", keys: "John 1" }] },
-            { category: "Letters", books: [{ name: "Romans", theme: "Gospel", app: "Mindset", keys: "Rom 8" }, { name: "James", theme: "Action", app: "Integrity", keys: "Jas 1" }] }
-        ];
+        const BIBLE_TOPICS = [{ title: "Finance", desc: "Stewardship", verses: ["Prov 22:7"], chapters: ["Prov 3"] }];
+        const FOCUS_SOUNDS = [{ id: 'rain', label: 'Rain', icon: CloudRain, url: 'https://assets.mixkit.co/active_storage/sfx/2515/2515-preview.mp3' }];
+        const DAILY_SPIRITUALITY = [{ verse: "Joshua 1:9", text: "Be strong and courageous...", prayer: "Lord, grant me courage.", encouragement: "You are never alone." }];
+        const BIBLE_BOOKS = [{ category: "Foundations", books: [{ name: "Genesis", theme: "Beginnings", app: "Family & Legacy", keys: "Gen 1" }] }];
+        const DEFAULT_TOOLS = [{ id: 't1', category: 'Productivity HQ', name: 'ChatGPT', url: 'https://chat.openai.com/', icon: 'Bot' }];
 
         // --- HELPERS ---
         const Card = ({ children, className = "", title, action }) => (
-            React.createElement("div", { className: `bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 md:p-6 flex flex-col ${className}` },
+            React.createElement("div", { className: `glass-panel rounded-2xl p-5 flex flex-col transition-all duration-300 hover:border-zinc-700/50 ${className}` },
                 (title || action) && (
-                    React.createElement("div", { className: "flex justify-between items-center mb-4" },
-                        title && React.createElement("h3", { className: "text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider" }, title),
+                    React.createElement("div", { className: "flex justify-between items-center mb-4 border-b border-white/5 pb-2" },
+                        title && React.createElement("h3", { className: "text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2" }, 
+                           React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block" }), title
+                        ),
                         action
                     )
                 ),
@@ -380,56 +234,55 @@
         const NavItem = ({ icon: Icon, label, active, onClick }) => (
             React.createElement("button", { 
                 onClick: onClick,
-                className: `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${active ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-lg shadow-zinc-200 dark:shadow-none' : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'}`
+                className: `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden ${active ? 'text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`
             },
-                React.createElement(Icon, { size: 20, className: active ? '' : 'stroke-[2px]' }),
-                React.createElement("span", { className: "font-medium" }, label),
-                active && React.createElement(ChevronRight, { size: 16, className: "ml-auto opacity-50" })
+                active && React.createElement("div", { className: "absolute inset-0 bg-indigo-600/10 border-l-2 border-indigo-500" }),
+                React.createElement(Icon, { size: 18, className: active ? 'text-indigo-400' : 'opacity-70' }),
+                React.createElement("span", { className: "font-medium text-sm tracking-wide" }, label)
             )
         );
 
-        const QuickLinkButton = ({ href, icon: Icon, label, colorClass = "text-zinc-600 dark:text-zinc-300" }) => (
-            React.createElement("a", { href: href, target: "_blank", rel: "noopener noreferrer", className: "flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-100 dark:border-zinc-800 hover:border-indigo-500/50 hover:bg-white dark:hover:bg-zinc-900 hover:shadow-md transition-all group text-center h-full" },
-                React.createElement("div", { className: `w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-zinc-900 shadow-sm group-hover:scale-110 transition-transform ${colorClass}` }, React.createElement(Icon, { size: 16 })),
-                React.createElement("span", { className: "text-xs font-medium text-zinc-600 dark:text-zinc-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-1" }, label)
+        const QuickLinkButton = ({ href, icon: Icon, label, colorClass = "text-zinc-400" }) => (
+            React.createElement("a", { href: href, target: "_blank", rel: "noopener noreferrer", className: "flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-zinc-900/50 border border-zinc-800 hover:border-indigo-500/50 hover:bg-zinc-900 hover:shadow-glow-sm transition-all group text-center h-full" },
+                React.createElement("div", { className: `w-8 h-8 rounded-lg flex items-center justify-center bg-zinc-950 shadow-inner ${colorClass}` }, React.createElement(Icon, { size: 16 })),
+                React.createElement("span", { className: "text-[10px] font-medium text-zinc-500 group-hover:text-zinc-300 line-clamp-1 uppercase tracking-wide" }, label)
             )
         );
 
-        // --- NEW COMPONENT: MOBILE TOP BAR ---
-        const MobileTopBar = ({ handleLogout }) => (
-            React.createElement("header", { className: "md:hidden fixed top-0 left-0 right-0 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 z-50 px-4 h-16 flex items-center justify-between transition-all duration-300" },
+        // --- MOBILE NAV ---
+        const MobileTopBar = ({ handleLogout, user }) => (
+            React.createElement("header", { className: "md:hidden fixed top-0 left-0 right-0 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800 z-50 px-4 h-14 flex items-center justify-between" },
                 React.createElement("div", { className: "flex items-center gap-3" },
-                    React.createElement("div", { className: "w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-500/20" }, React.createElement(Brain, { size: 18 })),
-                    React.createElement("span", { className: "font-bold text-lg tracking-tight text-zinc-900 dark:text-zinc-100" }, "LifeOS")
+                    React.createElement("div", { className: "w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-glow" }, React.createElement(Brain, { size: 18 })),
+                    React.createElement("span", { className: "font-bold text-lg tracking-tight text-white" }, "LifeOS")
                 ),
-                React.createElement("button", { 
-                    onClick: handleLogout, 
-                    className: "flex items-center gap-2 px-3 py-1.5 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-lg text-xs font-bold border border-red-100 dark:border-red-900/20 active:scale-95 transition-all" 
-                },
-                    React.createElement(LogOut, { size: 14 }),
-                    "Sign Out"
+                React.createElement("div", { className: "flex items-center gap-2" },
+                    user && React.createElement("div", { 
+                        className: `p-1.5 rounded-full ${user.isLocal ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600'}`,
+                        title: user.isLocal ? "Local Mode" : "Cloud Sync Active"
+                    }, 
+                        user.isLocal ? React.createElement(WifiOff, { size: 14 }) : React.createElement(Wifi, { size: 14 })
+                    ),
+                    React.createElement("button", { onClick: handleLogout, className: "p-2 text-zinc-400 hover:text-red-400 transition-colors" }, React.createElement(LogOut, { size: 18 }))
                 )
             )
         );
 
-        // --- UPDATED MOBILE NAV BAR (Tabs Only) ---
         const MobileNavBar = ({ activeTab, setActiveTab, tabConfig }) => {
-            const tabs = ['dashboard', 'goals2026', 'tasks', 'worries', 'focus', 'braindump', 'spirituality', 'food', 'fitness', 'tools'];
-            
-            return React.createElement("div", { className: "md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-lg border-t border-zinc-200 dark:border-zinc-800 z-50 px-2 py-1 pb-safe flex h-[4.5rem] shadow-[0_-5px_20px_rgba(0,0,0,0.1)]" },
+            const tabs = ['dashboard', 'goals2026', 'tasks', 'worries', 'focus', 'braindump', 'spirituality', 'food', 'fitness', 'tools', 'deadlines'];
+            return React.createElement("div", { className: "md:hidden fixed bottom-0 left-0 right-0 bg-zinc-950/90 backdrop-blur-xl border-t border-zinc-800 z-50 px-4 py-2 pb-safe flex h-[4.5rem] shadow-[0_-5px_20px_rgba(0,0,0,0.1)]" },
                 React.createElement("div", { className: "flex-1 flex overflow-x-auto no-scrollbar items-center px-2 gap-1" },
                     tabs.map(t => {
                         const isActive = activeTab === t;
                         const config = tabConfig[t];
+                        if(!config) return null;
                         return React.createElement("button", {
                             key: t,
                             onClick: () => setActiveTab(t),
-                            className: `flex flex-col items-center justify-center min-w-[3.5rem] h-full rounded-xl transition-all shrink-0 ${isActive ? 'text-indigo-600' : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'}`
+                            className: `flex flex-col items-center justify-center min-w-[3.5rem] h-full rounded-xl transition-all shrink-0 ${isActive ? 'text-indigo-400 scale-110' : 'text-zinc-600'}`
                         },
-                            React.createElement("div", { className: `p-1.5 rounded-lg mb-0.5 transition-all ${isActive ? 'bg-indigo-50 dark:bg-indigo-500/20' : 'bg-transparent'}` },
-                                React.createElement(config.icon, { size: 20, strokeWidth: isActive ? 2.5 : 2 })
-                            ),
-                            React.createElement("span", { className: "text-[9px] font-medium leading-none" }, config.label.split(' ')[0]) // Shorten label for mobile
+                            React.createElement("div", { className: `p-1.5 rounded-lg mb-0.5 transition-all ${isActive ? 'bg-indigo-500/20' : 'bg-transparent'}` }, React.createElement(config.icon, { size: 20, strokeWidth: isActive ? 2.5 : 2 })),
+                            React.createElement("span", { className: "text-[9px] font-medium leading-none" }, config.label.split(' ')[0])
                         );
                     })
                 )
@@ -437,230 +290,489 @@
         };
 
         // --- AUTH COMPONENT ---
-        const AuthModal = ({ onClose, onLogin }) => {
-            const [activeTab, setActiveTab] = useState("login"); // 'login' or 'signup'
+        const AuthModal = ({ onClose, onLogin, inline = false }) => {
+            const [activeTab, setActiveTab] = useState("login");
             const [email, setEmail] = useState("");
             const [password, setPassword] = useState("");
             const [confirmPassword, setConfirmPassword] = useState("");
             const [showPassword, setShowPassword] = useState(false);
             const [error, setError] = useState(null);
             const [loading, setLoading] = useState(false);
-
-            const isLogin = activeTab === "login";
-
-            const handleSubmit = async (e) => {
-                e.preventDefault(); setError(null); setLoading(true);
-                
-                if (!isLogin && password !== confirmPassword) {
-                    setError("Passwords do not match."); setLoading(false); return;
-                }
-
-                try {
-                    // Try real Firebase Auth first
-                    if (isLogin) await signInWithEmailAndPassword(auth, email, password);
-                    else await createUserWithEmailAndPassword(auth, email, password);
-                    onLogin({ email, uid: auth.currentUser.uid, isLocal: false, displayName: email.split('@')[0] });
-                    onClose();
-                } catch (err) { 
-                    console.warn("Auth Error caught, checking fallback...", err.code);
-                    let msg = err.message.replace("Firebase: ", "");
-                    
-                    // FALLBACK TO LOCAL AUTH
-                    try {
-                        const localUser = isLogin 
-                            ? LocalAuth.login(email, password)
-                            : LocalAuth.signup(email, password);
-                        onLogin(localUser);
-                        onClose();
-                        return;
-                    } catch (localErr) {
-                         setError(localErr.message); 
-                    }
-                } finally { setLoading(false); }
-            };
-
-            const handleGoogleLogin = async () => {
-                 setLoading(true);
-                 setTimeout(() => {
-                     // Simulate a Google user
-                     const user = { 
-                         email: "demo.user@gmail.com", 
-                         displayName: "Demo User",
-                         uid: "google-local-" + Date.now(), 
-                         isLocal: true 
-                     };
-                     onLogin(user);
-                     onClose();
-                     setLoading(false);
-                 }, 500);
-            };
-
-            return React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" },
-                React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 max-w-sm w-full relative shadow-2xl" },
-                    React.createElement("button", { onClick: onClose, className: "absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200" }, React.createElement(X, { size: 20 })),
-                    
-                    // Header with Tabs
-                    React.createElement("div", { className: "text-center mb-6" },
-                        React.createElement("div", { className: "w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-3" }, React.createElement(LogIn, { size: 24 })),
-                        React.createElement("div", { className: "flex justify-center gap-4 border-b border-zinc-100 dark:border-zinc-800 pb-2 mt-4" },
-                            React.createElement("button", { onClick: () => { setActiveTab("login"); setError(null); }, className: `pb-2 text-sm font-bold transition-colors border-b-2 ${isLogin ? 'text-indigo-600 border-indigo-600' : 'text-zinc-400 border-transparent hover:text-zinc-600'}` }, "Sign In"),
-                            React.createElement("button", { onClick: () => { setActiveTab("signup"); setError(null); }, className: `pb-2 text-sm font-bold transition-colors border-b-2 ${!isLogin ? 'text-indigo-600 border-indigo-600' : 'text-zinc-400 border-transparent hover:text-zinc-600'}` }, "Create Account")
-                        )
-                    ),
-
-                    React.createElement("div", { className: "space-y-4" },
-                        React.createElement("button", { onClick: handleGoogleLogin, disabled: loading, className: "w-full py-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold rounded-xl transition-colors flex items-center justify-center gap-2" }, 
-                            React.createElement("img", { src: "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg", className: "w-5 h-5", alt: "G" }), "Sign in with Google"
-                        ),
-                        React.createElement("div", { className: "relative flex py-2 items-center" }, React.createElement("div", { className: "flex-grow border-t border-zinc-200 dark:border-zinc-800" }), React.createElement("span", { className: "flex-shrink mx-4 text-xs text-zinc-400 uppercase" }, "Or"), React.createElement("div", { className: "flex-grow border-t border-zinc-200 dark:border-zinc-800" })),
-                        React.createElement("form", { onSubmit: handleSubmit, className: "space-y-4" },
-                            React.createElement("input", { type: "email", required: true, value: email, onChange: (e) => setEmail(e.target.value), placeholder: "Email", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-zinc-900 dark:text-zinc-100" }),
-                            
-                            // Password Field with Toggle
-                            React.createElement("div", { className: "relative" },
-                                React.createElement("input", { type: showPassword ? "text" : "password", required: true, value: password, onChange: (e) => setPassword(e.target.value), placeholder: "Password", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-zinc-900 dark:text-zinc-100 pr-10" }),
-                                React.createElement("button", { type: "button", onClick: () => setShowPassword(!showPassword), className: "absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200" }, React.createElement(showPassword ? EyeOff : Eye, { size: 18 }))
-                            ),
-
-                            !isLogin && React.createElement("input", { type: "password", required: true, value: confirmPassword, onChange: (e) => setConfirmPassword(e.target.value), placeholder: "Confirm Password", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-zinc-900 dark:text-zinc-100" }),
-                            
-                            error && React.createElement("div", { className: "p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg flex items-center gap-2" }, React.createElement(AlertCircle, { size: 16 }), error),
-                            
-                            React.createElement("button", { type: "submit", disabled: loading, className: "w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50" }, loading ? "Processing..." : (isLogin ? "Sign In" : "Create Account"))
-                        )
-                    )
-                )
-            );
-        };
-
-        // --- LANDING PAGE ---
-        const LandingPage = ({ onLoginSuccess, onGuestLogin }) => {
-            const [activeTab, setActiveTab] = useState("login"); // 'login' or 'signup'
-            const [email, setEmail] = useState("");
-            const [password, setPassword] = useState("");
-            const [confirmPassword, setConfirmPassword] = useState("");
-            const [showPassword, setShowPassword] = useState(false);
-            const [error, setError] = useState(null);
-            const [loading, setLoading] = useState(false);
-
             const isLogin = activeTab === "login";
 
             const handleSubmit = async (e) => {
                 e.preventDefault(); setError(null); setLoading(true);
                 if (!isLogin && password !== confirmPassword) { setError("Passwords do not match."); setLoading(false); return; }
 
-                try {
-                    if (isLogin) await signInWithEmailAndPassword(auth, email, password);
-                    else await createUserWithEmailAndPassword(auth, email, password);
-                    onLoginSuccess({ email, uid: auth.currentUser.uid, isLocal: false, displayName: email.split('@')[0] });
-                } catch (err) { 
-                    console.warn("Auth Fallback (Landing):", err.code);
+                if (isSupabaseConfigured) {
                     try {
-                         const localUser = isLogin 
-                             ? LocalAuth.login(email, password)
-                             : LocalAuth.signup(email, password);
-                         onLoginSuccess(localUser);
-                         return;
-                     } catch (localErr) {
-                         setError(localErr.message);
-                         setLoading(false);
-                         return;
-                     }
-                } finally { setLoading(false); }
+                        const { data, error } = isLogin 
+                            ? await supabase.auth.signInWithPassword({ email, password })
+                            : await supabase.auth.signUp({ email, password });
+                        if (error) throw error;
+                        
+                        if (data?.user) {
+                             onLogin({ email: data.user.email, id: data.user.id, isLocal: false, user_metadata: data.user.user_metadata });
+                             if(!inline) onClose();
+                        } else {
+                             throw new Error("Login failed. Please try again.");
+                        }
+                    } catch(err) {
+                         if (err.message.includes("Email not confirmed")) {
+                             setError("Please confirm your email address (check inbox) or disable 'Confirm Email' in Supabase.");
+                         } else if (err.message.includes("fetch")) {
+                             setError("Connection Failed. Falling back to Local Mode...");
+                             setTimeout(handleLocalAuth, 1500);
+                         } else {
+                             setError(err.message);
+                         }
+                    } finally { setLoading(false); }
+                } else {
+                    handleLocalAuth();
+                }
+            };
+
+            const handleLocalAuth = () => {
+                try {
+                    const user = isLogin ? LocalAuth.login(email, password) : LocalAuth.signup(email, password);
+                    onLogin(user); 
+                    if(!inline) onClose();
+                } catch(e) { setError(e.message); } finally { setLoading(false); }
             };
 
             const handleGoogleLogin = async () => {
-                setLoading(true);
-                setTimeout(() => {
-                    onLoginSuccess({ 
-                        email: "demo.user@gmail.com", 
-                        displayName: "Demo User",
-                        uid: "google-local-" + Date.now(), 
-                        isLocal: true 
-                    });
-                    setLoading(false);
-                }, 800);
+                if (isSupabaseConfigured) {
+                    const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+                    if (error) setError(error.message);
+                } else {
+                    setError("Google Login unavailable. Use Email/Password for Local Mode.");
+                }
             };
 
-            const handleGuest = () => {
-                 onGuestLogin({ email: "guest@lifeos.app", displayName: "Guest", uid: "guest-user", isLocal: true });
-            };
-
-            return React.createElement("div", { className: "min-h-screen flex flex-col md:flex-row bg-zinc-950 text-white font-sans" },
-                React.createElement("div", { className: "md:w-1/2 p-12 flex flex-col justify-between landing-gradient relative overflow-hidden" },
-                    React.createElement("div", { className: "relative z-10" },
-                        React.createElement("div", { className: "flex items-center gap-3 mb-8" },
-                            React.createElement("div", { className: "w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center" }, React.createElement(Brain, { size: 24, className: "text-white" })),
-                            React.createElement("h1", { className: "text-2xl font-bold tracking-tight" }, "LifeOS")
-                        ),
-                        React.createElement("h2", { className: "text-5xl md:text-6xl font-bold mb-6 leading-tight" }, "Your Second", React.createElement("br"), React.createElement("span", { className: "text-indigo-500" }, "Brain.")),
-                        React.createElement("p", { className: "text-zinc-400 text-lg max-w-md leading-relaxed" }, "Organize your entire life. Master your habits. Achieve your 2026 vision. All in one place.")
-                    ),
-                    React.createElement("div", { className: "relative z-10 mt-12 grid grid-cols-2 gap-6" },
-                        React.createElement("div", { className: "flex items-center gap-3 text-zinc-300" }, React.createElement(CheckCircle2, { className: "text-emerald-500" }), "Goal Tracking"),
-                        React.createElement("div", { className: "flex items-center gap-3 text-zinc-300" }, React.createElement(CheckCircle2, { className: "text-blue-500" }), "Focus Timer"),
-                        React.createElement("div", { className: "flex items-center gap-3 text-zinc-300" }, React.createElement(CheckCircle2, { className: "text-amber-500" }), "Daily Journal"),
-                        React.createElement("div", { className: "flex items-center gap-3 text-zinc-300" }, React.createElement(CheckCircle2, { className: "text-indigo-500" }), "Habit Builder")
-                    ),
-                    React.createElement("div", { className: "absolute top-0 right-0 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" }),
-                    React.createElement("div", { className: "absolute bottom-0 left-0 w-64 h-64 bg-rose-600/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" })
+            const content = React.createElement("div", { className: inline ? "space-y-6" : "bg-zinc-900 border border-zinc-800 rounded-2xl p-8 max-w-sm w-full relative shadow-2xl" },
+                !inline && React.createElement("button", { onClick: onClose, className: "absolute top-4 right-4 text-zinc-400 hover:text-zinc-200" }, React.createElement(X, { size: 20 })),
+                
+                !inline && React.createElement("div", { className: "text-center mb-6" },
+                    React.createElement("h3", { className: "text-xl font-bold text-white" }, isLogin ? "Welcome Back" : "Create Account")
                 ),
-                React.createElement("div", { className: "md:w-1/2 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 flex flex-col justify-center p-8 md:p-16" },
-                    React.createElement("div", { className: "max-w-md w-full mx-auto" },
-                        React.createElement("div", { className: "mb-8 text-center" },
-                            React.createElement("h3", { className: "text-3xl font-bold mb-2" }, isLogin ? "Welcome Back" : "Create Account"),
-                            React.createElement("p", { className: "text-zinc-500" }, isLogin ? "Enter your details to access your workspace." : "Start your journey to clarity today.")
-                        ),
-                        
-                        React.createElement("div", { className: "space-y-4" },
-                            React.createElement("button", { onClick: handleGoogleLogin, disabled: loading, className: "w-full py-3 mb-6 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold rounded-xl transition-all flex items-center justify-center gap-3 shadow-sm" },
-                                React.createElement("img", { src: "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg", className: "w-5 h-5", alt: "G" }), "Continue with Google"
-                            ),
-                            React.createElement("div", { className: "relative flex py-2 items-center mb-6" },
-                                React.createElement("div", { className: "flex-grow border-t border-zinc-200 dark:border-zinc-800" }),
-                                React.createElement("span", { className: "flex-shrink mx-4 text-xs text-zinc-400 uppercase font-bold tracking-wider" }, "Or with Email"),
-                                React.createElement("div", { className: "flex-grow border-t border-zinc-200 dark:border-zinc-800" })
-                            ),
-                            
-                            // LANDING TABS
-                            React.createElement("div", { className: "flex justify-center gap-6 border-b border-zinc-200 dark:border-zinc-800 pb-1 mb-4" },
-                                React.createElement("button", { onClick: () => { setActiveTab("login"); setError(null); }, className: `pb-2 text-sm font-bold transition-colors border-b-2 ${isLogin ? 'text-indigo-600 border-indigo-600' : 'text-zinc-400 border-transparent hover:text-zinc-600'}` }, "Sign In"),
-                                React.createElement("button", { onClick: () => { setActiveTab("signup"); setError(null); }, className: `pb-2 text-sm font-bold transition-colors border-b-2 ${!isLogin ? 'text-indigo-600 border-indigo-600' : 'text-zinc-400 border-transparent hover:text-zinc-600'}` }, "Create Account")
-                            ),
 
-                            React.createElement("form", { onSubmit: handleSubmit, className: "space-y-4" },
-                                React.createElement("div", null, React.createElement("label", { className: "block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1" }, "Email Address"), React.createElement("input", { type: "email", required: true, value: email, onChange: (e) => setEmail(e.target.value), placeholder: "name@example.com", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-zinc-900 dark:text-zinc-100" })),
-                                
-                                // Password Field with Toggle
-                                React.createElement("div", null,
-                                    React.createElement("label", { className: "block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1" }, "Password"),
-                                    React.createElement("div", { className: "relative" },
-                                        React.createElement("input", { type: showPassword ? "text" : "password", required: true, value: password, onChange: (e) => setPassword(e.target.value), placeholder: "••••••••", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-zinc-900 dark:text-zinc-100 pr-10" }),
-                                        React.createElement("button", { type: "button", onClick: () => setShowPassword(!showPassword), className: "absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200" }, React.createElement(showPassword ? EyeOff : Eye, { size: 18 }))
-                                    )
-                                ),
+                React.createElement("div", { className: "flex p-1 bg-zinc-900/50 border border-zinc-800 rounded-xl mb-6" },
+                    React.createElement("button", { onClick: () => { setActiveTab("login"); setError(null); }, className: `flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${isLogin ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}` }, "Login"),
+                    React.createElement("button", { onClick: () => { setActiveTab("signup"); setError(null); }, className: `flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${!isLogin ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}` }, "Sign Up")
+                ),
 
-                                !isLogin && React.createElement("div", null, React.createElement("label", { className: "block text-xs font-bold text-zinc-500 uppercase mb-1 ml-1" }, "Confirm Password"), React.createElement("input", { type: "password", required: true, value: confirmPassword, onChange: (e) => setConfirmPassword(e.target.value), placeholder: "••••••••", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-zinc-900 dark:text-zinc-100" })),
-                                
-                                error && React.createElement("div", { className: "p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg flex items-center gap-2" }, React.createElement(AlertCircle, { size: 16 }), error),
-                                
-                                React.createElement("button", { type: "submit", disabled: loading, className: "w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed mt-2" }, loading ? "Processing..." : (isLogin ? "Sign In" : "Create Account"))
-                            ),
-                            React.createElement("div", { className: "mt-6 text-center" },
-                                React.createElement("button", { onClick: handleGuest, disabled: loading, className: "text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors uppercase tracking-wider font-bold" }, "Continue as Guest")
+                React.createElement("button", { onClick: handleGoogleLogin, className: "w-full py-3 bg-white text-black hover:bg-zinc-200 font-bold rounded-xl transition-all flex items-center justify-center gap-2 mb-4" }, 
+                    React.createElement("img", { src: "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg", className: "w-5 h-5", alt: "G" }), "Continue with Google"
+                ),
+
+                React.createElement("div", { className: "relative flex py-2 items-center mb-4" }, 
+                    React.createElement("div", { className: "flex-grow border-t border-zinc-800" }), 
+                    React.createElement("span", { className: "flex-shrink mx-4 text-[10px] text-zinc-500 uppercase tracking-widest" }, "Or with Email"), 
+                    React.createElement("div", { className: "flex-grow border-t border-zinc-800" })
+                ),
+
+                React.createElement("form", { onSubmit: handleSubmit, className: "space-y-4" },
+                    React.createElement("div", { className: "space-y-1" },
+                        React.createElement("div", { className: "relative" },
+                            React.createElement(Mail, { size: 16, className: "absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" }),
+                            React.createElement("input", { type: "email", required: true, value: email, onChange: (e) => setEmail(e.target.value), placeholder: "Email address", className: "w-full pl-11 pr-4 py-3.5 rounded-xl bg-zinc-900/50 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-sm font-mono" })
+                        )
+                    ),
+                    React.createElement("div", { className: "space-y-1" },
+                        React.createElement("div", { className: "relative" },
+                            React.createElement(Lock, { size: 16, className: "absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" }),
+                            React.createElement("input", { type: showPassword ? "text" : "password", required: true, value: password, onChange: (e) => setPassword(e.target.value), placeholder: "Password", className: "w-full pl-11 pr-11 py-3.5 rounded-xl bg-zinc-900/50 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-sm font-mono pr-10" }),
+                            React.createElement("button", { type: "button", onClick: () => setShowPassword(!showPassword), className: "absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors" }, React.createElement(showPassword ? EyeOff : Eye, { size: 16 }))
+                        )
+                    ),
+                    !isLogin && React.createElement("div", { className: "space-y-1" },
+                        React.createElement("div", { className: "relative" },
+                            React.createElement(Lock, { size: 16, className: "absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" }),
+                            React.createElement("input", { type: "password", required: true, value: confirmPassword, onChange: (e) => setConfirmPassword(e.target.value), placeholder: "Confirm Password", className: "w-full pl-11 pr-4 py-3.5 rounded-xl bg-zinc-900/50 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-sm font-mono" })
+                        )
+                    ),
+                    error && React.createElement("div", { className: "p-3 bg-red-900/20 border border-red-900/50 text-red-400 text-xs rounded-lg flex items-start gap-2" }, React.createElement(AlertTriangle, { size: 14, className: "shrink-0 mt-0.5" }), error),
+                    React.createElement("button", { type: "submit", disabled: loading, className: "w-full py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold rounded-xl transition-all shadow-glow hover:shadow-glow-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2 text-sm tracking-wide" }, 
+                        loading ? "Processing..." : (isLogin ? "Access System" : "Initialize Account")
+                    )
+                )
+            );
+
+            if (inline) return content;
+            return React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" }, content);
+        };
+
+        // --- LANDING PAGE ---
+        const LandingPage = ({ onLoginSuccess, onGuestLogin }) => {
+            return React.createElement("div", { className: "min-h-screen flex flex-col md:flex-row bg-zinc-950 text-white font-sans overflow-hidden" },
+                React.createElement("div", { className: "fixed inset-0 z-0 pointer-events-none" },
+                    React.createElement("div", { className: "absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px]" }),
+                    React.createElement("div", { className: "absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px]" })
+                ),
+                React.createElement("div", { className: "md:w-1/2 p-8 md:p-16 flex flex-col justify-center relative z-10" },
+                    React.createElement("div", { className: "mb-8 flex items-center gap-3" },
+                        React.createElement("div", { className: "w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-glow" }, React.createElement(Brain, { size: 20 })),
+                        React.createElement("h1", { className: "text-2xl font-bold tracking-tight text-white" }, "LifeOS")
+                    ),
+                    React.createElement("h2", { className: "text-5xl md:text-7xl font-bold mb-6 leading-tight tracking-tight" }, "Design Your ", React.createElement("span", { className: "text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400" }, "Mind.")),
+                    React.createElement("p", { className: "text-zinc-400 text-lg md:text-xl max-w-md leading-relaxed mb-10" }, "A futuristic operating system for your life. Organize habits, tasks, and goals in one unified interface."),
+                    React.createElement("div", { className: "grid grid-cols-2 gap-4 max-w-sm" },
+                        [{l:"Focus", i:Timer}, {l:"Goals", i:Flag}, {l:"Habits", i:CheckCircle2}, {l:"Health", i:Activity}].map((f, i) => 
+                            React.createElement("div", { key: i, className: "flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5" }, 
+                                React.createElement(f.i, { className: "text-indigo-400", size: 18 }), 
+                                React.createElement("span", { className: "text-sm font-medium text-zinc-300" }, f.l)
                             )
                         )
+                    )
+                ),
+                React.createElement("div", { className: "md:w-1/2 bg-black/40 backdrop-blur-xl border-l border-white/5 flex flex-col justify-center p-8 md:p-16 relative z-20" },
+                     React.createElement(AuthModal, { onClose: () => {}, onLogin: onLoginSuccess, inline: true }),
+                     React.createElement("div", { className: "mt-6 text-center" },
+                        React.createElement("button", { 
+                            onClick: () => onGuestLogin({ email: "guest@lifeos.app", displayName: "Guest", uid: "guest-user", isLocal: true }), 
+                            className: "text-zinc-500 hover:text-white text-xs font-medium transition-colors flex items-center justify-center gap-2 mx-auto" 
+                        }, "Enter as Guest", React.createElement(ArrowRight, { size: 12 }))
                     )
                 )
             );
         };
 
-        // --- APP COMPONENT ---
+        // --- WIDGETS ---
+        const WeatherWidget = () => React.createElement("div", { className: "text-right" }, React.createElement("span", { className: "text-xl font-bold text-white" }, "22°C"), React.createElement("div", { className: "text-xs text-zinc-500" }, "London"));
+        const TimeWidget = () => {
+             const [time, setTime] = useState(new Date());
+             useEffect(() => { const t = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(t); }, []);
+             return React.createElement("div", { className: "text-right" }, React.createElement("div", { className: "text-3xl font-bold font-mono text-indigo-400" }, time.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})), React.createElement("div", { className: "text-xs font-bold uppercase tracking-widest text-zinc-500" }, time.toLocaleDateString()));
+        };
+        const CompactTimer = ({ timerState, toggleTimer, resetTimer }) => {
+            const format = (s) => `${Math.floor(s / 60).toString().padStart(2,'0')}:${(s % 60).toString().padStart(2,'0')}`;
+            return React.createElement("div", { className: "flex items-center gap-4 bg-zinc-900 border border-zinc-800 rounded-xl p-3" },
+                React.createElement("div", { className: "font-mono text-2xl font-bold text-indigo-400 w-20 text-center" }, format(timerState.timeLeft)),
+                React.createElement("div", { className: "flex gap-2" },
+                    React.createElement("button", { onClick: toggleTimer, className: "p-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500" }, timerState.isActive ? React.createElement(Pause, { size: 16 }) : React.createElement(Play, { size: 16 })),
+                    React.createElement("button", { onClick: resetTimer, className: "p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white" }, React.createElement(RotateCcw, { size: 16 }))
+                )
+            );
+        };
+        
+        const EditableList = ({ items = [], onAdd, onToggle, onDelete, placeholder }) => {
+            const [newItem, setNewItem] = useState("");
+            return React.createElement("div", { className: "space-y-2" },
+                items.map(item => 
+                    React.createElement("div", { key: item.id, className: "flex items-start gap-3 w-full group" },
+                        React.createElement("button", { onClick: () => onToggle(item.id), className: `mt-0.5 w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-all ${item.completed ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-zinc-700 bg-zinc-900'}` }, 
+                            React.createElement(CheckCircle2, { size: 14, className: item.completed ? "opacity-100" : "opacity-0" })
+                        ),
+                        React.createElement("span", { className: `text-sm leading-snug flex-1 ${item.completed ? 'text-zinc-500 line-through' : 'text-zinc-200'}` }, item.text),
+                        React.createElement("button", { onClick: () => onDelete(item.id), className: "text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" }, React.createElement(Trash, { size: 14 }))
+                    )
+                ),
+                React.createElement("div", { className: "flex gap-2 mt-2 pt-2 border-t border-zinc-800" },
+                    React.createElement("input", { 
+                        type: "text", 
+                        value: newItem, 
+                        onChange: (e) => setNewItem(e.target.value), 
+                        onKeyDown: (e) => { if (e.key === 'Enter' && newItem.trim()) { onAdd(newItem); setNewItem(""); } },
+                        placeholder: placeholder || "Add new...", 
+                        className: "flex-1 bg-transparent text-sm focus:outline-none text-zinc-400 placeholder:text-zinc-600" 
+                    }),
+                    React.createElement("button", { onClick: () => { if (newItem.trim()) { onAdd(newItem); setNewItem(""); } }, className: "text-indigo-500 hover:text-indigo-400" }, React.createElement(Plus, { size: 16 }))
+                )
+            );
+        };
 
+        // --- VIEWS ---
+        const DashboardView = ({ onNavigate, tasks = [], deadlines = [], dashboardData = {}, onUpdateDashboard, timerState, toggleTimer, resetTimer }) => {
+            const dailyFocus = dashboardData?.focus || "";
+            const [focusInput, setFocusInput] = useState(dailyFocus);
+            const [isEditing, setIsEditing] = useState(!dailyFocus);
+            
+            useEffect(() => { if (dailyFocus) { setFocusInput(dailyFocus); setIsEditing(false); } }, [dailyFocus]);
+            const handleSetFocus = () => { if (focusInput.trim()) { onUpdateDashboard({ ...dashboardData, focus: focusInput }); setIsEditing(false); } };
+
+            const nextDeadline = deadlines[0]; 
+            return React.createElement("div", { className: "p-4 space-y-6" },
+                React.createElement("div", { className: "flex justify-between items-end mb-4" }, 
+                    React.createElement("h2", { className: "text-3xl font-bold tracking-tight text-white" }, "Command Center"), 
+                    React.createElement(TimeWidget)
+                ),
+                React.createElement(Card, { className: "relative overflow-hidden rounded-3xl p-8 border border-indigo-500/30 bg-gradient-to-br from-indigo-900/20 to-black" },
+                    React.createElement("div", { className: "relative z-10" },
+                        React.createElement("div", { className: "flex items-center gap-2 mb-4 text-indigo-300 text-xs font-bold uppercase tracking-widest" }, 
+                            React.createElement(Target, { size: 14 }), "Primary Directive"
+                        ),
+                        isEditing ? (
+                            React.createElement("div", { className: "flex gap-2" },
+                                React.createElement("input", { type: "text", value: focusInput, onChange: (e) => setFocusInput(e.target.value), onKeyDown: (e) => e.key === 'Enter' && handleSetFocus(), placeholder: "Win the day by...", className: "w-full bg-transparent border-b-2 border-zinc-700 text-3xl font-bold focus:outline-none py-1 text-white placeholder:text-zinc-600" }),
+                                React.createElement("button", { onClick: handleSetFocus, className: "p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500" }, React.createElement(ArrowRight, { size: 20 }))
+                            )
+                        ) : (
+                             React.createElement("div", { className: "flex items-center justify-between" },
+                                React.createElement("h2", { className: "text-4xl md:text-5xl font-bold text-white leading-tight" }, dailyFocus),
+                                React.createElement("button", { onClick: () => setIsEditing(true), className: "text-zinc-500 hover:text-white" }, React.createElement(Edit3, { size: 18 }))
+                            )
+                        ),
+                        React.createElement("button", { onClick: () => onNavigate('tasks'), className: "mt-6 px-6 py-3 bg-white text-black font-bold rounded-full hover:scale-105 transition-transform flex items-center gap-2 text-sm" }, 
+                            "View Tasks", React.createElement(ArrowRight, { size: 16 })
+                        )
+                    )
+                ),
+                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" },
+                     React.createElement(Card, { title: "Active Tasks" },
+                        React.createElement("div", { className: "flex items-center justify-between" },
+                             React.createElement("span", { className: "text-4xl font-bold text-white" }, tasks.length),
+                             React.createElement(ListTodo, { className: "text-zinc-700", size: 48 })
+                        )
+                     ),
+                     React.createElement(Card, { title: "Next Deadline" },
+                        deadlines[0] ? React.createElement("div", null, 
+                            React.createElement("p", { className: "font-bold text-white truncate" }, deadlines[0].title),
+                            React.createElement("p", { className: "text-sm text-zinc-400 mt-1" }, new Date(deadlines[0].date).toLocaleDateString())
+                        ) : React.createElement("p", { className: "text-zinc-500" }, "All clear.")
+                     ),
+                     React.createElement(Card, { title: "Mind Status" },
+                        React.createElement("div", { className: "flex items-center gap-2 text-emerald-400" },
+                            React.createElement(ShieldCheck, { size: 20 }),
+                            React.createElement("span", { className: "font-bold" }, "Online")
+                        )
+                     )
+                )
+            );
+        };
+        
+        const Goals2026View = ({ goalsData, onUpdateGoals }) => {
+            const updateSection = (path, newData) => {
+                const newGoals = { ...goalsData };
+                if (path.includes('.')) {
+                    const [parent, child] = path.split('.');
+                    if (!newGoals[parent]) newGoals[parent] = {};
+                    newGoals[parent][child] = newData;
+                } else newGoals[path] = newData;
+                onUpdateGoals(newGoals);
+            };
+            const addItem = (path, text) => {
+                const [parent, child] = path.split('.');
+                const list = (goalsData[parent] && goalsData[parent][child]) ? goalsData[parent][child] : [];
+                updateSection(path, [...list, { id: Date.now().toString(), text, completed: false }]);
+            };
+            const toggleItem = (path, id) => {
+                 const [parent, child] = path.split('.');
+                 const list = goalsData[parent][child];
+                 updateSection(path, list.map(i => i.id === id ? { ...i, completed: !i.completed } : i));
+            };
+            const deleteItem = (path, id) => {
+                 const [parent, child] = path.split('.');
+                 const list = goalsData[parent][child];
+                 updateSection(path, list.filter(i => i.id !== id));
+            };
+
+            return React.createElement("div", { className: "p-4 space-y-8 pb-24" },
+                React.createElement(Card, { className: "bg-indigo-900/20 border-indigo-500/30" },
+                    React.createElement("h4", { className: "text-lg font-bold text-indigo-300 mb-2" }, "Primary Mission"),
+                    React.createElement("p", { className: "text-xl font-bold text-white leading-relaxed" }, goalsData.mission)
+                ),
+                React.createElement("div", { className: "grid gap-6 md:grid-cols-3" },
+                    React.createElement(Card, { title: "Phase 1: Stabilise" }, React.createElement(EditableList, { items: goalsData.phases?.phase1 || [], onAdd: t=>addItem('phases.phase1', t), onToggle: id=>toggleItem('phases.phase1', id), onDelete: id=>deleteItem('phases.phase1', id) })),
+                    React.createElement(Card, { title: "Phase 2: Discipline" }, React.createElement(EditableList, { items: goalsData.phases?.phase2 || [], onAdd: t=>addItem('phases.phase2', t), onToggle: id=>toggleItem('phases.phase2', id), onDelete: id=>deleteItem('phases.phase2', id) })),
+                    React.createElement(Card, { title: "Phase 3: Direction" }, React.createElement(EditableList, { items: goalsData.phases?.phase3 || [], onAdd: t=>addItem('phases.phase3', t), onToggle: id=>toggleItem('phases.phase3', id), onDelete: id=>deleteItem('phases.phase3', id) }))
+                )
+            );
+        };
+        
+        const TasksView = ({ tasks, onAddTask, onDeleteTask, onUpdateTask }) => {
+            const [input, setInput] = useState("");
+            return React.createElement("div", { className: "p-4 pb-24" }, 
+                React.createElement("h2", { className: "text-3xl font-bold text-white mb-6" }, "Daily Tasks"),
+                React.createElement("div", { className: "flex gap-3 mb-6" },
+                    React.createElement("input", { value: input, onChange: e => setInput(e.target.value), className: "p-4 rounded-xl border border-zinc-800 bg-zinc-900 text-white flex-1 focus:border-indigo-500 focus:outline-none", placeholder: "Add new task..." }),
+                    React.createElement("button", { onClick: () => { if(input.trim()) { onAddTask({ text: input, category: 'do_first', completed: false }); setInput(""); }}, className: "p-4 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition-colors" }, React.createElement(Plus))
+                ),
+                React.createElement("div", { className: "space-y-3" }, 
+                    tasks.map(t => React.createElement("div", { key: t.id, className: "p-4 border border-zinc-800 rounded-xl flex justify-between items-center bg-zinc-900/50 hover:bg-zinc-900 transition-colors group" }, 
+                        React.createElement("div", { className: "flex items-center gap-3" },
+                            React.createElement("button", { onClick: () => onUpdateTask(t.id, { completed: !t.completed }), className: `w-5 h-5 rounded-full border flex items-center justify-center ${t.completed ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-zinc-600'}` }, t.completed && React.createElement(Check, { size: 12 })),
+                            React.createElement("span", { className: t.completed ? "text-zinc-500 line-through" : "text-zinc-200" }, t.text)
+                        ),
+                        React.createElement("button", { onClick: () => onDeleteTask(t.id), className: "text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" }, React.createElement(Trash, { size: 16 }))
+                    ))
+                )
+            );
+        };
+        
+        const WorriesView = ({ worries, onAddWorry, onDeleteWorry }) => {
+             const [input, setInput] = useState("");
+             return React.createElement("div", { className: "p-4 pb-24" }, 
+                React.createElement("h2", { className: "text-3xl font-bold text-white mb-6" }, "Worry Jar"),
+                React.createElement("div", { className: "relative mb-8" },
+                    React.createElement("div", { className: "absolute -inset-0.5 bg-gradient-to-r from-pink-600 to-purple-600 rounded-xl opacity-30 blur" }),
+                    React.createElement("input", { value: input, onChange: e => setInput(e.target.value), onKeyDown: e => { if(e.key === 'Enter' && input.trim()) { onAddWorry(input); setInput(""); }}, className: "relative w-full p-4 border border-zinc-800 rounded-xl bg-zinc-900 text-white focus:outline-none placeholder:text-zinc-600", placeholder: "Cast your worries here..." })
+                ),
+                React.createElement("div", { className: "grid gap-4 md:grid-cols-2" }, 
+                    worries.map(w => React.createElement("div", { key: w.id, className: "p-5 border border-zinc-800 rounded-2xl bg-zinc-900/50 flex justify-between items-start group hover:border-pink-500/30 transition-colors" }, 
+                        React.createElement("p", { className: "text-zinc-300 text-sm leading-relaxed" }, w.text),
+                        React.createElement("button", { onClick: () => onDeleteWorry(w.id), className: "text-zinc-600 hover:text-pink-500 opacity-0 group-hover:opacity-100 transition-opacity ml-4" }, React.createElement(Trash, { size: 16 }))
+                    ))
+                )
+            );
+        };
+        
+        const FocusView = ({ timerState, toggleTimer, resetTimer }) => (
+            React.createElement("div", { className: "p-4 flex flex-col items-center justify-center h-full min-h-[80vh]" }, 
+                React.createElement("h2", { className: "text-2xl font-bold mb-8" }, "Focus Mode"),
+                React.createElement("div", { className: "text-8xl font-mono font-bold mb-8" }, `${Math.floor(timerState.timeLeft / 60).toString().padStart(2,'0')}:${(timerState.timeLeft % 60).toString().padStart(2,'0')}`),
+                React.createElement("div", { className: "flex gap-4" },
+                    React.createElement("button", { onClick: toggleTimer, className: "px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold text-xl" }, timerState.isActive ? "PAUSE" : "START"),
+                    React.createElement("button", { onClick: resetTimer, className: "px-8 py-4 bg-zinc-200 text-zinc-800 rounded-2xl font-bold text-xl" }, "RESET")
+                )
+            )
+        );
+
+        const BrainDumpView = ({ dumps, onAddDump, onDeleteDump }) => {
+             const [input, setInput] = useState("");
+             return React.createElement("div", { className: "p-4 pb-24" }, 
+                React.createElement("h2", { className: "text-3xl font-bold text-white mb-6" }, "Brain Dump"),
+                React.createElement("div", { className: "mb-8 relative" },
+                    React.createElement("div", { className: "absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl opacity-20 blur" }),
+                    React.createElement("textarea", { value: input, onChange: e => setInput(e.target.value), className: "relative w-full p-4 border border-zinc-800 rounded-xl bg-zinc-900 text-white h-32 focus:outline-none placeholder:text-zinc-600 resize-none", placeholder: "Clear your mind..." }),
+                    React.createElement("button", { onClick: () => { if(input.trim()) { onAddDump(input); setInput(""); }}, className: "absolute bottom-4 right-4 p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors" }, React.createElement(ArrowRight, { size: 20 }))
+                ),
+                React.createElement("div", { className: "columns-1 md:columns-2 gap-4 space-y-4" }, 
+                    dumps.map(d => React.createElement("div", { key: d.id, className: "break-inside-avoid p-5 border border-zinc-800 rounded-2xl bg-zinc-900/50 hover:bg-zinc-900 transition-all group relative" }, 
+                        React.createElement("p", { className: "text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap" }, d.text),
+                        React.createElement("button", { onClick: () => onDeleteDump(d.id), className: "absolute top-4 right-4 text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" }, React.createElement(Trash, { size: 14 }))
+                    ))
+                )
+            );
+        };
+        
+        const DeadlinesView = ({ deadlines = [], onAddDeadline, onDeleteDeadline }) => {
+            const [newTitle, setNewTitle] = useState("");
+            const [newDate, setNewDate] = useState("");
+            const handleAdd = () => { if (newTitle && newDate) { onAddDeadline({ title: newTitle, date: newDate }); setNewTitle(""); setNewDate(""); } };
+            return React.createElement("div", { className: "h-full flex flex-col p-4 pb-24" },
+                React.createElement("h3", { className: "text-3xl font-bold text-white mb-6 flex items-center gap-3" }, "Deadlines", React.createElement("span", { className: "text-xs bg-rose-500/10 text-rose-500 px-3 py-1 rounded-full font-bold uppercase tracking-wider" }, "Urgent")),
+                React.createElement("div", { className: "flex flex-col md:flex-row gap-3 mb-8 bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800" },
+                    React.createElement("input", { value: newTitle, onChange: e => setNewTitle(e.target.value), placeholder: "Assignment Title...", className: "flex-1 p-3 rounded-xl bg-black border border-zinc-800 text-white focus:outline-none focus:border-rose-500" }),
+                    React.createElement("input", { type: "date", value: newDate, onChange: e => setNewDate(e.target.value), className: "p-3 rounded-xl bg-black border border-zinc-800 text-zinc-400 focus:text-white focus:outline-none focus:border-rose-500" }),
+                    React.createElement("button", { onClick: handleAdd, className: "p-3 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-500 transition-colors" }, "Add Deadline")
+                ),
+                React.createElement("div", { className: "grid gap-3" },
+                    deadlines.length === 0 ? React.createElement("div", { className: "text-center py-12 text-zinc-600" }, "No upcoming deadlines.") :
+                    deadlines.map(d => React.createElement("div", { key: d.id, className: "flex justify-between items-center p-5 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-rose-500/30 transition-all group" },
+                        React.createElement("div", null, React.createElement("p", { className: "font-bold text-white text-lg" }, d.title), React.createElement("p", { className: "text-xs text-zinc-500 font-mono mt-1" }, new Date(d.date).toLocaleDateString())),
+                        React.createElement("button", { onClick: () => onDeleteDeadline(d.id), className: "text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" }, React.createElement(Trash, { size: 18 }))
+                    ))
+                )
+            );
+        };
+        
+        const FoodView = ({ meals, onUpdateMeal }) => {
+             const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+             const [activeDayIndex, setActiveDayIndex] = useState(0);
+             const day = days[activeDayIndex];
+             
+             const getMeal = (d, t) => {
+                 const m = meals.find(item => item.day === d && item.type === t);
+                 return m ? m.text : "";
+             };
+
+             return React.createElement("div", { className: "p-4 pb-24" },
+                React.createElement("h2", { className: "text-3xl font-bold text-white mb-6" }, "Nutrition"),
+                React.createElement("div", { className: "flex items-center justify-between mb-8 bg-zinc-900 p-2 rounded-xl border border-zinc-800" },
+                     React.createElement("button", { onClick: () => setActiveDayIndex((activeDayIndex - 1 + 7) % 7), className: "p-2 hover:bg-zinc-800 rounded-lg text-zinc-400" }, React.createElement(ChevronLeft)),
+                     React.createElement("span", { className: "font-bold text-white" }, day),
+                     React.createElement("button", { onClick: () => setActiveDayIndex((activeDayIndex + 1) % 7), className: "p-2 hover:bg-zinc-800 rounded-lg text-zinc-400" }, React.createElement(ChevronRight))
+                ),
+                React.createElement("div", { className: "grid gap-4" },
+                    ['Breakfast', 'Lunch', 'Dinner', 'Snack'].map(type => 
+                        React.createElement("div", { key: type, className: "p-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl" },
+                            React.createElement("div", { className: "text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2" }, type),
+                            React.createElement("textarea", { 
+                                value: getMeal(day, type), 
+                                onChange: (e) => onUpdateMeal(day, type, e.target.value), 
+                                className: "w-full bg-transparent text-zinc-200 resize-none focus:outline-none placeholder:text-zinc-700",
+                                placeholder: "Add meal...",
+                                rows: 2 
+                            })
+                        )
+                    )
+                )
+             );
+        };
+
+        const SpiritualityView = ({ notes, onAddNote, onDeleteNote }) => {
+            const [input, setInput] = useState("");
+            return React.createElement("div", { className: "p-4 pb-24" },
+                React.createElement("h2", { className: "text-3xl font-bold text-white mb-6" }, "Spirituality"),
+                React.createElement("div", { className: "mb-8 bg-zinc-900 p-4 rounded-2xl border border-zinc-800" },
+                    React.createElement("textarea", { value: input, onChange: e => setInput(e.target.value), className: "w-full bg-transparent text-white resize-none h-24 focus:outline-none placeholder:text-zinc-600", placeholder: "Prayer/Notes..." }),
+                    React.createElement("div", { className: "flex justify-end mt-2" },
+                        React.createElement("button", { onClick: () => { if(input.trim()) { onAddNote(input); setInput(""); }}, className: "px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-500 transition-colors" }, "Save Entry")
+                    )
+                ),
+                React.createElement("div", { className: "space-y-4" }, 
+                    notes.length === 0 ? React.createElement("div", { className: "text-center text-zinc-600 py-8" }, "No entries yet.") :
+                    notes.map(n => React.createElement("div", { key: n.id, className: "p-5 border border-zinc-800 rounded-2xl bg-zinc-900/30 flex justify-between group hover:border-zinc-700 transition-all" }, 
+                        React.createElement("p", { className: "text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap" }, n.text), 
+                        React.createElement("button", { onClick: () => onDeleteNote(n.id), className: "text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 ml-4" }, React.createElement(Trash, { size: 14 }))
+                    ))
+                )
+            );
+        };
+
+        const FitnessView = () => {
+             const [plan, setPlan] = useState('gym');
+             const currentPlan = plan === 'gym' ? GYM_WORKOUT_PLAN : HOME_WORKOUT_PLAN;
+             return React.createElement("div", { className: "p-4 pb-24" },
+                 React.createElement("div", { className: "flex justify-between items-center mb-6" }, 
+                     React.createElement("h2", { className: "text-3xl font-bold text-white" }, "Fitness"),
+                     React.createElement("div", { className: "flex gap-2 p-1 bg-zinc-900 rounded-lg" }, 
+                         React.createElement("button", { onClick: () => setPlan('gym'), className: `px-4 py-1.5 text-sm rounded-md transition-all ${plan === 'gym' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}` }, "Gym"),
+                         React.createElement("button", { onClick: () => setPlan('home'), className: `px-4 py-1.5 text-sm rounded-md transition-all ${plan === 'home' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}` }, "Home")
+                     )
+                 ),
+                 React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+                     currentPlan.map(s => React.createElement("div", { key: s.id, className: "p-6 border border-zinc-800 rounded-2xl bg-zinc-900/30" }, 
+                         React.createElement("div", { className: "flex items-center gap-3 mb-4" },
+                            React.createElement(s.icon, { className: s.color, size: 24 }),
+                            React.createElement("h3", { className: "font-bold text-lg text-white" }, s.title)
+                         ),
+                         React.createElement("ul", { className: "space-y-2 mb-4" }, s.exercises.map((e, i) => React.createElement("li", { key: i, className: "text-sm text-zinc-400 flex justify-between border-b border-zinc-800/50 pb-1" }, React.createElement("span", null, e.name), React.createElement("span", { className: "font-mono text-zinc-600" }, `${e.sets}x${e.reps}`)))),
+                         React.createElement("div", { className: "text-xs text-red-400 font-bold uppercase tracking-wider" }, `Finisher: ${s.finisher}`)
+                     ))
+                 )
+             );
+        };
+        
+        const ToolsView = ({ tools, onAddTool }) => {
+            const [name, setName] = useState("");
+            const [url, setUrl] = useState("");
+            return React.createElement("div", { className: "p-4 pb-24" },
+                React.createElement("div", { className: "flex justify-between items-center mb-6" },
+                    React.createElement("h2", { className: "text-3xl font-bold text-white" }, "Toolbox"),
+                ),
+                React.createElement("div", { className: "bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-8" },
+                    React.createElement("div", { className: "flex gap-3" },
+                        React.createElement("input", { value: name, onChange: e => setName(e.target.value), placeholder: "Tool Name", className: "flex-1 p-2 bg-black border border-zinc-800 rounded-lg text-white focus:outline-none" }),
+                        React.createElement("input", { value: url, onChange: e => setUrl(e.target.value), placeholder: "URL", className: "flex-1 p-2 bg-black border border-zinc-800 rounded-lg text-white focus:outline-none" }),
+                        React.createElement("button", { onClick: () => { if(name && url) { onAddTool({ name, url, category: "Custom" }); setName(""); setUrl(""); }}, className: "px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 font-bold" }, "Add")
+                    )
+                ),
+                React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" }, 
+                    tools.map(t => React.createElement("a", { key: t.id, href: t.url, target: "_blank", className: "p-4 border border-zinc-800 rounded-2xl bg-zinc-900/50 hover:bg-zinc-800 hover:border-zinc-700 transition-all text-center group" }, 
+                        React.createElement("div", { className: "w-10 h-10 mx-auto bg-black rounded-lg flex items-center justify-center mb-3 text-zinc-400 group-hover:text-white transition-colors" }, React.createElement(Wrench, { size: 18 })),
+                        React.createElement("span", { className: "text-sm font-medium text-zinc-300" }, t.name)
+                    ))
+                )
+            );
+        };
+
+
+        // --- APP COMPONENT ---
         const App = () => {
-            // UPDATED: Reordered tabs and added configuration for icons/labels
             const tabConfig = {
                 dashboard: { label: "Dashboard", icon: Layout },
+                deadlines: { label: "Deadlines", icon: Hourglass },
                 goals2026: { label: "2026 Plan", icon: Flag },
                 tasks: { label: "Daily Tasks", icon: ListTodo },
                 worries: { label: "Worries", icon: ShieldAlert },
@@ -672,226 +784,264 @@
                 tools: { label: "Tools", icon: Wrench }
             };
 
-            const VALID_TABS = ['dashboard', 'goals2026', 'tasks', 'worries', 'focus', 'braindump', 'spirituality', 'food', 'fitness', 'tools'];
+            const VALID_TABS = Object.keys(tabConfig);
+            const [activeTab, setActiveTab] = useState("dashboard");
+            const [darkMode, setDarkMode] = useState(true);
+            const [user, setUser] = useState(null);
             
-            const [activeTab, setActiveTab] = useState(() => localStorage.getItem('lifeos_active_tab') || 'dashboard');
-            const [darkMode, setDarkMode] = useState(() => JSON.parse(localStorage.getItem('lifeos_dark_mode') || 'true'));
-            
-            // Session Persistence
-            const [user, setUser] = useState(() => {
-                try {
-                    const stored = localStorage.getItem('lifeos_user_session');
-                    return stored ? JSON.parse(stored) : null;
-                } catch(e) { return null; }
-            });
-            
-            const [isDataLoaded, setIsDataLoaded] = useState(false);
-            const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-            const [showShareModal, setShowShareModal] = useState(false);
-            const [showAuthModal, setShowAuthModal] = useState(false);
-            const [authError, setAuthError] = useState(null);
-
-            const [dumps, setDumps] = useState([]);
-            const [spiritualNotes, setSpiritualNotes] = useState([]);
-            const [meals, setMeals] = useState([]);
-            const [worries, setWorries] = useState([]);
+            // App Data
+            const [deadlines, setDeadlines] = useState([]);
             const [tasks, setTasks] = useState([]);
-            const [goalsProgress, setGoalsProgress] = useState({});
-            const [goalsData, setGoalsData] = useState(DEFAULT_GOALS_DATA); 
-            const [dashboardData, setDashboardData] = useState({ focus: "", habits: [] });
-            const [tools, setTools] = useState(DEFAULT_TOOLS); // NEW STATE FOR TOOLS
-            
-            // GLOBAL FOCUS STATE
-            const [activeSound, setActiveSound] = useState(null);
-            const [isPlayingSound, setIsPlayingSound] = useState(false);
-            const audioRef = useRef(new Audio());
-            const [focusState, setFocusState] = useState({
-                timeLeft: 25 * 60,
-                isActive: false,
-                initialTime: 25 * 60
-            });
+            const [dumps, setDumps] = useState([]);
+            const [worries, setWorries] = useState([]);
+            const [meals, setMeals] = useState(DEFAULT_MEALS);
+            const [goalsData, setGoalsData] = useState(DEFAULT_GOALS_DATA);
+            const [dashboardData, setDashboardData] = useState({});
+            const [tools, setTools] = useState(DEFAULT_TOOLS);
+            const [spiritualNotes, setSpiritualNotes] = useState([]);
 
-            // Focus Timer Logic
+            // Timer State
+            const [focusState, setFocusState] = useState({ timeLeft: 1500, isActive: false, initialTime: 1500 });
             useEffect(() => {
                 let interval = null;
-                if (focusState.isActive && focusState.timeLeft > 0) { interval = setInterval(() => { setFocusState(prev => ({ ...prev, timeLeft: prev.timeLeft - 1 })); }, 1000); } else if (focusState.timeLeft === 0) { setFocusState(prev => ({ ...prev, isActive: false })); }
+                if (focusState.isActive && focusState.timeLeft > 0) {
+                    interval = setInterval(() => { setFocusState(prev => ({ ...prev, timeLeft: prev.timeLeft - 1 })); }, 1000);
+                } else if (focusState.timeLeft === 0) {
+                    setFocusState(prev => ({ ...prev, isActive: false }));
+                }
                 return () => clearInterval(interval);
             }, [focusState.isActive, focusState.timeLeft]);
-            const handleTimerToggle = () => setFocusState(prev => ({ ...prev, isActive: !prev.isActive }));
-            const handleTimerReset = (newTime) => { const time = newTime || focusState.initialTime; setFocusState({ timeLeft: time, isActive: false, initialTime: time }); };
 
-            // Auth Listener
+            // DB Connectivity Check
+            const [connectionError, setConnectionError] = useState(null);
             useEffect(() => {
-                if (isFirebaseConfigured) {
-                    const unsubscribe = onAuthStateChanged(auth, (u) => {
-                        if (u && (!user || !user.isLocal)) {
-                             const newUser = { email: u.email || "Guest", uid: u.uid, isLocal: false, displayName: u.displayName || u.email.split('@')[0] };
-                             setUser(newUser);
-                             localStorage.setItem('lifeos_user_session', JSON.stringify(newUser));
-                        }
-                    });
-                    return () => unsubscribe();
+                if(isSupabaseConfigured) {
+                    supabase.from('tasks').select('count', { count: 'exact', head: true })
+                        .then(({ error }) => {
+                            if(error) {
+                                console.error("DB Check Failed:", error);
+                                setConnectionError("Cloud DB unreachable. Check API Key.");
+                            }
+                        });
                 }
             }, []);
 
-            // Login Success
-            const handleLoginSuccess = (userData) => {
-                setUser(userData);
-                localStorage.setItem('lifeos_user_session', JSON.stringify(userData));
-                setIsDataLoaded(false); 
-                setShowAuthModal(false);
-            };
-
-            const handleLogout = () => {
-                if (isFirebaseConfigured && auth.currentUser) signOut(auth);
-                setUser(null);
-                localStorage.removeItem('lifeos_user_session');
-                setIsDataLoaded(false);
-                setDumps([]); setSpiritualNotes([]); setMeals([]); setTasks([]); setWorries([]); setGoalsData(DEFAULT_GOALS_DATA); setDashboardData({ focus: "", habits: [] }); setTools(DEFAULT_TOOLS);
-            };
+            // Auth Check
+            useEffect(() => {
+                const sessionUser = JSON.parse(localStorage.getItem('lifeos_user_session'));
+                if (sessionUser) setUser(sessionUser);
+                
+                if (isSupabaseConfigured) {
+                    supabase.auth.getSession().then(({ data: { session } }) => {
+                        if (session) setUser({ ...session.user, isLocal: false });
+                    });
+                    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+                        if (session) setUser({ ...session.user, isLocal: false });
+                    });
+                    return () => subscription.unsubscribe();
+                }
+            }, []);
 
             // Data Sync
             useEffect(() => {
                 if (!user) return;
-                const userId = user.uid;
-                const prefix = `lifeos_data_${userId}_`;
-                try {
-                    setDumps(JSON.parse(localStorage.getItem(`${prefix}dumps`) || '[]'));
-                    setSpiritualNotes(JSON.parse(localStorage.getItem(`${prefix}spiritual_notes`) || '[]'));
-                    setMeals(JSON.parse(localStorage.getItem(`${prefix}meals`) || '[]'));
-                    setTasks(JSON.parse(localStorage.getItem(`${prefix}tasks`) || '[]'));
-                    setWorries(JSON.parse(localStorage.getItem(`${prefix}worries`) || '[]'));
-                    const loadedGoals = localStorage.getItem(`${prefix}goals_data_2026`);
-                    setGoalsData(loadedGoals ? JSON.parse(loadedGoals) : DEFAULT_GOALS_DATA);
-                    const loadedTools = localStorage.getItem(`${prefix}tools`); // Load Tools
-                    setTools(loadedTools ? JSON.parse(loadedTools) : DEFAULT_TOOLS);
-                    setDashboardData(JSON.parse(localStorage.getItem(`${prefix}dashboard`) || '{"focus":"", "habits":[]}'));
-                    setIsDataLoaded(true);
-                } catch(e) { console.error("Local Load Error", e); }
+                if (!user.isLocal && isSupabaseConfigured) {
+                    const fetchData = async () => {
+                        const { data: dData } = await supabase.from('deadlines').select('*').eq('user_id', user.id);
+                        if(dData) setDeadlines(dData);
+                        const { data: tData } = await supabase.from('tasks').select('*').eq('user_id', user.id);
+                        if(tData) setTasks(tData);
+                        const { data: bData } = await supabase.from('brain_dumps').select('*').eq('user_id', user.id);
+                        if(bData) setDumps(bData);
+                        const { data: wData } = await supabase.from('worries').select('*').eq('user_id', user.id);
+                        if(wData) setWorries(wData);
+                        const { data: mData } = await supabase.from('meals').select('*').eq('user_id', user.id);
+                        if(mData && mData.length > 0) setMeals(mData);
+                        const { data: aData } = await supabase.from('app_data').select('*').eq('user_id', user.id).single();
+                        if(aData) {
+                            if(aData.goals_2026) setGoalsData(aData.goals_2026);
+                            if(aData.dashboard_config) setDashboardData(aData.dashboard_config);
+                        }
+                        const { data: tlData } = await supabase.from('tools').select('*').eq('user_id', user.id);
+                        if(tlData && tlData.length > 0) setTools(tlData);
+                         const { data: sData } = await supabase.from('spiritual_notes').select('*').eq('user_id', user.id);
+                        if(sData) setSpiritualNotes(sData);
+                    };
+                    fetchData();
+                    
+                     const channel = supabase.channel('db-changes')
+                        .on('postgres_changes', { event: '*', schema: 'public' }, () => fetchData())
+                        .subscribe();
+                    return () => supabase.removeChannel(channel);
+                } else {
+                    // Local
+                    try {
+                        const prefix = `lifeos_data_${user.id}_`;
+                        setDeadlines(JSON.parse(localStorage.getItem(`${prefix}deadlines`) || '[]'));
+                        setTasks(JSON.parse(localStorage.getItem(`${prefix}tasks`) || '[]'));
+                        setDumps(JSON.parse(localStorage.getItem(`${prefix}dumps`) || '[]'));
+                        setWorries(JSON.parse(localStorage.getItem(`${prefix}worries`) || '[]'));
+                        setMeals(JSON.parse(localStorage.getItem(`${prefix}meals`) || JSON.stringify(DEFAULT_MEALS)));
+                        setGoalsData(JSON.parse(localStorage.getItem(`${prefix}goals_2026`) || JSON.stringify(DEFAULT_GOALS_DATA)));
+                        setTools(JSON.parse(localStorage.getItem(`${prefix}tools`) || JSON.stringify(DEFAULT_TOOLS)));
+                        setSpiritualNotes(JSON.parse(localStorage.getItem(`${prefix}spiritual_notes`) || '[]'));
+                    } catch(e) {}
+                }
             }, [user]);
 
-            // Save to LocalStorage
+            // Save Local
             useEffect(() => {
-                if (user && isDataLoaded) {
-                    const prefix = `lifeos_data_${user.uid}_`;
-                    localStorage.setItem(`${prefix}dumps`, JSON.stringify(dumps));
-                    localStorage.setItem(`${prefix}spiritual_notes`, JSON.stringify(spiritualNotes));
-                    localStorage.setItem(`${prefix}meals`, JSON.stringify(meals));
+                if(user && user.isLocal) {
+                    const prefix = `lifeos_data_${user.id}_`;
+                    localStorage.setItem(`${prefix}deadlines`, JSON.stringify(deadlines));
                     localStorage.setItem(`${prefix}tasks`, JSON.stringify(tasks));
+                    localStorage.setItem(`${prefix}dumps`, JSON.stringify(dumps));
                     localStorage.setItem(`${prefix}worries`, JSON.stringify(worries));
-                    localStorage.setItem(`${prefix}goals_data_2026`, JSON.stringify(goalsData));
-                    localStorage.setItem(`${prefix}tools`, JSON.stringify(tools)); // Save Tools
-                    localStorage.setItem(`${prefix}dashboard`, JSON.stringify(dashboardData));
+                     localStorage.setItem(`${prefix}meals`, JSON.stringify(meals));
+                    localStorage.setItem(`${prefix}goals_2026`, JSON.stringify(goalsData));
+                     localStorage.setItem(`${prefix}tools`, JSON.stringify(tools));
+                     localStorage.setItem(`${prefix}spiritual_notes`, JSON.stringify(spiritualNotes));
                 }
-            }, [dumps, spiritualNotes, meals, tasks, worries, goalsData, dashboardData, tools, user, isDataLoaded]);
+            }, [deadlines, tasks, dumps, worries, meals, goalsData, tools, spiritualNotes, user]);
+
+            const handleLoginSuccess = (u) => {
+                setUser(u);
+                localStorage.setItem('lifeos_user_session', JSON.stringify(u));
+            };
+
+            const handleLogout = async () => {
+                if (isSupabaseConfigured) await supabase.auth.signOut();
+                localStorage.removeItem('lifeos_user_session');
+                setUser(null);
+            };
 
             // Handlers
-            const handleAddDump = (text) => setDumps(prev => [{ id: Date.now().toString(), text, createdAt: new Date() }, ...prev]);
-            const handleDeleteDump = (id) => setDumps(prev => prev.filter(d => d.id !== id));
-            const handleAddSpiritualNote = (text) => setSpiritualNotes(prev => [{ id: Date.now().toString(), text, createdAt: new Date() }, ...prev]);
-            const handleDeleteSpiritualNote = (id) => setSpiritualNotes(prev => prev.filter(n => n.id !== id));
-            const handleAddWorry = (text) => setWorries(prev => [{ id: Date.now().toString(), text, createdAt: new Date() }, ...prev]);
-            const handleDeleteWorry = (id) => setWorries(prev => prev.filter(w => w.id !== id));
-            const handleAddTask = (task) => setTasks(prev => [{ id: Date.now().toString(), ...task, createdAt: new Date() }, ...prev]);
-            const handleUpdateTask = (id, data) => setTasks(prev => prev.map(t => t.id === id ? { ...t, ...data } : t));
-            const handleDeleteTask = (id) => setTasks(prev => prev.filter(t => t.id !== id));
-            const handleUpdateDashboard = (data) => setDashboardData(data);
-            const handleUpdateGoals = (newData) => setGoalsData(newData);
-            const handleAddTool = (tool) => setTools(prev => [...prev, { id: Date.now().toString(), ...tool }]); // Add Tool Handler
-
-            const handleUpdateMeal = (day, type, text) => {
-                const existingMeal = meals.find(m => m.day === day && m.type === type);
-                const docId = `${day}_${type}`;
-                if (existingMeal) { 
-                    setMeals(prev => prev.map(m => m.day === day && m.type === type ? { ...m, text, id: docId } : m));
-                } else { 
-                    const newMeal = { id: docId, day, type, text };
-                    setMeals(prev => [...prev, newMeal]);
+            const handleAddDeadline = async (item) => {
+                const newItem = { ...item, id: Date.now().toString(), user_id: user.id };
+                setDeadlines(prev => [...prev, newItem]);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('deadlines').insert(newItem);
+            };
+            const handleDeleteDeadline = async (id) => {
+                setDeadlines(prev => prev.filter(i => i.id !== id));
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('deadlines').delete().eq('id', id);
+            };
+             const handleAddTask = async (item) => {
+                const newItem = { ...item, id: Date.now().toString(), user_id: user.id };
+                setTasks(prev => [...prev, newItem]);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('tasks').insert(newItem);
+            };
+            const handleDeleteTask = async (id) => {
+                setTasks(prev => prev.filter(t => t.id !== id));
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('tasks').delete().eq('id', id);
+            };
+            const handleUpdateTask = async (id, updates) => {
+                setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('tasks').update(updates).eq('id', id);
+            };
+             const handleAddDump = async (text) => {
+                const newItem = { text, id: Date.now().toString(), user_id: user.id };
+                setDumps(prev => [...prev, newItem]);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('brain_dumps').insert(newItem);
+            };
+            const handleDeleteDump = async (id) => {
+                setDumps(prev => prev.filter(d => d.id !== id));
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('brain_dumps').delete().eq('id', id);
+            };
+             const handleAddWorry = async (text) => {
+                const newItem = { text, id: Date.now().toString(), user_id: user.id };
+                setWorries(prev => [...prev, newItem]);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('worries').insert(newItem);
+            };
+            const handleDeleteWorry = async (id) => {
+                setWorries(prev => prev.filter(w => w.id !== id));
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('worries').delete().eq('id', id);
+            };
+            const handleAddTool = async (item) => {
+                const newItem = { ...item, id: Date.now().toString(), user_id: user.id };
+                setTools(prev => [...prev, newItem]);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('tools').insert(newItem);
+            };
+            
+            const handleAddSpiritualNote = async (text) => {
+                 const newItem = { text, id: Date.now().toString(), user_id: user.id };
+                 setSpiritualNotes(prev => [...prev, newItem]);
+                 if(!user.isLocal && isSupabaseConfigured) await supabase.from('spiritual_notes').insert(newItem);
+            };
+             const handleDeleteSpiritualNote = async (id) => {
+                setSpiritualNotes(prev => prev.filter(n => n.id !== id));
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('spiritual_notes').delete().eq('id', id);
+            };
+            
+            const handleUpdateDashboard = async (newData) => {
+                setDashboardData(newData);
+                if (isSupabaseConfigured && !user.isLocal) {
+                     const { data } = await supabase.from('app_data').select('*').eq('user_id', user.id).single();
+                     if (data) await supabase.from('app_data').update({ dashboard_config: newData }).eq('user_id', user.id);
+                     else await supabase.from('app_data').insert({ user_id: user.id, dashboard_config: newData });
+                }
+            };
+            
+            const handleUpdateMeal = async (day, type, text) => {
+                setMeals(prev => {
+                    const exists = prev.find(m => m.day === day && m.type === type);
+                    if(exists) return prev.map(m => m.day === day && m.type === type ? { ...m, text } : m);
+                    return [...prev, { day, type, text, user_id: user.id }];
+                });
+                if (isSupabaseConfigured && !user.isLocal) {
+                    await supabase.from('meals').delete().match({ user_id: user.id, day, type });
+                    await supabase.from('meals').insert({ user_id: user.id, day, type, text });
+                }
+            };
+            
+            const handleUpdateGoals = async (newData) => {
+                setGoalsData(newData);
+                if (isSupabaseConfigured && !user.isLocal) {
+                     const { data } = await supabase.from('app_data').select('*').eq('user_id', user.id).single();
+                     if (data) await supabase.from('app_data').update({ goals_2026: newData }).eq('user_id', user.id);
+                     else await supabase.from('app_data').insert({ user_id: user.id, goals_2026: newData });
                 }
             };
 
-            const toggleSound = (sound) => {
-                if (activeSound === sound.id && isPlayingSound) { audioRef.current.pause(); setIsPlayingSound(false); }
-                else { audioRef.current.src = sound.url; audioRef.current.loop = true; audioRef.current.play(); setIsPlayingSound(true); setActiveSound(sound.id); }
-            };
+            const [showAuthModal, setShowAuthModal] = useState(false);
 
-            useEffect(() => { if (darkMode) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }, [darkMode]);
-            useEffect(() => localStorage.setItem('lifeos_active_tab', activeTab), [activeTab]);
-
-            if (!user) return React.createElement(LandingPage, { 
-                onLoginSuccess: handleLoginSuccess, 
-                onGuestLogin: handleLoginSuccess 
-            });
+            if (!user) return React.createElement(LandingPage, { onLoginSuccess: handleLoginSuccess, onGuestLogin: handleLoginSuccess });
 
             return React.createElement("div", { className: "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans" },
                 React.createElement("aside", { className: "fixed left-0 top-0 h-full w-64 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 hidden md:flex flex-col z-20" },
                     React.createElement("h1", { className: "text-2xl font-bold mb-8" }, "LifeOS"),
                     React.createElement("nav", { className: "space-y-2 flex-1" },
-                        VALID_TABS.map(t => React.createElement(NavItem, { 
-                            key: t, 
-                            icon: tabConfig[t].icon, 
-                            label: tabConfig[t].label, 
-                            active: activeTab === t, 
-                            onClick: () => setActiveTab(t) 
-                        }))
+                        VALID_TABS.map(t => React.createElement(NavItem, { key: t, icon: tabConfig[t].icon, label: tabConfig[t].label, active: activeTab === t, onClick: () => setActiveTab(t) }))
                     ),
                     React.createElement("div", { className: "pt-6 border-t border-zinc-200 dark:border-zinc-800 space-y-2" },
-                        // PROFILE CARD
-                        user && React.createElement("div", { className: "flex items-center gap-3 px-3 py-2 mb-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800" },
-                            React.createElement("div", { className: "w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0" }, 
-                                React.createElement(User, { size: 16 })
-                            ),
-                            React.createElement("div", { className: "flex-1 overflow-hidden" },
-                                React.createElement("p", { className: "text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider" }, "Signed in as"),
-                                React.createElement("p", { className: "text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate" }, user.displayName || user.email)
-                            )
-                        ),
-                        React.createElement("button", { onClick: () => setDarkMode(!darkMode), className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors" },
-                            React.createElement(darkMode ? Sun : Moon, { size: 20 }),
-                            React.createElement("span", { className: "font-medium" }, darkMode ? "Light Mode" : "Dark Mode")
-                        ),
-                        React.createElement("button", { onClick: handleLogout, className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors" },
-                            React.createElement(LogOut, { size: 20 }),
-                            React.createElement("span", { className: "font-medium" }, "Sign Out")
-                        )
+                        React.createElement("button", { onClick: handleLogout, className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50" }, React.createElement(LogOut, { size: 20 }), "Sign Out")
                     )
                 ),
-                
-                // NEW: MOBILE TOP BAR
-                React.createElement(MobileTopBar, { handleLogout }),
-                
-                // NEW: MOBILE BOTTOM NAVIGATION BAR
+                React.createElement(MobileTopBar, { handleLogout, user }),
                 React.createElement(MobileNavBar, { activeTab, setActiveTab, tabConfig }),
-
-                React.createElement("main", { className: "md:ml-64 p-4 md:p-12 pb-24 pt-20 md:pt-12 max-w-7xl mx-auto" }, // Added pt-20 for mobile header space
-                    showAuthModal && React.createElement(AuthModal, { onClose: () => setShowAuthModal(false), onLogin: handleLoginSuccess }),
+                React.createElement("main", { className: "md:ml-64 p-4 md:p-12 pb-24 pt-20 md:pt-12 max-w-7xl mx-auto" },
+                    connectionError && React.createElement("div", { className: "mb-4 p-3 bg-red-100 text-red-800 rounded-lg text-sm flex items-center gap-2" }, React.createElement(AlertTriangle, { size: 16 }), connectionError),
                     activeTab === 'dashboard' && React.createElement(DashboardView, { 
-                        onAddDump: handleAddDump, 
+                        onNavigate: setActiveTab, 
+                        tasks, 
+                        deadlines, 
                         dashboardData, 
-                        onUpdateDashboard: handleUpdateDashboard, 
-                        onNavigate: setActiveTab,
+                        onUpdateDashboard: handleUpdateDashboard,
                         timerState: focusState,
-                        toggleTimer: handleTimerToggle,
-                        resetTimer: handleTimerReset,
-                        worries, // PASS WORRIES
-                        meals,   // PASS MEALS
-                        tasks,   // PASS TASKS
-                        goalsData // PASS GOALS
+                        toggleTimer: () => setFocusState(prev => ({...prev, isActive: !prev.isActive})),
+                        resetTimer: () => setFocusState(prev => ({...prev, isActive: false, timeLeft: prev.initialTime}))
                     }),
+                    activeTab === 'deadlines' && React.createElement(DeadlinesView, { deadlines, onAddDeadline: handleAddDeadline, onDeleteDeadline: handleDeleteDeadline }),
+                    activeTab === 'tasks' && React.createElement(TasksView, { tasks, onAddTask: handleAddTask, onDeleteTask: handleDeleteTask, onUpdateTask: handleUpdateTask }),
                     activeTab === 'goals2026' && React.createElement(Goals2026View, { goalsData, onUpdateGoals: handleUpdateGoals }),
-                    activeTab === 'tasks' && React.createElement(TasksView, { tasks, onAddTask: handleAddTask, onUpdateTask: handleUpdateTask, onDeleteTask: handleDeleteTask }),
                     activeTab === 'worries' && React.createElement(WorriesView, { worries, onAddWorry: handleAddWorry, onDeleteWorry: handleDeleteWorry }),
                     activeTab === 'focus' && React.createElement(FocusView, { 
-                        activeSound, 
-                        isPlayingSound, 
-                        toggleSound, 
-                        focusState,
-                        toggleTimer: handleTimerToggle, 
-                        resetTimer: handleTimerReset 
+                        timerState: focusState,
+                        toggleTimer: () => setFocusState(prev => ({...prev, isActive: !prev.isActive})),
+                        resetTimer: () => setFocusState(prev => ({...prev, isActive: false, timeLeft: prev.initialTime})) 
                     }),
                     activeTab === 'braindump' && React.createElement(BrainDumpView, { dumps, onAddDump: handleAddDump, onDeleteDump: handleDeleteDump }),
                     activeTab === 'spirituality' && React.createElement(SpiritualityView, { notes: spiritualNotes, onAddNote: handleAddSpiritualNote, onDeleteNote: handleDeleteSpiritualNote }),
-                    activeTab === 'fitness' && React.createElement(FitnessView),
+                    activeTab === 'fitness' && React.createElement(FitnessView, {}),
                     activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal }),
                     activeTab === 'tools' && React.createElement(ToolsView, { tools, onAddTool: handleAddTool })
                 )
