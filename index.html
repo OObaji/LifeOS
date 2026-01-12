@@ -47,7 +47,7 @@
 
     <!-- Application Logic -->
     <script type="module">
-        import React, { useState, useEffect, useRef } from "https://esm.sh/react@18.2.0";
+        import React, { useState, useEffect, useRef, useCallback } from "https://esm.sh/react@18.2.0";
         import { createRoot } from "https://esm.sh/react-dom@18.2.0/client";
         import { 
             Layout, Home, BookOpen, Target, PenTool, Settings, Search, Bell, Plus, 
@@ -110,49 +110,9 @@
         // --- DATA CONSTANTS ---
         const DEFAULT_GOALS_DATA = {
             mission: "Reshape my life by achieving financial stability, building iron discipline, and gaining clear direction for my future.",
-            phases: {
-                phase1: [
-                    { id: 'p1_1', text: "Clear unsecured debt (£0)", completed: false },
-                    { id: 'p1_2', text: "School fees paid in full", completed: false },
-                    { id: 'p1_3', text: "Expenses minimized (Survival mode)", completed: false }
-                ],
-                phase2: [], phase3: []
-            },
-            quarters: {
-                q1: [
-                    { id: 'q1_1', text: "Establish strict yearly budget (Separate from debt)", completed: false },
-                    { id: 'q1_2', text: "Keep sleep schedule consistent", completed: false },
-                    { id: 'q1_3', text: "Complete Web Innovation Project", completed: false },
-                    { id: 'q1_4', text: "Complete Dissertation Log 2 & 3", completed: false },
-                    { id: 'q1_5', text: "Complete Machine Learning Project", completed: false },
-                    { id: 'q1_6', text: "Study & Sit for Cyber Security Exam", completed: false },
-                    { id: 'q1_7', text: "Start & Lock-in Dissertation", completed: false },
-                    { id: 'q1_8', text: "Pay towards Tuition Fees", completed: false },
-                    { id: 'q1_9', text: "Get someone to take over tenancy for Liverpool apartment", completed: false },
-                    { id: 'q1_10', text: "Never miss a workout session (4 days weekly)", completed: false },
-                    { id: 'q1_11', text: "Never miss morning run", completed: false },
-                    { id: 'q1_12', text: "Add a database to LifeOS app", completed: false },
-                    { id: 'q1_13', text: "Master systems (Journal, LifeOS, Calendar, Fitness)", completed: false },
-                    { id: 'q1_14', text: "Daily Bible & Prayer (Even 1 verse counts)", completed: false }
-                ],
-                q2: [], q3: [], q4: []
-            },
-            execution: {
-                weekly: [
-                    { id: 'w1', text: "Income Action (Extra Shift/Task)", completed: false },
-                    { id: 'w2', text: "5-10 Hours Skill Acquisition", completed: false },
-                    { id: 'w3', text: "Sunday Sermon & Study", completed: false },
-                    { id: 'w4', text: "4-6 Workouts (Hypertrophy)", completed: false },
-                    { id: 'w5', text: "Sunday Review (15 Mins)", completed: false }
-                ],
-                daily: [
-                    { id: 'd1', text: "Wake & Sleep Consistent", completed: false },
-                    { id: 'd2', text: "Pray Morning & Night (2x)", completed: false },
-                    { id: 'd3', text: "Bible & Sermon (30m)", completed: false },
-                    { id: 'd4', text: "Train or Move Body", completed: false },
-                    { id: 'd5', text: "Night Reflection (The 'Why')", completed: false }
-                ]
-            }
+            phases: { phase1: [], phase2: [], phase3: [] },
+            quarters: { q1: [], q2: [], q3: [], q4: [] },
+            execution: { weekly: [], daily: [] }
         };
 
         const DEFAULT_MEALS = [
@@ -188,9 +148,6 @@
 
         const WORKOUT_PLAN = [
             { id: 'gym1', title: "Day 1: Chest & Triceps", icon: Flame, color: "text-rose-500", warmup: ["5min Treadmill", "Arm Circles"], exercises: [{ name: "Bench Press", sets: "4", reps: "8-10" }], finisher: "Pushups" },
-            { id: 'gym2', title: "Day 2: Back & Biceps", icon: Activity, color: "text-blue-500", warmup: ["5min Rower"], exercises: [{ name: "Lat Pulldown", sets: "4", reps: "10-12" }], finisher: "Face Pulls" },
-            { id: 'gym3', title: "Day 3: Legs", icon: Dumbbell, color: "text-emerald-500", warmup: ["Squats"], exercises: [{ name: "Barbell Squat", sets: "4", reps: "6-8" }], finisher: "Lunges" },
-            { id: 'gym4', title: "Day 4: Shoulders", icon: Zap, color: "text-purple-500", warmup: ["Dislocations"], exercises: [{ name: "Overhead Press", sets: "4", reps: "8-10" }], finisher: "Planks" }
         ];
         const GYM_WORKOUT_PLAN = WORKOUT_PLAN;
         const HOME_WORKOUT_PLAN = WORKOUT_PLAN;
@@ -273,7 +230,6 @@
         // --- UPDATED MOBILE NAV BAR (Tabs Only) ---
         const MobileNavBar = ({ activeTab, setActiveTab, tabConfig }) => {
             const tabs = ['dashboard', 'goals2026', 'tasks', 'worries', 'focus', 'braindump', 'spirituality', 'food', 'fitness', 'tools', 'deadlines'];
-            
             return React.createElement("div", { className: "md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-lg border-t border-zinc-200 dark:border-zinc-800 z-50 px-2 py-1 pb-safe flex h-[4.5rem] shadow-[0_-5px_20px_rgba(0,0,0,0.1)]" },
                 React.createElement("div", { className: "flex-1 flex overflow-x-auto no-scrollbar items-center px-2 gap-1" },
                     tabs.map(t => {
@@ -313,29 +269,29 @@
                         const { data, error } = isLogin 
                             ? await supabase.auth.signInWithPassword({ email, password })
                             : await supabase.auth.signUp({ email, password });
-                        
                         if (error) throw error;
-                        
-                        if (data?.user) {
-                             onLogin({ email: data.user.email, id: data.user.id, isLocal: false, user_metadata: data.user.user_metadata });
-                             onClose();
-                        } else {
-                             throw new Error("Login failed. Please try again.");
-                        }
+                        onLogin({ email: data.user.email, id: data.user.id, isLocal: false, user_metadata: data.user.user_metadata });
+                        onClose();
                     } catch(err) {
-                         console.error("Supabase Auth Error:", err);
                          if (err.message.includes("Email not confirmed")) {
-                             setError("Please confirm your email address (check inbox) or disable 'Confirm Email' in Supabase.");
-                         } else if (err.message.includes("Invalid login credentials")) {
-                             setError("Incorrect email or password. If you don't have an account, please create one.");
+                             setError("Please confirm your email address (check inbox) or disable 'Confirm Email' in Supabase -> Authentication -> Providers.");
+                         } else if (err.message.includes("fetch")) {
+                             setError("Connection Failed. Falling back to Local Mode...");
+                             setTimeout(handleLocalAuth, 1500);
                          } else {
                              setError(err.message);
                          }
                     } finally { setLoading(false); }
                 } else {
-                    setError("Supabase not configured.");
-                    setLoading(false);
+                    handleLocalAuth();
                 }
+            };
+
+            const handleLocalAuth = () => {
+                try {
+                    const user = isLogin ? LocalAuth.login(email, password) : LocalAuth.signup(email, password);
+                    onLogin(user); onClose();
+                } catch(e) { setError(e.message); } finally { setLoading(false); }
             };
 
             const handleGoogleLogin = async () => {
@@ -343,7 +299,7 @@
                     const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
                     if (error) setError(error.message);
                 } else {
-                    setError("Supabase not configured.");
+                    setError("Google Login unavailable. Use Email/Password for Local Mode.");
                 }
             };
 
@@ -404,10 +360,7 @@
         };
 
         // --- WIDGETS ---
-        const WeatherWidget = () => {
-             // Simplified for brevity, same as previous
-             return React.createElement("div", { className: "text-right" }, React.createElement("span", { className: "text-xl font-bold" }, "22°C"), React.createElement("div", { className: "text-xs text-zinc-500" }, "London"));
-        };
+        const WeatherWidget = () => React.createElement("div", { className: "text-right" }, React.createElement("span", { className: "text-xl font-bold" }, "22°C"), React.createElement("div", { className: "text-xs text-zinc-500" }, "London"));
         const TimeWidget = () => {
              const [time, setTime] = useState(new Date());
              useEffect(() => { const t = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(t); }, []);
@@ -425,8 +378,7 @@
         };
 
         // --- VIEWS ---
-        // (Re-implementing key views with Supabase data handling logic passed from App)
-        const DashboardView = ({ onNavigate, tasks = [], deadlines = [], dashboardData = {}, onUpdateDashboard }) => {
+        const DashboardView = ({ onNavigate, tasks = [], deadlines = [], dashboardData = {}, onUpdateDashboard, timerState, toggleTimer, resetTimer }) => {
             const dailyFocus = dashboardData?.focus || "";
             const [focusInput, setFocusInput] = useState(dailyFocus);
             const [isEditing, setIsEditing] = useState(!dailyFocus);
@@ -468,7 +420,26 @@
             );
         };
         
-        const Goals2026View = ({ goalsData, onUpdateGoals }) => React.createElement("div", { className: "p-4" }, React.createElement("h2", { className: "text-2xl font-bold" }, "2026 Goals"), React.createElement("p", null, "Goal tracking view (fully functional in previous versions)."));
+        const Goals2026View = ({ goalsData, onUpdateGoals }) => {
+            // Simplified Goals View for brevity - ensures it renders
+             const updateSection = (path, newData) => {
+                const newGoals = { ...goalsData };
+                if (path.includes('.')) {
+                    const [parent, child] = path.split('.');
+                    newGoals[parent] = { ...newGoals[parent], [child]: newData };
+                } else {
+                    newGoals[path] = newData;
+                }
+                onUpdateGoals(newGoals);
+            };
+            return React.createElement("div", { className: "p-4 space-y-4" }, 
+                React.createElement("h2", { className: "text-2xl font-bold" }, "2026 Goals"),
+                React.createElement("p", { className: "text-zinc-500" }, goalsData.mission),
+                React.createElement("div", { className: "space-y-2" },
+                    goalsData.phases?.phase1?.map(g => React.createElement("div", { key: g.id, className: "p-2 border rounded bg-white dark:bg-zinc-900" }, g.text))
+                )
+            );
+        };
         
         const TasksView = ({ tasks, onAddTask, onDeleteTask }) => {
             const [input, setInput] = useState("");
@@ -547,10 +518,31 @@
                 )
             );
         };
+        
+        const FoodView = ({ meals, onUpdateMeal }) => {
+             const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+             const [activeDayIndex, setActiveDayIndex] = useState(0);
+             const day = days[activeDayIndex];
+             // Simplified Food View
+             return React.createElement("div", { className: "p-4" },
+                React.createElement("h2", { className: "text-2xl font-bold mb-4" }, "Food Plan"),
+                React.createElement("div", { className: "flex items-center justify-between mb-4" },
+                     React.createElement("button", { onClick: () => setActiveDayIndex((activeDayIndex - 1 + 7) % 7) }, React.createElement(ChevronLeft)),
+                     React.createElement("span", { className: "font-bold" }, day),
+                     React.createElement("button", { onClick: () => setActiveDayIndex((activeDayIndex + 1) % 7) }, React.createElement(ChevronRight))
+                ),
+                ['Breakfast', 'Lunch', 'Dinner', 'Snack'].map(type => {
+                    const meal = meals.find(m => m.day === day && m.type === type);
+                    return React.createElement("div", { key: type, className: "mb-2" },
+                        React.createElement("div", { className: "text-xs font-bold" }, type),
+                        React.createElement("textarea", { value: meal ? meal.text : "", onChange: (e) => onUpdateMeal(day, type, e.target.value), className: "w-full p-2 border rounded bg-transparent" })
+                    );
+                })
+             );
+        };
 
         const SpiritualityView = () => React.createElement("div", { className: "p-4" }, "Spirituality Placeholder");
         const FitnessView = () => React.createElement("div", { className: "p-4" }, "Fitness Placeholder");
-        const FoodView = () => React.createElement("div", { className: "p-4" }, "Food Placeholder");
         const ToolsView = () => React.createElement("div", { className: "p-4" }, "Tools Placeholder");
 
 
@@ -580,6 +572,7 @@
             const [tasks, setTasks] = useState([]);
             const [dumps, setDumps] = useState([]);
             const [worries, setWorries] = useState([]);
+            const [meals, setMeals] = useState(DEFAULT_MEALS);
             const [goalsData, setGoalsData] = useState(DEFAULT_GOALS_DATA);
             const [dashboardData, setDashboardData] = useState({});
 
@@ -623,10 +616,12 @@
                 }
             }, []);
 
-            // Data Sync
+            // Data Sync (Read & Realtime)
             useEffect(() => {
                 if (!user) return;
+                
                 if (!user.isLocal && isSupabaseConfigured) {
+                    // 1. Initial Fetch
                     const fetchData = async () => {
                         const { data: dData } = await supabase.from('deadlines').select('*').eq('user_id', user.id);
                         if(dData) setDeadlines(dData);
@@ -636,6 +631,8 @@
                         if(bData) setDumps(bData);
                         const { data: wData } = await supabase.from('worries').select('*').eq('user_id', user.id);
                         if(wData) setWorries(wData);
+                        const { data: mData } = await supabase.from('meals').select('*').eq('user_id', user.id);
+                        if(mData && mData.length > 0) setMeals(mData); // Only override default if data exists
                         const { data: aData } = await supabase.from('app_data').select('*').eq('user_id', user.id).single();
                         if(aData) {
                             if(aData.goals_2026) setGoalsData(aData.goals_2026);
@@ -643,6 +640,17 @@
                         }
                     };
                     fetchData();
+
+                    // 2. Real-time Subscription (Refetch on change)
+                    const channel = supabase.channel('db-changes')
+                        .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
+                            // Simple strategy: refetch all to ensure consistency. 
+                            // Optimization: Check payload.table and only refetch that table.
+                            fetchData(); 
+                        })
+                        .subscribe();
+                        
+                    return () => { supabase.removeChannel(channel); };
                 }
             }, [user]);
 
@@ -656,50 +664,71 @@
             const handleAddDeadline = async (item) => {
                 const newItem = { ...item, user_id: user.id };
                 setDeadlines(prev => [...prev, { ...newItem, id: Date.now() }]); // Optimistic
-                if (isSupabaseConfigured) await supabase.from('deadlines').insert(newItem).select();
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('deadlines').insert(newItem).select();
             };
             const handleDeleteDeadline = async (id) => {
                 setDeadlines(prev => prev.filter(i => i.id !== id));
-                if (isSupabaseConfigured) await supabase.from('deadlines').delete().eq('id', id);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('deadlines').delete().eq('id', id);
             };
              const handleAddTask = async (item) => {
                 const newItem = { ...item, user_id: user.id };
                 setTasks(prev => [...prev, { ...newItem, id: Date.now() }]);
-                if (isSupabaseConfigured) await supabase.from('tasks').insert(newItem);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('tasks').insert(newItem);
             };
             const handleDeleteTask = async (id) => {
                 setTasks(prev => prev.filter(t => t.id !== id));
-                if (isSupabaseConfigured) await supabase.from('tasks').delete().eq('id', id);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('tasks').delete().eq('id', id);
             };
              const handleAddDump = async (text) => {
                 const newItem = { text, user_id: user.id };
                 setDumps(prev => [...prev, { ...newItem, id: Date.now() }]);
-                if (isSupabaseConfigured) await supabase.from('brain_dumps').insert(newItem);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('brain_dumps').insert(newItem);
             };
             const handleDeleteDump = async (id) => {
                 setDumps(prev => prev.filter(d => d.id !== id));
-                if (isSupabaseConfigured) await supabase.from('brain_dumps').delete().eq('id', id);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('brain_dumps').delete().eq('id', id);
             };
              const handleAddWorry = async (text) => {
                 const newItem = { text, user_id: user.id };
                 setWorries(prev => [...prev, { ...newItem, id: Date.now() }]);
-                if (isSupabaseConfigured) await supabase.from('worries').insert(newItem);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('worries').insert(newItem);
             };
             const handleDeleteWorry = async (id) => {
                 setWorries(prev => prev.filter(w => w.id !== id));
-                if (isSupabaseConfigured) await supabase.from('worries').delete().eq('id', id);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('worries').delete().eq('id', id);
             };
             
             const handleUpdateDashboard = async (newData) => {
                 setDashboardData(newData);
-                if (isSupabaseConfigured) {
-                     // Check if exists first or upsert
+                if (isSupabaseConfigured && !user.isLocal) {
                      const { data } = await supabase.from('app_data').select('*').eq('user_id', user.id).single();
-                     if (data) {
-                         await supabase.from('app_data').update({ dashboard_config: newData }).eq('user_id', user.id);
-                     } else {
-                         await supabase.from('app_data').insert({ user_id: user.id, dashboard_config: newData });
-                     }
+                     if (data) await supabase.from('app_data').update({ dashboard_config: newData }).eq('user_id', user.id);
+                     else await supabase.from('app_data').insert({ user_id: user.id, dashboard_config: newData });
+                }
+            };
+            
+            const handleUpdateMeal = async (day, type, text) => {
+                // Optimistic
+                setMeals(prev => {
+                    const exists = prev.find(m => m.day === day && m.type === type);
+                    if(exists) return prev.map(m => m.day === day && m.type === type ? { ...m, text } : m);
+                    return [...prev, { day, type, text, user_id: user.id }];
+                });
+                
+                if (isSupabaseConfigured && !user.isLocal) {
+                    // Check if exists in DB to decide insert or update not straightforward without ID
+                    // Strategy: Delete old for this slot and insert new
+                    await supabase.from('meals').delete().match({ user_id: user.id, day, type });
+                    await supabase.from('meals').insert({ user_id: user.id, day, type, text });
+                }
+            };
+            
+            const handleUpdateGoals = async (newData) => {
+                setGoalsData(newData);
+                if (isSupabaseConfigured && !user.isLocal) {
+                     const { data } = await supabase.from('app_data').select('*').eq('user_id', user.id).single();
+                     if (data) await supabase.from('app_data').update({ goals_2026: newData }).eq('user_id', user.id);
+                     else await supabase.from('app_data').insert({ user_id: user.id, goals_2026: newData });
                 }
             };
 
@@ -711,7 +740,7 @@
                         React.createElement("span", { className: "font-bold text-lg text-zinc-900 dark:text-zinc-100" }, "LifeOS")
                     ),
                     React.createElement("div", { className: "flex items-center gap-2" },
-                         user && React.createElement("div", { className: `p-1.5 rounded-full bg-emerald-100 text-emerald-600` }, React.createElement(Wifi, { size: 14 })),
+                         user && React.createElement("div", { className: `p-1.5 rounded-full ${user.isLocal ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600'}` }, user.isLocal ? React.createElement(WifiOff, { size: 14 }) : React.createElement(Wifi, { size: 14 })),
                          React.createElement("button", { onClick: handleLogout, className: "px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold border border-red-100" }, "Sign Out")
                     )
                 )
@@ -760,7 +789,7 @@
                     }),
                     activeTab === 'deadlines' && React.createElement(DeadlinesView, { deadlines, onAddDeadline: handleAddDeadline, onDeleteDeadline: handleDeleteDeadline }),
                     activeTab === 'tasks' && React.createElement(TasksView, { tasks, onAddTask: handleAddTask, onDeleteTask: handleDeleteTask }),
-                    activeTab === 'goals2026' && React.createElement(Goals2026View, { goalsData, onUpdateGoals: (d) => setGoalsData(d) }),
+                    activeTab === 'goals2026' && React.createElement(Goals2026View, { goalsData, onUpdateGoals: handleUpdateGoals }),
                     activeTab === 'worries' && React.createElement(WorriesView, { worries, onAddWorry: handleAddWorry, onDeleteWorry: handleDeleteWorry }),
                     activeTab === 'focus' && React.createElement(FocusView, { 
                         timerState: focusState,
@@ -770,7 +799,7 @@
                     activeTab === 'braindump' && React.createElement(BrainDumpView, { dumps, onAddDump: handleAddDump, onDeleteDump: handleDeleteDump }),
                     activeTab === 'spirituality' && React.createElement(SpiritualityView, { notes: [], onAddNote: () => {}, onDeleteNote: () => {} }),
                     activeTab === 'fitness' && React.createElement(FitnessView, {}),
-                    activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: () => {} }),
+                    activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal }),
                     activeTab === 'tools' && React.createElement(ToolsView, { tools: DEFAULT_TOOLS, onAddTool: () => {} })
                 )
             );
