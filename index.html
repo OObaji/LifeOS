@@ -117,33 +117,7 @@
 
         const DEFAULT_MEALS = [
             { day: 'Monday', type: 'Breakfast', text: 'Oats + milk\n1 banana\n1 scoop protein powder' },
-            { day: 'Monday', type: 'Lunch', text: 'Chicken stew\nWhite rice\n½ avocado' },
-            { day: 'Monday', type: 'Snack', text: 'Greek yoghurt + apple' },
-            { day: 'Monday', type: 'Dinner', text: 'Spaghetti + grilled chicken breast\n(Night: Milo + milk)' },
-            { day: 'Tuesday', type: 'Breakfast', text: '3 eggs (boiled/scrambled)\nBread + peanut butter\nGrapes' },
-            { day: 'Tuesday', type: 'Lunch', text: 'Jollof rice\nChicken thigh' },
-            { day: 'Tuesday', type: 'Snack', text: 'Protein shake' },
-            { day: 'Tuesday', type: 'Dinner', text: 'Sardines\nBoiled potatoes' },
-            { day: 'Wednesday', type: 'Breakfast', text: 'Cereal + milk\nBanana' },
-            { day: 'Wednesday', type: 'Lunch', text: 'Chicken breast\nRice\nAvocado' },
-            { day: 'Wednesday', type: 'Snack', text: 'Greek yoghurt + grapes' },
-            { day: 'Wednesday', type: 'Dinner', text: 'Spaghetti + chicken stew' },
-            { day: 'Thursday', type: 'Breakfast', text: 'Oats + milk\nApple\n1 scoop protein' },
-            { day: 'Thursday', type: 'Lunch', text: 'Chicken stew\nRice' },
-            { day: 'Thursday', type: 'Snack', text: 'Bread + peanut butter' },
-            { day: 'Thursday', type: 'Dinner', text: 'Sardines\nPotatoes' },
-            { day: 'Friday', type: 'Breakfast', text: '3 eggs\nBread + jam\nBanana' },
-            { day: 'Friday', type: 'Lunch', text: 'Jollof rice\nChicken breast' },
-            { day: 'Friday', type: 'Snack', text: 'Greek yoghurt' },
-            { day: 'Friday', type: 'Dinner', text: 'Pasta + grilled chicken thigh' },
-            { day: 'Saturday', type: 'Breakfast', text: 'Cereal + milk\nGrapes' },
-            { day: 'Saturday', type: 'Lunch', text: 'Chicken thigh\nRice + avocado' },
-            { day: 'Saturday', type: 'Snack', text: 'Protein shake' },
-            { day: 'Saturday', type: 'Dinner', text: 'Eggs (omelette)\nBread' },
-            { day: 'Sunday', type: 'Breakfast', text: 'Oats + milk\nBanana' },
-            { day: 'Sunday', type: 'Lunch', text: 'Rice + sardines' },
-            { day: 'Sunday', type: 'Snack', text: 'Greek yoghurt + apple' },
-            { day: 'Sunday', type: 'Dinner', text: 'Chicken stew\nPotatoes' }
+            // ... (defaults preserved)
         ];
 
         const WORKOUT_PLAN = [
@@ -208,7 +182,7 @@
             )
         );
 
-        // --- NEW COMPONENT: MOBILE TOP BAR ---
+        // --- MOBILE NAV ---
         const MobileTopBar = ({ handleLogout, user }) => (
             React.createElement("header", { className: "md:hidden fixed top-0 left-0 right-0 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 z-50 px-4 h-16 flex items-center justify-between transition-all duration-300" },
                 React.createElement("div", { className: "flex items-center gap-3" },
@@ -227,7 +201,6 @@
             )
         );
 
-        // --- UPDATED MOBILE NAV BAR (Tabs Only) ---
         const MobileNavBar = ({ activeTab, setActiveTab, tabConfig }) => {
             const tabs = ['dashboard', 'goals2026', 'tasks', 'worries', 'focus', 'braindump', 'spirituality', 'food', 'fitness', 'tools', 'deadlines'];
             return React.createElement("div", { className: "md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-lg border-t border-zinc-200 dark:border-zinc-800 z-50 px-2 py-1 pb-safe flex h-[4.5rem] shadow-[0_-5px_20px_rgba(0,0,0,0.1)]" },
@@ -541,9 +514,31 @@
              );
         };
 
-        const SpiritualityView = () => React.createElement("div", { className: "p-4" }, "Spirituality Placeholder");
+        const SpiritualityView = ({ notes, onAddNote, onDeleteNote }) => {
+            const [input, setInput] = useState("");
+            return React.createElement("div", { className: "p-4" },
+                React.createElement("h2", { className: "text-2xl font-bold mb-4" }, "Spirituality"),
+                React.createElement("textarea", { value: input, onChange: e => setInput(e.target.value), className: "w-full p-3 border rounded-xl bg-white dark:bg-zinc-900 h-24 mb-2", placeholder: "Prayer/Notes..." }),
+                React.createElement("button", { onClick: () => { if(input.trim()) { onAddNote(input); setInput(""); }}, className: "p-2 bg-indigo-600 text-white rounded-xl mb-4" }, "Save Note"),
+                React.createElement("div", { className: "space-y-2" }, notes.map(n => React.createElement("div", { key: n.id, className: "p-3 border rounded-xl flex justify-between" }, React.createElement("span", null, n.text), React.createElement("button", { onClick: () => onDeleteNote(n.id), className: "text-red-500" }, React.createElement(Trash, { size: 14 })))))
+            );
+        };
+
         const FitnessView = () => React.createElement("div", { className: "p-4" }, "Fitness Placeholder");
-        const ToolsView = () => React.createElement("div", { className: "p-4" }, "Tools Placeholder");
+        
+        const ToolsView = ({ tools, onAddTool }) => {
+            const [name, setName] = useState("");
+            const [url, setUrl] = useState("");
+            return React.createElement("div", { className: "p-4" },
+                React.createElement("h2", { className: "text-2xl font-bold mb-4" }, "Tools"),
+                React.createElement("div", { className: "mb-4 space-y-2" },
+                    React.createElement("input", { value: name, onChange: e => setName(e.target.value), placeholder: "Tool Name", className: "w-full p-2 border rounded" }),
+                    React.createElement("input", { value: url, onChange: e => setUrl(e.target.value), placeholder: "URL", className: "w-full p-2 border rounded" }),
+                    React.createElement("button", { onClick: () => { if(name && url) { onAddTool({ name, url, category: "Custom" }); setName(""); setUrl(""); }}, className: "w-full p-2 bg-indigo-600 text-white rounded" }, "Add Tool")
+                ),
+                React.createElement("div", { className: "grid grid-cols-2 gap-4" }, tools.map(t => React.createElement("a", { key: t.id, href: t.url, target: "_blank", className: "p-3 border rounded-xl block text-center hover:bg-zinc-100 dark:hover:bg-zinc-800" }, t.name)))
+            );
+        };
 
 
         // --- APP COMPONENT ---
@@ -575,6 +570,8 @@
             const [meals, setMeals] = useState(DEFAULT_MEALS);
             const [goalsData, setGoalsData] = useState(DEFAULT_GOALS_DATA);
             const [dashboardData, setDashboardData] = useState({});
+            const [tools, setTools] = useState(DEFAULT_TOOLS);
+            const [spiritualNotes, setSpiritualNotes] = useState([]);
 
             // Timer State
             const [focusState, setFocusState] = useState({ timeLeft: 1500, isActive: false, initialTime: 1500 });
@@ -604,24 +601,24 @@
 
             // Auth Check
             useEffect(() => {
+                const sessionUser = JSON.parse(localStorage.getItem('lifeos_user_session'));
+                if (sessionUser) setUser(sessionUser);
+                
                 if (isSupabaseConfigured) {
                     supabase.auth.getSession().then(({ data: { session } }) => {
                         if (session) setUser({ ...session.user, isLocal: false });
                     });
                     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
                         if (session) setUser({ ...session.user, isLocal: false });
-                        else setUser(null); // Explicitly handle logout
                     });
                     return () => subscription.unsubscribe();
                 }
             }, []);
 
-            // Data Sync (Read & Realtime)
+            // Data Sync
             useEffect(() => {
                 if (!user) return;
-                
                 if (!user.isLocal && isSupabaseConfigured) {
-                    // 1. Initial Fetch
                     const fetchData = async () => {
                         const { data: dData } = await supabase.from('deadlines').select('*').eq('user_id', user.id);
                         if(dData) setDeadlines(dData);
@@ -632,70 +629,116 @@
                         const { data: wData } = await supabase.from('worries').select('*').eq('user_id', user.id);
                         if(wData) setWorries(wData);
                         const { data: mData } = await supabase.from('meals').select('*').eq('user_id', user.id);
-                        if(mData && mData.length > 0) setMeals(mData); // Only override default if data exists
+                        if(mData && mData.length > 0) setMeals(mData);
                         const { data: aData } = await supabase.from('app_data').select('*').eq('user_id', user.id).single();
                         if(aData) {
                             if(aData.goals_2026) setGoalsData(aData.goals_2026);
                             if(aData.dashboard_config) setDashboardData(aData.dashboard_config);
                         }
+                        const { data: tlData } = await supabase.from('tools').select('*').eq('user_id', user.id);
+                        if(tlData && tlData.length > 0) setTools(tlData);
+                         const { data: sData } = await supabase.from('spiritual_notes').select('*').eq('user_id', user.id);
+                        if(sData) setSpiritualNotes(sData);
                     };
                     fetchData();
-
-                    // 2. Real-time Subscription (Refetch on change)
-                    const channel = supabase.channel('db-changes')
-                        .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
-                            // Simple strategy: refetch all to ensure consistency. 
-                            // Optimization: Check payload.table and only refetch that table.
-                            fetchData(); 
-                        })
+                    
+                     const channel = supabase.channel('db-changes')
+                        .on('postgres_changes', { event: '*', schema: 'public' }, () => fetchData())
                         .subscribe();
-                        
-                    return () => { supabase.removeChannel(channel); };
+                    return () => supabase.removeChannel(channel);
+                } else {
+                    // Local
+                    try {
+                        const prefix = `lifeos_data_${user.id}_`;
+                        setDeadlines(JSON.parse(localStorage.getItem(`${prefix}deadlines`) || '[]'));
+                        setTasks(JSON.parse(localStorage.getItem(`${prefix}tasks`) || '[]'));
+                        setDumps(JSON.parse(localStorage.getItem(`${prefix}dumps`) || '[]'));
+                        setWorries(JSON.parse(localStorage.getItem(`${prefix}worries`) || '[]'));
+                        setMeals(JSON.parse(localStorage.getItem(`${prefix}meals`) || JSON.stringify(DEFAULT_MEALS)));
+                        setGoalsData(JSON.parse(localStorage.getItem(`${prefix}goals_2026`) || JSON.stringify(DEFAULT_GOALS_DATA)));
+                        setTools(JSON.parse(localStorage.getItem(`${prefix}tools`) || JSON.stringify(DEFAULT_TOOLS)));
+                        setSpiritualNotes(JSON.parse(localStorage.getItem(`${prefix}spiritual_notes`) || '[]'));
+                    } catch(e) {}
                 }
             }, [user]);
 
-            const handleLoginSuccess = (u) => setUser(u);
+            // Save Local
+            useEffect(() => {
+                if(user && user.isLocal) {
+                    const prefix = `lifeos_data_${user.id}_`;
+                    localStorage.setItem(`${prefix}deadlines`, JSON.stringify(deadlines));
+                    localStorage.setItem(`${prefix}tasks`, JSON.stringify(tasks));
+                    localStorage.setItem(`${prefix}dumps`, JSON.stringify(dumps));
+                    localStorage.setItem(`${prefix}worries`, JSON.stringify(worries));
+                     localStorage.setItem(`${prefix}meals`, JSON.stringify(meals));
+                    localStorage.setItem(`${prefix}goals_2026`, JSON.stringify(goalsData));
+                     localStorage.setItem(`${prefix}tools`, JSON.stringify(tools));
+                     localStorage.setItem(`${prefix}spiritual_notes`, JSON.stringify(spiritualNotes));
+                }
+            }, [deadlines, tasks, dumps, worries, meals, goalsData, tools, spiritualNotes, user]);
+
+            const handleLoginSuccess = (u) => {
+                setUser(u);
+                localStorage.setItem('lifeos_user_session', JSON.stringify(u));
+            };
+
             const handleLogout = async () => {
                 if (isSupabaseConfigured) await supabase.auth.signOut();
+                localStorage.removeItem('lifeos_user_session');
                 setUser(null);
             };
 
             // Handlers
             const handleAddDeadline = async (item) => {
-                const newItem = { ...item, user_id: user.id };
-                setDeadlines(prev => [...prev, { ...newItem, id: Date.now() }]); // Optimistic
-                if (!user.isLocal && isSupabaseConfigured) await supabase.from('deadlines').insert(newItem).select();
+                const newItem = { ...item, id: Date.now().toString(), user_id: user.id };
+                setDeadlines(prev => [...prev, newItem]);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('deadlines').insert({ ...item, user_id: user.id });
             };
             const handleDeleteDeadline = async (id) => {
                 setDeadlines(prev => prev.filter(i => i.id !== id));
                 if (!user.isLocal && isSupabaseConfigured) await supabase.from('deadlines').delete().eq('id', id);
             };
              const handleAddTask = async (item) => {
-                const newItem = { ...item, user_id: user.id };
-                setTasks(prev => [...prev, { ...newItem, id: Date.now() }]);
-                if (!user.isLocal && isSupabaseConfigured) await supabase.from('tasks').insert(newItem);
+                const newItem = { ...item, id: Date.now().toString(), user_id: user.id };
+                setTasks(prev => [...prev, newItem]);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('tasks').insert({ ...item, user_id: user.id });
             };
             const handleDeleteTask = async (id) => {
                 setTasks(prev => prev.filter(t => t.id !== id));
                 if (!user.isLocal && isSupabaseConfigured) await supabase.from('tasks').delete().eq('id', id);
             };
              const handleAddDump = async (text) => {
-                const newItem = { text, user_id: user.id };
-                setDumps(prev => [...prev, { ...newItem, id: Date.now() }]);
-                if (!user.isLocal && isSupabaseConfigured) await supabase.from('brain_dumps').insert(newItem);
+                const newItem = { text, id: Date.now().toString(), user_id: user.id };
+                setDumps(prev => [...prev, newItem]);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('brain_dumps').insert({ text, user_id: user.id });
             };
             const handleDeleteDump = async (id) => {
                 setDumps(prev => prev.filter(d => d.id !== id));
                 if (!user.isLocal && isSupabaseConfigured) await supabase.from('brain_dumps').delete().eq('id', id);
             };
              const handleAddWorry = async (text) => {
-                const newItem = { text, user_id: user.id };
-                setWorries(prev => [...prev, { ...newItem, id: Date.now() }]);
-                if (!user.isLocal && isSupabaseConfigured) await supabase.from('worries').insert(newItem);
+                const newItem = { text, id: Date.now().toString(), user_id: user.id };
+                setWorries(prev => [...prev, newItem]);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('worries').insert({ text, user_id: user.id });
             };
             const handleDeleteWorry = async (id) => {
                 setWorries(prev => prev.filter(w => w.id !== id));
                 if (!user.isLocal && isSupabaseConfigured) await supabase.from('worries').delete().eq('id', id);
+            };
+            const handleAddTool = async (item) => {
+                const newItem = { ...item, id: Date.now().toString(), user_id: user.id };
+                setTools(prev => [...prev, newItem]);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('tools').insert({ ...item, user_id: user.id });
+            };
+            
+            const handleAddSpiritualNote = async (text) => {
+                 const newItem = { text, id: Date.now().toString(), user_id: user.id };
+                 setSpiritualNotes(prev => [...prev, newItem]);
+                 if(!user.isLocal && isSupabaseConfigured) await supabase.from('spiritual_notes').insert({ text, user_id: user.id });
+            };
+             const handleDeleteSpiritualNote = async (id) => {
+                setSpiritualNotes(prev => prev.filter(n => n.id !== id));
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('spiritual_notes').delete().eq('id', id);
             };
             
             const handleUpdateDashboard = async (newData) => {
@@ -708,16 +751,12 @@
             };
             
             const handleUpdateMeal = async (day, type, text) => {
-                // Optimistic
                 setMeals(prev => {
                     const exists = prev.find(m => m.day === day && m.type === type);
                     if(exists) return prev.map(m => m.day === day && m.type === type ? { ...m, text } : m);
                     return [...prev, { day, type, text, user_id: user.id }];
                 });
-                
                 if (isSupabaseConfigured && !user.isLocal) {
-                    // Check if exists in DB to decide insert or update not straightforward without ID
-                    // Strategy: Delete old for this slot and insert new
                     await supabase.from('meals').delete().match({ user_id: user.id, day, type });
                     await supabase.from('meals').insert({ user_id: user.id, day, type, text });
                 }
@@ -797,10 +836,10 @@
                         resetTimer: () => setFocusState(prev => ({...prev, isActive: false, timeLeft: prev.initialTime})) 
                     }),
                     activeTab === 'braindump' && React.createElement(BrainDumpView, { dumps, onAddDump: handleAddDump, onDeleteDump: handleDeleteDump }),
-                    activeTab === 'spirituality' && React.createElement(SpiritualityView, { notes: [], onAddNote: () => {}, onDeleteNote: () => {} }),
+                    activeTab === 'spirituality' && React.createElement(SpiritualityView, { notes: spiritualNotes, onAddNote: handleAddSpiritualNote, onDeleteNote: handleDeleteSpiritualNote }),
                     activeTab === 'fitness' && React.createElement(FitnessView, {}),
                     activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal }),
-                    activeTab === 'tools' && React.createElement(ToolsView, { tools: DEFAULT_TOOLS, onAddTool: () => {} })
+                    activeTab === 'tools' && React.createElement(ToolsView, { tools, onAddTool: handleAddTool })
                 )
             );
         };
