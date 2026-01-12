@@ -10,6 +10,7 @@
     
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
@@ -19,6 +20,7 @@
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
                         mono: ['JetBrains Mono', 'monospace'],
+                        hand: ['Kalam', 'cursive'],
                     },
                     colors: {
                         zinc: {
@@ -77,6 +79,19 @@
             -webkit-box-shadow: 0 0 0 30px #09090b inset !important;
             -webkit-text-fill-color: white !important;
         }
+        
+        /* Sticky Note Rotation variations */
+        .rotate-1 { transform: rotate(1deg); }
+        .rotate-neg-1 { transform: rotate(-1deg); }
+        .rotate-2 { transform: rotate(2deg); }
+        .rotate-neg-2 { transform: rotate(-2deg); }
+
+        /* Brain Animations */
+        @keyframes pulse-brain {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+        .animate-brain { animation: pulse-brain 4s infinite ease-in-out; }
     </style>
 </head>
 <body class="bg-zinc-950 text-zinc-100 min-h-screen overflow-y-auto selection:bg-indigo-500/30 selection:text-indigo-200">
@@ -102,7 +117,7 @@
             List, Grid, Columns, Utensils, FileText, Trash, ShieldAlert, Flame, Volume2, ChevronLeft,
             ListTodo, ArrowUpRight, CheckSquare, Flower2, Dumbbell, Github, Bot, Newspaper, QrCode,
             Waves, Wind, Mountain, Footprints, Ban, ShieldCheck, Milestone, User, LogIn, ArrowLeft, Info,
-            Eye, EyeOff, Hourglass, AlertTriangle, Check
+            Eye, EyeOff, Hourglass, AlertTriangle, Check, Cpu
         } from "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0";
 
         // --- SUPABASE IMPORT ---
@@ -147,49 +162,9 @@
         // --- DATA CONSTANTS ---
         const DEFAULT_GOALS_DATA = {
             mission: "Reshape my life by achieving financial stability, building iron discipline, and gaining clear direction for my future.",
-            phases: {
-                phase1: [
-                    { id: 'p1_1', text: "Clear unsecured debt (£0)", completed: false },
-                    { id: 'p1_2', text: "School fees paid in full", completed: false },
-                    { id: 'p1_3', text: "Expenses minimized (Survival mode)", completed: false }
-                ],
-                phase2: [], phase3: []
-            },
-            quarters: {
-                q1: [
-                    { id: 'q1_1', text: "Establish strict yearly budget (Separate from debt)", completed: false },
-                    { id: 'q1_2', text: "Keep sleep schedule consistent", completed: false },
-                    { id: 'q1_3', text: "Complete Web Innovation Project", completed: false },
-                    { id: 'q1_4', text: "Complete Dissertation Log 2 & 3", completed: false },
-                    { id: 'q1_5', text: "Complete Machine Learning Project", completed: false },
-                    { id: 'q1_6', text: "Study & Sit for Cyber Security Exam", completed: false },
-                    { id: 'q1_7', text: "Start & Lock-in Dissertation", completed: false },
-                    { id: 'q1_8', text: "Pay towards Tuition Fees", completed: false },
-                    { id: 'q1_9', text: "Get someone to take over tenancy for Liverpool apartment", completed: false },
-                    { id: 'q1_10', text: "Never miss a workout session (4 days weekly)", completed: false },
-                    { id: 'q1_11', text: "Never miss morning run", completed: false },
-                    { id: 'q1_12', text: "Add a database to LifeOS app", completed: false },
-                    { id: 'q1_13', text: "Master systems (Journal, LifeOS, Calendar, Fitness)", completed: false },
-                    { id: 'q1_14', text: "Daily Bible & Prayer (Even 1 verse counts)", completed: false }
-                ],
-                q2: [], q3: [], q4: []
-            },
-            execution: {
-                weekly: [
-                    { id: 'w1', text: "Income Action (Extra Shift/Task)", completed: false },
-                    { id: 'w2', text: "5-10 Hours Skill Acquisition", completed: false },
-                    { id: 'w3', text: "Sunday Sermon & Study", completed: false },
-                    { id: 'w4', text: "4-6 Workouts (Hypertrophy)", completed: false },
-                    { id: 'w5', text: "Sunday Review (15 Mins)", completed: false }
-                ],
-                daily: [
-                    { id: 'd1', text: "Wake & Sleep Consistent", completed: false },
-                    { id: 'd2', text: "Pray Morning & Night (2x)", completed: false },
-                    { id: 'd3', text: "Bible & Sermon (30m)", completed: false },
-                    { id: 'd4', text: "Train or Move Body", completed: false },
-                    { id: 'd5', text: "Night Reflection (The 'Why')", completed: false }
-                ]
-            }
+            phases: { phase1: [], phase2: [], phase3: [] },
+            quarters: { q1: [], q2: [], q3: [], q4: [] },
+            execution: { weekly: [], daily: [] }
         };
 
         const DEFAULT_MEALS = [
@@ -212,8 +187,6 @@
 
         const GYM_PLAN = WORKOUT_PLAN; 
         const BIBLE_TOPICS = [{ title: "Finance", desc: "Stewardship", verses: ["Prov 22:7"], chapters: ["Prov 3"] }];
-        
-        // --- UPDATED RELIABLE SOUND SOURCES (MP3s) ---
         const FOCUS_SOUNDS = [
             { id: 'rain', label: 'Rain', icon: CloudRain, url: 'https://cdn.pixabay.com/audio/2022/07/04/audio_24e0f0656f.mp3' },
             { id: 'forest', label: 'Forest', icon: CloudSun, url: 'https://cdn.pixabay.com/audio/2021/09/06/audio_0172e2593d.mp3' },
@@ -223,7 +196,6 @@
             { id: 'ocean', label: 'Ocean', icon: Waves, url: 'https://cdn.pixabay.com/audio/2022/08/04/audio_2ede959ecd.mp3' },
             { id: 'thunder', label: 'Thunder', icon: CloudLightning, url: 'https://cdn.pixabay.com/audio/2021/08/09/audio_2771746270.mp3' }
         ];
-        
         const DAILY_SPIRITUALITY = [{ verse: "Joshua 1:9", text: "Be strong and courageous...", prayer: "Lord, grant me courage.", encouragement: "You are never alone." }];
         const BIBLE_BOOKS = [{ category: "Foundations", books: [{ name: "Genesis", theme: "Beginnings", app: "Family & Legacy", keys: "Gen 1" }] }];
         const DEFAULT_TOOLS = [{ id: 't1', category: 'Productivity HQ', name: 'ChatGPT', url: 'https://chat.openai.com/', icon: 'Bot' }];
@@ -493,6 +465,93 @@
             );
         };
 
+        // --- NEW VIEW: BRAIN DUMP (Neural Grid) ---
+        const BrainDumpView = ({ dumps, onAddDump, onDeleteDump }) => {
+            const [input, setInput] = useState("");
+            
+            // Calculate positions in a circle around center
+            const getPosition = (index, total) => {
+                if (total === 0) return { x: 50, y: 50 };
+                const angle = (index / total) * 2 * Math.PI - (Math.PI / 2); // Start from top
+                const radius = 35; // 35% radius from center
+                const x = 50 + radius * Math.cos(angle);
+                const y = 50 + radius * Math.sin(angle);
+                return { x, y };
+            };
+
+            return React.createElement("div", { className: "h-[85vh] w-full relative overflow-hidden flex flex-col" },
+                // Header (Floating top left)
+                React.createElement("div", { className: "absolute top-4 left-4 z-20 pointer-events-none" },
+                    React.createElement("h2", { className: "text-3xl font-bold text-white shadow-black drop-shadow-md" }, "Mind Map"),
+                    React.createElement("p", { className: "text-zinc-400 text-sm mt-1" }, "Visualize your thoughts.")
+                ),
+
+                // Map Area
+                React.createElement("div", { className: "flex-1 relative w-full h-full" },
+                    // Lines Layer (SVG)
+                    React.createElement("svg", { className: "absolute inset-0 w-full h-full pointer-events-none z-0" },
+                        dumps.map((dump, i) => {
+                            const pos = getPosition(i, dumps.length);
+                            return React.createElement("line", {
+                                key: `line-${dump.id}`,
+                                x1: "50%",
+                                y1: "50%",
+                                x2: `${pos.x}%`,
+                                y2: `${pos.y}%`,
+                                className: "stroke-indigo-500/20 stroke-2",
+                                strokeDasharray: "5,5"
+                            });
+                        })
+                    ),
+
+                    // Central Brain
+                    React.createElement("div", { className: "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10" },
+                         React.createElement("div", { className: "w-24 h-24 bg-indigo-600 rounded-full flex items-center justify-center shadow-glow animate-brain relative z-20" },
+                             React.createElement(Brain, { size: 48, className: "text-white" })
+                         ),
+                         // Center ripple
+                         React.createElement("div", { className: "absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-20" })
+                    ),
+
+                    // Thought Nodes
+                    dumps.map((dump, i) => {
+                        const pos = getPosition(i, dumps.length);
+                        return React.createElement("div", {
+                            key: dump.id,
+                            style: { left: `${pos.x}%`, top: `${pos.y}%` },
+                            className: "absolute -translate-x-1/2 -translate-y-1/2 w-48 z-20 transition-all duration-500"
+                        },
+                            React.createElement("div", { className: "glass-panel p-4 rounded-xl text-xs text-zinc-200 border-zinc-700/50 hover:border-indigo-500/50 transition-all group relative cursor-default hover:scale-105 hover:z-30 hover:bg-zinc-900 shadow-lg" },
+                                React.createElement("p", { className: "line-clamp-4 text-center leading-relaxed font-medium" }, dump.text),
+                                React.createElement("button", { 
+                                    onClick: () => onDeleteDump(dump.id),
+                                    className: "absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:scale-110"
+                                }, React.createElement(Trash, { size: 12 }))
+                            )
+                        );
+                    })
+                ),
+
+                // Input Area (Bottom Floating)
+                React.createElement("div", { className: "absolute bottom-8 left-1/2 -translate-x-1/2 z-30 w-full max-w-xl px-4" }, 
+                    React.createElement("div", { className: "relative w-full" },
+                        React.createElement("div", { className: "absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full opacity-30 blur" }),
+                        React.createElement("input", { 
+                            value: input, 
+                            onChange: e => setInput(e.target.value),
+                            onKeyDown: e => { if (e.key === 'Enter' && input.trim()) { onAddDump(input); setInput(""); } },
+                            placeholder: "Add a thought node...", 
+                            className: "relative w-full p-4 pl-6 rounded-full bg-zinc-900 border border-zinc-700 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-xl backdrop-blur-md transition-all placeholder:text-zinc-500"
+                        }),
+                        React.createElement("button", { 
+                            onClick: () => { if(input.trim()) { onAddDump(input); setInput(""); }}, 
+                            className: "absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-indigo-600 rounded-full hover:bg-indigo-500 transition-colors shadow-lg z-40"
+                        }, React.createElement(Plus, { size: 20, className: "text-white" }))
+                    )
+                )
+            );
+        };
+
         // --- NEW VIEW: DEADLINES ---
         const DeadlinesView = ({ deadlines = [], onAddDeadline, onDeleteDeadline }) => {
             const [newTitle, setNewTitle] = useState("");
@@ -591,13 +650,33 @@
         // --- VIEWS ---
         const DashboardView = ({ onNavigate, tasks = [], deadlines = [], dashboardData = {}, onUpdateDashboard, timerState, toggleTimer, resetTimer }) => {
             const dailyFocus = dashboardData?.focus || "";
+            const dailyTopic = dashboardData?.topic || "";
             const [focusInput, setFocusInput] = useState(dailyFocus);
+            const [topicInput, setTopicInput] = useState(dailyTopic);
             const [isEditing, setIsEditing] = useState(!dailyFocus);
+            const [isEditingTopic, setIsEditingTopic] = useState(!dailyTopic);
             
             useEffect(() => { if (dailyFocus) { setFocusInput(dailyFocus); setIsEditing(false); } }, [dailyFocus]);
+            useEffect(() => { if (dailyTopic) { setTopicInput(dailyTopic); setIsEditingTopic(false); } }, [dailyTopic]);
+            
             const handleSetFocus = () => { if (focusInput.trim()) { onUpdateDashboard({ ...dashboardData, focus: focusInput }); setIsEditing(false); } };
+            const handleSetTopic = () => { if (topicInput.trim()) { onUpdateDashboard({ ...dashboardData, topic: topicInput }); setIsEditingTopic(false); } };
 
             const nextDeadline = deadlines[0]; 
+            // 2b. Daily Rules (PSWTR)
+            const dailyRules = dashboardData?.dailyRules || { p: false, s: false, w: false, t: false, r: false };
+            const toggleRule = (key) => {
+                const newRules = { ...dailyRules, [key]: !dailyRules[key] };
+                onUpdateDashboard({ ...dashboardData, dailyRules: newRules });
+            };
+            const pswtrData = [
+                { key: 'p', letter: 'P', label: 'Pray', desc: 'Daily prayer' },
+                { key: 's', letter: 'S', label: 'Practice Skills', desc: 'Tech practice' },
+                { key: 'w', letter: 'W', label: 'Work', desc: 'Income focused' },
+                { key: 't', letter: 'T', label: 'Train', desc: 'Gym & Run' },
+                { key: 'r', letter: 'R', label: 'Read', desc: 'Page & Notes' }
+            ];
+
             return React.createElement("div", { className: "p-4 space-y-6" },
                 React.createElement("div", { className: "flex justify-between items-end mb-4" }, 
                     React.createElement("h2", { className: "text-3xl font-bold tracking-tight text-white" }, "Command Center"), 
@@ -624,7 +703,7 @@
                         )
                     )
                 ),
-                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" },
+                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6" },
                      React.createElement(Card, { title: "Active Tasks" },
                         React.createElement("div", { className: "flex items-center justify-between" },
                              React.createElement("span", { className: "text-4xl font-bold text-white" }, tasks.length),
@@ -642,6 +721,50 @@
                             React.createElement(ShieldCheck, { size: 20 }),
                             React.createElement("span", { className: "font-bold" }, "Online")
                         )
+                     ),
+                     React.createElement(Card, { title: "Weekly Learning" },
+                        isEditingTopic ? (
+                            React.createElement("div", { className: "flex gap-2" },
+                                React.createElement("input", { 
+                                    value: topicInput, 
+                                    onChange: e => setTopicInput(e.target.value),
+                                    onKeyDown: e => e.key === 'Enter' && handleSetTopic(),
+                                    className: "w-full bg-transparent border-b border-zinc-700 focus:outline-none text-sm text-white",
+                                    placeholder: "Topic..." 
+                                }),
+                                React.createElement("button", { onClick: handleSetTopic }, React.createElement(Check, { size: 14 }))
+                            )
+                        ) : (
+                            React.createElement("div", { className: "flex justify-between items-center" },
+                                React.createElement("span", { className: "text-lg font-bold text-white truncate" }, dailyTopic || "No topic set"),
+                                React.createElement("button", { onClick: () => setIsEditingTopic(true), className: "text-zinc-500 hover:text-white" }, React.createElement(Edit3, { size: 14 }))
+                            )
+                        )
+                    )
+                ),
+                // Daily Rules
+                React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-6" },
+                     React.createElement(Card, { title: "Daily Rules (PSWTR)" },
+                        React.createElement("div", { className: "space-y-2" },
+                            pswtrData.map(item => 
+                                React.createElement("button", { 
+                                    key: item.key, 
+                                    onClick: () => toggleRule(item.key),
+                                    className: `flex items-center gap-3 w-full p-2 rounded-lg transition-all ${dailyRules[item.key] ? 'bg-zinc-800/50' : 'hover:bg-zinc-900'}`
+                                },
+                                    React.createElement("div", { className: `w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 border transition-colors ${dailyRules[item.key] ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-transparent border-zinc-700 text-zinc-500'}` }, 
+                                        dailyRules[item.key] ? React.createElement(Check, { size: 16 }) : item.letter
+                                    ),
+                                    React.createElement("div", { className: "flex flex-col items-start" },
+                                        React.createElement("span", { className: `text-sm font-bold ${dailyRules[item.key] ? 'text-zinc-500 line-through' : 'text-zinc-800 dark:text-zinc-200'}` }, item.label),
+                                        React.createElement("span", { className: "text-[10px] text-zinc-400" }, item.desc)
+                                    )
+                                )
+                            )
+                        )
+                     ),
+                     React.createElement(Card, { title: "System Status" },
+                        React.createElement("div", { className: "text-sm text-zinc-400" }, "All systems operational.")
                      )
                 )
             );
@@ -779,24 +902,6 @@
             );
         };
 
-        const BrainDumpView = ({ dumps, onAddDump, onDeleteDump }) => {
-             const [input, setInput] = useState("");
-             return React.createElement("div", { className: "p-4 pb-24" }, 
-                React.createElement("h2", { className: "text-3xl font-bold text-white mb-6" }, "Brain Dump"),
-                React.createElement("div", { className: "mb-8 relative" },
-                    React.createElement("div", { className: "absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl opacity-20 blur" }),
-                    React.createElement("textarea", { value: input, onChange: e => setInput(e.target.value), className: "relative w-full p-4 border border-zinc-800 rounded-xl bg-zinc-900 text-white h-32 focus:outline-none placeholder:text-zinc-600 resize-none", placeholder: "Clear your mind..." }),
-                    React.createElement("button", { onClick: () => { if(input.trim()) { onAddDump(input); setInput(""); }}, className: "absolute bottom-4 right-4 p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors" }, React.createElement(ArrowRight, { size: 20 }))
-                ),
-                React.createElement("div", { className: "columns-1 md:columns-2 gap-4 space-y-4" }, 
-                    dumps.map(d => React.createElement("div", { key: d.id, className: "break-inside-avoid p-5 border border-zinc-800 rounded-2xl bg-zinc-900/50 hover:bg-zinc-900 transition-all group relative" }, 
-                        React.createElement("p", { className: "text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap" }, d.text),
-                        React.createElement("button", { onClick: () => onDeleteDump(d.id), className: "absolute top-4 right-4 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" }, React.createElement(Trash, { size: 14 }))
-                    ))
-                )
-            );
-        };
-        
         const FoodView = ({ meals, onUpdateMeal }) => {
              const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
              const [activeDayIndex, setActiveDayIndex] = useState(0);
@@ -935,7 +1040,7 @@
             const [activeSound, setActiveSound] = useState(null);
             const [isPlayingSound, setIsPlayingSound] = useState(false);
             const audioRef = useRef(new Audio());
-            const [focusState, setFocusState] = useState({ timeLeft: 1500, isActive: false, initialTime: 1500 });
+            const [focusState, setFocusState] = useState({ timeLeft: 1500, isActive: false, initialTime: 1500, mode: 'FOCUS' });
             
             useEffect(() => {
                 let interval = null;
@@ -948,33 +1053,11 @@
             }, [focusState.isActive, focusState.timeLeft]);
 
             const handleTimerToggle = () => setFocusState(prev => ({ ...prev, isActive: !prev.isActive }));
-            const handleTimerReset = (newTime) => { const time = newTime || focusState.initialTime; setFocusState({ timeLeft: time, isActive: false, initialTime: time }); };
+            const handleTimerReset = (newTime, newMode) => { const time = newTime || focusState.initialTime; setFocusState({ timeLeft: time, isActive: false, initialTime: time, mode: newMode || 'FOCUS' }); };
 
             const toggleSound = (sound) => {
-                // Handle previous playback
-                if (audioRef.current.src) {
-                    audioRef.current.pause();
-                }
-
-                if (activeSound === sound.id && isPlayingSound) { 
-                     setIsPlayingSound(false); 
-                } else { 
-                    audioRef.current.src = sound.url; 
-                    audioRef.current.loop = true; 
-                    
-                    const playPromise = audioRef.current.play();
-                    
-                    if (playPromise !== undefined) {
-                        playPromise.then(_ => {
-                            setIsPlayingSound(true); 
-                            setActiveSound(sound.id);
-                        })
-                        .catch(error => {
-                            console.error("Audio playback error:", error);
-                            setIsPlayingSound(false);
-                        });
-                    }
-                }
+                if (activeSound === sound.id && isPlayingSound) { audioRef.current.pause(); setIsPlayingSound(false); }
+                else { audioRef.current.src = sound.url; audioRef.current.loop = true; audioRef.current.play(); setIsPlayingSound(true); setActiveSound(sound.id); }
             };
 
             // DB Connectivity Check
