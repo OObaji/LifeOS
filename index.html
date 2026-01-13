@@ -888,6 +888,8 @@
                     t.category === category || (category === 'normal' && !['hardest', 'easiest'].includes(t.category))
                 );
 
+                const isFull = categoryTasks.length >= 1;
+
                 return React.createElement("div", { className: "flex flex-col h-full bg-zinc-900/30 border border-zinc-800 rounded-2xl overflow-hidden shadow-lg" },
                     // Header
                     React.createElement("div", { className: `p-4 border-b border-zinc-800 ${colorClass} bg-opacity-10 backdrop-blur-sm flex justify-between items-center` },
@@ -908,6 +910,10 @@
                     ),
                     // Input
                     React.createElement("div", { className: "p-3 border-t border-zinc-800 bg-zinc-900/50" },
+                        isFull ? 
+                        React.createElement("div", { className: "w-full py-3 text-center opacity-50" },
+                            React.createElement("span", { className: "text-xs font-medium text-zinc-500" }, "Daily limit reached")
+                        ) :
                         React.createElement("div", { className: "relative group/input" },
                             React.createElement("input", { 
                                 value: input, 
@@ -1032,7 +1038,7 @@
         };
 
         const SpiritualityView = ({ notes, onAddNote, onDeleteNote }) => {
-            const [activeSubTab, setActiveSubTab] = useState("journal"); // journal, books, people
+            const [activeSubTab, setActiveSubTab] = useState("books");
             const [input, setInput] = useState("");
 
             return React.createElement("div", { className: "p-4 pb-24 h-full flex flex-col" },
@@ -1043,9 +1049,9 @@
                     // Sub-navigation
                     React.createElement("div", { className: "flex p-1 bg-zinc-900 rounded-lg border border-zinc-800 self-start md:self-auto" },
                         [
-                            { id: "journal", label: "Journal", icon: Edit3 },
                             { id: "books", label: "Books", icon: Book },
-                            { id: "people", label: "People", icon: Users }
+                            { id: "people", label: "People", icon: Users },
+                            { id: "notes", label: "Notes", icon: Edit3 }
                         ].map(tab => 
                             React.createElement("button", {
                                 key: tab.id,
@@ -1059,31 +1065,6 @@
                 // Content Area
                 React.createElement("div", { className: "flex-1 overflow-y-auto custom-scrollbar pr-2" },
                     
-                    // JOURNAL TAB
-                    activeSubTab === "journal" && React.createElement("div", { className: "space-y-6 animate-in fade-in slide-in-from-bottom-2" },
-                        React.createElement("div", { className: "bg-zinc-900 p-4 rounded-2xl border border-zinc-800" },
-                            React.createElement("textarea", { 
-                                value: input, 
-                                onChange: e => setInput(e.target.value), 
-                                className: "w-full bg-transparent text-white resize-none h-24 focus:outline-none placeholder:text-zinc-600", 
-                                placeholder: "Prayer requests, insights, or gratitude..." 
-                            }),
-                            React.createElement("div", { className: "flex justify-end mt-2" },
-                                React.createElement("button", { 
-                                    onClick: () => { if(input.trim()) { onAddNote(input); setInput(""); }}, 
-                                    className: "px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-500 transition-colors" 
-                                }, "Save Entry")
-                            )
-                        ),
-                        React.createElement("div", { className: "space-y-3" }, 
-                            notes.length === 0 ? React.createElement("div", { className: "text-center text-zinc-600 py-8 italic" }, "Your spiritual journal is empty.") :
-                            notes.map(n => React.createElement("div", { key: n.id, className: "p-5 border border-zinc-800 rounded-2xl bg-zinc-900/30 flex justify-between group hover:border-zinc-700 transition-all" }, 
-                                React.createElement("p", { className: "text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap" }, n.text), 
-                                React.createElement("button", { onClick: () => onDeleteNote(n.id), className: "text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 ml-4 self-start" }, React.createElement(Trash, { size: 14 }))
-                            ))
-                        )
-                    ),
-
                     // BOOKS TAB
                     activeSubTab === "books" && React.createElement("div", { className: "space-y-8 animate-in fade-in slide-in-from-bottom-2" },
                         BIBLE_BOOKS_LIB.map((section, idx) => 
@@ -1120,6 +1101,31 @@
                                     )
                                 )
                             )
+                        )
+                    ),
+
+                    // NOTES TAB (Formerly Journal)
+                    activeSubTab === "notes" && React.createElement("div", { className: "space-y-6 animate-in fade-in slide-in-from-bottom-2" },
+                        React.createElement("div", { className: "bg-zinc-900 p-4 rounded-2xl border border-zinc-800" },
+                            React.createElement("textarea", { 
+                                value: input, 
+                                onChange: e => setInput(e.target.value), 
+                                className: "w-full bg-transparent text-white resize-none h-24 focus:outline-none placeholder:text-zinc-600", 
+                                placeholder: "Prayer requests, insights, or gratitude..." 
+                            }),
+                            React.createElement("div", { className: "flex justify-end mt-2" },
+                                React.createElement("button", { 
+                                    onClick: () => { if(input.trim()) { onAddNote(input); setInput(""); }}, 
+                                    className: "px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-500 transition-colors" 
+                                }, "Save Entry")
+                            )
+                        ),
+                        React.createElement("div", { className: "space-y-3" }, 
+                            notes.length === 0 ? React.createElement("div", { className: "text-center text-zinc-600 py-8 italic" }, "Your spiritual journal is empty.") :
+                            notes.map(n => React.createElement("div", { key: n.id, className: "p-5 border border-zinc-800 rounded-2xl bg-zinc-900/30 flex justify-between group hover:border-zinc-700 transition-all" }, 
+                                React.createElement("p", { className: "text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap" }, n.text), 
+                                React.createElement("button", { onClick: () => onDeleteNote(n.id), className: "text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 ml-4 self-start" }, React.createElement(Trash, { size: 14 }))
+                            ))
                         )
                     )
                 )
