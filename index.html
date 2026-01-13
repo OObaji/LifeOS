@@ -369,7 +369,7 @@
         };
 
         // --- DASHBOARD VIEW ---
-        const DashboardView = ({ onNavigate, tasks = [], deadlines = [], dashboardData = {}, onUpdateDashboard, timerState, toggleTimer, resetTimer }) => {
+        const DashboardView = ({ onNavigate, tasks = [], deadlines = [], dashboardData = {}, onUpdateDashboard, timerState, toggleTimer, resetTimer, books = [], meals = [], fitnessData = {} }) => {
             const dailyFocus = dashboardData?.focus || "";
             const positiveNote = dashboardData?.positiveNote || "";
             const dailyRules = dashboardData?.dailyRules || { p: false, s: false, w: false, t: false, r: false };
@@ -386,11 +386,22 @@
                 onUpdateDashboard({ ...dashboardData, dailyRules: newRules });
             };
 
-            return React.createElement("div", { className: "p-4 space-y-6" },
+            // Dynamic Data Helpers
+            const currentBook = books.find(b => b.status === 'Reading');
+            const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+            const todaysBreakfast = meals.find(m => m.day === todayName && m.type === 'Breakfast')?.text || "No breakfast planned";
+            
+            // Simple logic to rotate workout based on day index (just for display)
+            const dayIndex = new Date().getDay() % 4; // 0-3 roughly mapping to the 4 workout days
+            const todaysWorkout = fitnessData.gym ? fitnessData.gym[dayIndex] : null;
+
+            return React.createElement("div", { className: "p-4 space-y-6 pb-24" },
                 React.createElement("div", { className: "flex justify-between items-end mb-4" }, 
                     React.createElement("h2", { className: "text-3xl font-bold tracking-tight text-white" }, "Command Center"), 
                     React.createElement(TimeWidget)
                 ),
+                
+                // 1. Primary Directive (Hero)
                 React.createElement(Card, { className: "relative overflow-hidden rounded-3xl p-8 border border-indigo-500/30 bg-gradient-to-br from-indigo-900/20 to-black" },
                     React.createElement("div", { className: "relative z-10" },
                         React.createElement("div", { className: "flex items-center gap-2 mb-4 text-indigo-300 text-xs font-bold uppercase tracking-widest" }, 
@@ -404,6 +415,8 @@
                         })
                     )
                 ),
+
+                // 2. Positive Note
                 React.createElement(Card, { title: "Positive Note to Myself", className: "bg-gradient-to-r from-emerald-900/10 to-teal-900/10 border-emerald-500/20" },
                      React.createElement("textarea", { 
                         value: positiveNote, 
@@ -412,20 +425,55 @@
                         placeholder: "Write something kind to yourself..."
                     })
                 ),
+
+                // 3. Widget Grid
                 React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" },
-                     React.createElement(Card, { title: "Active Tasks" },
+                     
+                     // Task Counter
+                     React.createElement(Card, { title: "Active Tasks", action: React.createElement("button", { onClick: () => onNavigate('tasks'), className: "text-zinc-500 hover:text-white" }, React.createElement(ArrowRight, { size: 16 })) },
                         React.createElement("div", { className: "flex items-center justify-between" },
                              React.createElement("span", { className: "text-4xl font-bold text-white" }, tasks.length),
                              React.createElement(ListTodo, { className: "text-zinc-700", size: 48 })
                         )
                      ),
-                     React.createElement(Card, { title: "Next Deadline" },
+
+                     // Currently Reading (Library Widget)
+                     React.createElement(Card, { title: "Now Reading", action: React.createElement("button", { onClick: () => onNavigate('library'), className: "text-zinc-500 hover:text-white" }, React.createElement(Book, { size: 16 })) },
+                        currentBook ? React.createElement("div", null,
+                            React.createElement("h4", { className: "font-bold text-white truncate leading-tight" }, currentBook.title),
+                            React.createElement("p", { className: "text-xs text-zinc-500 mt-1" }, currentBook.author)
+                        ) : React.createElement("div", { className: "text-zinc-500 text-sm italic" }, "No book active.")
+                     ),
+
+                     // Nutrition Snapshot (Food Widget)
+                     React.createElement(Card, { title: "Today's Fuel", action: React.createElement("button", { onClick: () => onNavigate('food'), className: "text-zinc-500 hover:text-white" }, React.createElement(Utensils, { size: 16 })) },
+                        React.createElement("div", { className: "flex flex-col gap-1" },
+                            React.createElement("span", { className: "text-[10px] uppercase font-bold text-zinc-600" }, "Breakfast"),
+                            React.createElement("p", { className: "text-sm text-zinc-300 line-clamp-2 leading-snug" }, todaysBreakfast)
+                        )
+                     ),
+
+                     // Next Deadline
+                     React.createElement(Card, { title: "Next Deadline", action: React.createElement("button", { onClick: () => onNavigate('deadlines'), className: "text-zinc-500 hover:text-white" }, React.createElement(Hourglass, { size: 16 })) },
                         deadlines[0] ? React.createElement("div", null, 
                             React.createElement("p", { className: "font-bold text-white truncate" }, deadlines[0].title),
                             React.createElement("p", { className: "text-sm text-zinc-400 mt-1" }, new Date(deadlines[0].date).toLocaleDateString())
                         ) : React.createElement("p", { className: "text-zinc-500" }, "All clear.")
                      ),
-                     React.createElement(Card, { title: "Daily Rules (PSWTR)", className: "md:col-span-2" },
+
+                     // Fitness Snapshot
+                     React.createElement(Card, { title: "Daily Movement", className: "lg:col-span-2", action: React.createElement("button", { onClick: () => onNavigate('fitness'), className: "text-zinc-500 hover:text-white" }, React.createElement(Dumbbell, { size: 16 })) },
+                        todaysWorkout ? React.createElement("div", { className: "flex items-center gap-4" },
+                            React.createElement("div", { className: "p-3 bg-zinc-800 rounded-xl text-indigo-400" }, React.createElement(Activity, { size: 24 })),
+                            React.createElement("div", null,
+                                React.createElement("h4", { className: "font-bold text-white" }, todaysWorkout.title),
+                                React.createElement("p", { className: "text-xs text-zinc-500" }, `Finisher: ${todaysWorkout.finisher}`)
+                            )
+                        ) : React.createElement("p", { className: "text-zinc-500" }, "Rest Day / No Plan")
+                     ),
+
+                     // Daily Rules (PSWTR)
+                     React.createElement(Card, { title: "Daily Rules (PSWTR)", className: "lg:col-span-2" },
                         React.createElement("div", { className: "grid grid-cols-5 gap-2" },
                             pswtrData.map(item => 
                                 React.createElement("button", { 
@@ -1179,7 +1227,18 @@
             };
 
             const VALID_TABS = Object.keys(tabConfig);
-            const [activeTab, setActiveTab] = useState("dashboard");
+            
+            // Initialize activeTab from localStorage if available, otherwise default to 'dashboard'
+            const [activeTab, setActiveTab] = useState(() => {
+                const saved = localStorage.getItem('lifeos_active_tab');
+                return (saved && VALID_TABS.includes(saved)) ? saved : "dashboard";
+            });
+
+            // Save activeTab to localStorage whenever it changes
+            useEffect(() => {
+                localStorage.setItem('lifeos_active_tab', activeTab);
+            }, [activeTab]);
+
             const [user, setUser] = useState(null);
             
             // App Data
@@ -1348,7 +1407,8 @@
                 React.createElement("main", { className: "md:ml-64 p-4 md:p-12 pb-24 pt-20 md:pt-12 max-w-7xl mx-auto" },
                     activeTab === 'dashboard' && React.createElement(DashboardView, { 
                         onNavigate: setActiveTab, tasks, deadlines, dashboardData, onUpdateDashboard: setDashboardData,
-                        timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset
+                        timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset,
+                        books: books, meals: meals, fitnessData: fitnessData
                     }),
                     activeTab === 'deadlines' && React.createElement(DeadlinesView, { deadlines, onAddDeadline: handleAddDeadline, onDeleteDeadline: handleDeleteDeadline }),
                     activeTab === 'tasks' && React.createElement(TasksView, { tasks, onAddTask: handleAddTask, onDeleteTask: handleDeleteTask, onUpdateTask: handleUpdateTask }),
