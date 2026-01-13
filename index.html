@@ -68,34 +68,11 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Animation Utilities */
         @keyframes pulse-brain {
             0%, 100% { transform: scale(1); opacity: 0.8; }
             50% { transform: scale(1.05); opacity: 1; }
         }
         .animate-brain { animation: pulse-brain 4s infinite ease-in-out; }
-        
-        .ai-gradient-text {
-            background: linear-gradient(to right, #818cf8, #c084fc, #f472b6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .ai-border {
-            position: relative;
-        }
-        .ai-border::before {
-            content: "";
-            position: absolute;
-            inset: -2px;
-            border-radius: inherit;
-            padding: 2px;
-            background: linear-gradient(to right, #6366f1, #a855f7, #ec4899);
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            opacity: 0.5;
-            pointer-events: none;
-        }
     </style>
 </head>
 <body class="bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 min-h-screen overflow-y-auto selection:bg-indigo-500/30 selection:text-indigo-600 dark:selection:text-indigo-200 transition-colors duration-300">
@@ -143,26 +120,6 @@
             }
         }
 
-        // --- LOCAL AUTH SIMULATION (Fallback) ---
-        const LocalAuth = {
-            login: (email, password) => {
-                const users = JSON.parse(localStorage.getItem('lifeos_local_db_users') || '{}');
-                const user = users[email.toLowerCase()];
-                if (!user) throw new Error("User not found locally. Please create an account.");
-                if (user.password !== password) throw new Error("Incorrect password.");
-                return { email: user.email, id: user.uid, isLocal: true, displayName: user.displayName || user.email.split('@')[0] };
-            },
-            signup: (email, password) => {
-                const users = JSON.parse(localStorage.getItem('lifeos_local_db_users') || '{}');
-                if (users[email.toLowerCase()]) throw new Error("Account already exists. Please sign in.");
-                const uid = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                const displayName = email.split('@')[0];
-                users[email.toLowerCase()] = { email, password, uid, displayName };
-                localStorage.setItem('lifeos_local_db_users', JSON.stringify(users));
-                return { email, id: uid, isLocal: true, displayName };
-            }
-        };
-
         // --- AI SERVICE ---
         const callGemini = async (apiKey, prompt) => {
             if (!apiKey) throw new Error("API Key missing. Go to Settings to add your Gemini API Key.");
@@ -176,7 +133,7 @@
             return data.candidates[0].content.parts[0].text;
         };
 
-        // --- ICONS LIBRARY FOR TOOLS ---
+        // --- ICONS LIBRARY ---
         const ICON_LIB = {
             'Globe': Globe, 'Code2': Code2, 'Terminal': Terminal, 'Database': Database,
             'Layout': Layout, 'Palette': Palette, 'PenTool': PenTool, 'Image': Image,
@@ -198,11 +155,9 @@
         };
 
         const DEFAULT_MEALS = [{ day: 'Monday', type: 'Breakfast', text: 'Oats + milk\n1 banana\n1 scoop protein powder' }];
-        
         const DEFAULT_TOOLS_CATEGORIES = ['General', 'Development', 'Design', 'Productivity', 'Finance'];
         const DEFAULT_TOOLS = [{ id: 't1', category: 'General', name: 'ChatGPT', url: 'https://chat.openai.com/', icon: 'Bot' }];
 
-        // UPDATED: 4-Day Gym Plan
         const GYM_WORKOUT_PLAN = [
             { id: 'gym1', title: "Day 1: Chest & Triceps", icon: "Flame", color: "text-rose-500", warmup: ["5min Treadmill", "Arm Circles"], exercises: [{ name: "Bench Press", sets: "4", reps: "8-10" }, { name: "Incline DB Press", sets: "3", reps: "10-12" }, { name: "Cable Flys", sets: "3", reps: "12-15" }, { name: "Tricep Pushdowns", sets: "4", reps: "12-15" }, { name: "Skullcrushers", sets: "3", reps: "10-12" }], finisher: "Pushup burnout" },
             { id: 'gym2', title: "Day 2: Back & Biceps", icon: "Activity", color: "text-blue-500", warmup: ["5min Rower", "Band Pull-aparts"], exercises: [{ name: "Lat Pulldowns", sets: "4", reps: "10-12" }, { name: "Seated Cable Row", sets: "4", reps: "10-12" }, { name: "DB Row", sets: "3", reps: "10/side" }, { name: "Barbell Curls", sets: "3", reps: "10-12" }, { name: "Hammer Curls", sets: "3", reps: "12" }], finisher: "Face Pulls 3x15" },
@@ -233,7 +188,7 @@
             { n: "Paul", t: "Transformation", d: "Terrorist turned missionary. Intellectual powerhouse." }
         ];
 
-        // --- HELPERS ---
+        // --- COMPONENTS ---
         const Card = ({ children, className = "", title, action }) => (
             React.createElement("div", { className: `bg-white/80 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-200 dark:border-white/5 rounded-2xl p-5 flex flex-col transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/50 shadow-sm dark:shadow-none ${className}` },
                 (title || action) && (
@@ -438,7 +393,6 @@
                     React.createElement(TimeWidget)
                 ),
                 
-                // 1. Primary Directive (Hero)
                 React.createElement(Card, { className: "relative overflow-hidden rounded-3xl p-8 border border-indigo-500/30 bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-black" },
                     React.createElement("div", { className: "relative z-10" },
                         React.createElement("div", { className: "flex items-center gap-2 mb-4 text-indigo-500 dark:text-indigo-300 text-xs font-bold uppercase tracking-widest" }, 
@@ -453,7 +407,6 @@
                     )
                 ),
 
-                // 2. Positive Note
                 React.createElement(Card, { title: "Positive Note to Myself", className: "bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/10 dark:to-teal-900/10 border-emerald-500/20" },
                      React.createElement("textarea", { 
                         value: positiveNote, 
@@ -463,42 +416,31 @@
                     })
                 ),
 
-                // 3. Widget Grid
                 React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" },
-                     
-                     // Task Counter
                      React.createElement(Card, { title: "Active Tasks", action: React.createElement("button", { onClick: () => onNavigate('tasks'), className: "text-zinc-400 hover:text-zinc-900 dark:hover:text-white" }, React.createElement(ArrowRight, { size: 16 })) },
                         React.createElement("div", { className: "flex items-center justify-between" },
                              React.createElement("span", { className: "text-4xl font-bold text-zinc-900 dark:text-white" }, tasks.length),
                              React.createElement(ListTodo, { className: "text-zinc-200 dark:text-zinc-700", size: 48 })
                         )
                      ),
-
-                     // Currently Reading
                      React.createElement(Card, { title: "Now Reading", action: React.createElement("button", { onClick: () => onNavigate('library'), className: "text-zinc-400 hover:text-zinc-900 dark:hover:text-white" }, React.createElement(Book, { size: 16 })) },
                         currentBook ? React.createElement("div", null,
                             React.createElement("h4", { className: "font-bold text-zinc-900 dark:text-white truncate leading-tight" }, currentBook.title),
                             React.createElement("p", { className: "text-xs text-zinc-500 mt-1" }, currentBook.author)
                         ) : React.createElement("div", { className: "text-zinc-400 text-sm italic" }, "No book active.")
                      ),
-
-                     // Nutrition Snapshot
                      React.createElement(Card, { title: "Today's Fuel", action: React.createElement("button", { onClick: () => onNavigate('food'), className: "text-zinc-400 hover:text-zinc-900 dark:hover:text-white" }, React.createElement(Utensils, { size: 16 })) },
                         React.createElement("div", { className: "flex flex-col gap-1" },
                             React.createElement("span", { className: "text-[10px] uppercase font-bold text-zinc-500" }, "Breakfast"),
                             React.createElement("p", { className: "text-sm text-zinc-700 dark:text-zinc-300 line-clamp-2 leading-snug" }, todaysBreakfast)
                         )
                      ),
-
-                     // Next Deadline
                      React.createElement(Card, { title: "Next Deadline", action: React.createElement("button", { onClick: () => onNavigate('deadlines'), className: "text-zinc-400 hover:text-zinc-900 dark:hover:text-white" }, React.createElement(Hourglass, { size: 16 })) },
                         deadlines[0] ? React.createElement("div", null, 
                             React.createElement("p", { className: "font-bold text-zinc-900 dark:text-white truncate" }, deadlines[0].title),
                             React.createElement("p", { className: "text-sm text-zinc-500 mt-1" }, new Date(deadlines[0].date).toLocaleDateString())
                         ) : React.createElement("p", { className: "text-zinc-400" }, "All clear.")
                      ),
-
-                     // Fitness Snapshot
                      React.createElement(Card, { title: "Daily Movement", className: "lg:col-span-2", action: React.createElement("button", { onClick: () => onNavigate('fitness'), className: "text-zinc-400 hover:text-zinc-900 dark:hover:text-white" }, React.createElement(Dumbbell, { size: 16 })) },
                         todaysWorkout ? React.createElement("div", { className: "flex items-center gap-4" },
                             React.createElement("div", { className: "p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-indigo-500 dark:text-indigo-400" }, React.createElement(Activity, { size: 24 })),
@@ -508,8 +450,6 @@
                             )
                         ) : React.createElement("p", { className: "text-zinc-400" }, "Rest Day / No Plan")
                      ),
-
-                     // Daily Rules (PSWTR)
                      React.createElement(Card, { title: "Daily Rules (PSWTR)", className: "lg:col-span-2" },
                         React.createElement("div", { className: "grid grid-cols-5 gap-2" },
                             pswtrData.map(item => 
@@ -1324,35 +1264,116 @@
             useEffect(() => {
                 const sessionUser = JSON.parse(localStorage.getItem('lifeos_user_session'));
                 if (sessionUser) setUser(sessionUser);
+
+                if (isSupabaseConfigured) {
+                    supabase.auth.getSession().then(({ data: { session } }) => {
+                        if (session) setUser({ ...session.user, isLocal: false });
+                    });
+                    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+                        if (session) setUser({ ...session.user, isLocal: false });
+                    });
+                    return () => subscription.unsubscribe();
+                }
             }, []);
 
-            // Data Sync
+            // Data Sync & Daily Task Reset Logic
             useEffect(() => {
                 if (!user) return;
                 
-                try {
-                    const prefix = `lifeos_data_${user.id}_`;
-                    setDeadlines(JSON.parse(localStorage.getItem(`${prefix}deadlines`) || '[]'));
-                    setTasks(JSON.parse(localStorage.getItem(`${prefix}tasks`) || '[]'));
-                    setDumps(JSON.parse(localStorage.getItem(`${prefix}dumps`) || '[]'));
-                    setMeals(JSON.parse(localStorage.getItem(`${prefix}meals`) || JSON.stringify(DEFAULT_MEALS)));
-                    setGoalsData(JSON.parse(localStorage.getItem(`${prefix}goals_2026`) || JSON.stringify(DEFAULT_GOALS_DATA)));
-                    setSpiritualNotes(JSON.parse(localStorage.getItem(`${prefix}spiritual_notes`) || '[]'));
-                    
-                    // New Features Load
-                    setTools(JSON.parse(localStorage.getItem(`${prefix}tools`) || JSON.stringify(DEFAULT_TOOLS)));
-                    setToolCategories(JSON.parse(localStorage.getItem(`${prefix}tool_categories`) || JSON.stringify(DEFAULT_TOOLS_CATEGORIES)));
-                    setWishlist(JSON.parse(localStorage.getItem(`${prefix}wishlist`) || '[]'));
-                    setBooks(JSON.parse(localStorage.getItem(`${prefix}books`) || '[]'));
-                    setDashboardData(JSON.parse(localStorage.getItem(`${prefix}dashboard`) || '{}'));
-                    setFitnessData(JSON.parse(localStorage.getItem(`${prefix}fitness`) || JSON.stringify({ gym: GYM_WORKOUT_PLAN, home: HOME_WORKOUT_PLAN })));
+                if (!user.isLocal && isSupabaseConfigured) {
+                    const fetchData = async () => {
+                        // Deadlines
+                        const { data: dData } = await supabase.from('deadlines').select('*').eq('user_id', user.id);
+                        if(dData) setDeadlines(dData);
 
-                } catch(e) {}
+                        // Tasks with Daily Reset
+                        const { data: tData } = await supabase.from('tasks').select('*').eq('user_id', user.id);
+                        
+                        // Check last reset date
+                        const { data: metaData } = await supabase.from('app_data').select('tasks_last_reset').eq('user_id', user.id).single();
+                        const today = new Date().toLocaleDateString();
+                        
+                        if (tData && tData.length > 0 && (!metaData || metaData.tasks_last_reset !== today)) {
+                             // Reset tasks in DB
+                             await supabase.from('tasks').delete().eq('user_id', user.id);
+                             // Update reset date
+                             await supabase.from('app_data').upsert({ user_id: user.id, tasks_last_reset: today }, { onConflict: 'user_id' });
+                             setTasks([]);
+                        } else if (tData) {
+                             setTasks(tData);
+                        }
+
+                        const { data: bData } = await supabase.from('brain_dumps').select('*').eq('user_id', user.id);
+                        if(bData) setDumps(bData);
+                        
+                        const { data: mData } = await supabase.from('meals').select('*').eq('user_id', user.id);
+                        if(mData && mData.length > 0) setMeals(mData);
+                        
+                        const { data: aData } = await supabase.from('app_data').select('*').eq('user_id', user.id).single();
+                        if(aData) {
+                            if(aData.goals_2026) setGoalsData(aData.goals_2026);
+                            if(aData.dashboard_config) setDashboardData(aData.dashboard_config);
+                            if(aData.fitness_data) setFitnessData(aData.fitness_data);
+                            if(aData.tool_categories) setToolCategories(aData.tool_categories);
+                        }
+                        
+                        const { data: tlData } = await supabase.from('tools').select('*').eq('user_id', user.id);
+                        if(tlData && tlData.length > 0) setTools(tlData);
+                        
+                        const { data: sData } = await supabase.from('spiritual_notes').select('*').eq('user_id', user.id);
+                        if(sData) setSpiritualNotes(sData);
+                        
+                        const { data: wData } = await supabase.from('wishlist').select('*').eq('user_id', user.id);
+                        if(wData) setWishlist(wData);
+                        
+                        const { data: lData } = await supabase.from('library').select('*').eq('user_id', user.id);
+                        if(lData) setBooks(lData);
+                    };
+                    fetchData();
+                    
+                     const channel = supabase.channel('db-changes')
+                        .on('postgres_changes', { event: '*', schema: 'public' }, () => fetchData())
+                        .subscribe();
+                    return () => supabase.removeChannel(channel);
+                } else {
+                    // Local Storage Fallback
+                    try {
+                        const prefix = `lifeos_data_${user.id}_`;
+                        setDeadlines(JSON.parse(localStorage.getItem(`${prefix}deadlines`) || '[]'));
+                        
+                        // Daily Reset Local
+                        const savedTasks = JSON.parse(localStorage.getItem(`${prefix}tasks`) || '[]');
+                        const lastTaskDate = localStorage.getItem(`${prefix}tasks_date`);
+                        const today = new Date().toLocaleDateString();
+
+                        if (lastTaskDate !== today) {
+                            setTasks([]); 
+                            localStorage.setItem(`${prefix}tasks`, '[]');
+                            localStorage.setItem(`${prefix}tasks_date`, today);
+                        } else {
+                            setTasks(savedTasks);
+                        }
+
+                        setDumps(JSON.parse(localStorage.getItem(`${prefix}dumps`) || '[]'));
+                        setMeals(JSON.parse(localStorage.getItem(`${prefix}meals`) || JSON.stringify(DEFAULT_MEALS)));
+                        setGoalsData(JSON.parse(localStorage.getItem(`${prefix}goals_2026`) || JSON.stringify(DEFAULT_GOALS_DATA)));
+                        setSpiritualNotes(JSON.parse(localStorage.getItem(`${prefix}spiritual_notes`) || '[]'));
+                        
+                        // New Features Load
+                        setTools(JSON.parse(localStorage.getItem(`${prefix}tools`) || JSON.stringify(DEFAULT_TOOLS)));
+                        setToolCategories(JSON.parse(localStorage.getItem(`${prefix}tool_categories`) || JSON.stringify(DEFAULT_TOOLS_CATEGORIES)));
+                        setWishlist(JSON.parse(localStorage.getItem(`${prefix}wishlist`) || '[]'));
+                        setBooks(JSON.parse(localStorage.getItem(`${prefix}books`) || '[]'));
+                        setDashboardData(JSON.parse(localStorage.getItem(`${prefix}dashboard`) || '{}'));
+                        setFitnessData(JSON.parse(localStorage.getItem(`${prefix}fitness`) || JSON.stringify({ gym: GYM_WORKOUT_PLAN, home: HOME_WORKOUT_PLAN })));
+
+                    } catch(e) {}
+                }
             }, [user]);
 
-            // Save Local
+            // Save Local (for local mode)
             useEffect(() => {
-                if(user) {
+                if(user && user.isLocal) {
                     const prefix = `lifeos_data_${user.id}_`;
                     localStorage.setItem(`${prefix}deadlines`, JSON.stringify(deadlines));
                     localStorage.setItem(`${prefix}tasks`, JSON.stringify(tasks));
@@ -1371,34 +1392,112 @@
                 }
             }, [deadlines, tasks, dumps, meals, goalsData, spiritualNotes, dashboardData, tools, toolCategories, wishlist, books, fitnessData, user]);
 
+
             const handleLoginSuccess = (u) => { setUser(u); localStorage.setItem('lifeos_user_session', JSON.stringify(u)); };
-            const handleLogout = () => { localStorage.removeItem('lifeos_user_session'); setUser(null); };
+            const handleLogout = async () => { 
+                if (isSupabaseConfigured) await supabase.auth.signOut();
+                localStorage.removeItem('lifeos_user_session'); 
+                setUser(null); 
+            };
 
             // Handlers
-            const handleAddDeadline = (item) => setDeadlines(prev => [...prev, { ...item, id: Date.now().toString() }]);
-            const handleDeleteDeadline = (id) => setDeadlines(prev => prev.filter(i => i.id !== id));
-            const handleAddTask = (item) => setTasks(prev => [...prev, { ...item, id: Date.now().toString() }]);
-            const handleDeleteTask = (id) => setTasks(prev => prev.filter(t => t.id !== id));
-            const handleUpdateTask = (id, updates) => setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
-            const handleAddDump = (text) => setDumps(prev => [...prev, { text, id: Date.now().toString() }]);
-            const handleDeleteDump = (id) => setDumps(prev => prev.filter(d => d.id !== id));
+            const handleAddDeadline = async (item) => {
+                const newItem = { ...item, id: Date.now().toString(), user_id: user.id };
+                setDeadlines(prev => [...prev, newItem]);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('deadlines').insert(newItem);
+            };
+            const handleDeleteDeadline = async (id) => {
+                setDeadlines(prev => prev.filter(i => i.id !== id));
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('deadlines').delete().eq('id', id);
+            };
+            const handleAddTask = async (item) => {
+                const newItem = { ...item, id: Date.now().toString(), user_id: user.id };
+                setTasks(prev => [...prev, newItem]);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('tasks').insert(newItem);
+            };
+            const handleDeleteTask = async (id) => {
+                setTasks(prev => prev.filter(t => t.id !== id));
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('tasks').delete().eq('id', id);
+            };
+            const handleUpdateTask = async (id, updates) => {
+                setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('tasks').update(updates).eq('id', id);
+            };
+            const handleAddDump = async (text) => {
+                const newItem = { text, id: Date.now().toString(), user_id: user.id };
+                setDumps(prev => [...prev, newItem]);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('brain_dumps').insert(newItem);
+            };
+            const handleDeleteDump = async (id) => {
+                setDumps(prev => prev.filter(d => d.id !== id));
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('brain_dumps').delete().eq('id', id);
+            };
             
             // New Feature Handlers
-            const handleAddTool = (tool) => setTools(prev => [...prev, { ...tool, id: Date.now().toString() }]);
-            const handleAddCategory = (cat) => setToolCategories(prev => [...prev, cat]);
-            const handleAddWish = (item) => setWishlist(prev => [...prev, { ...item, id: Date.now().toString() }]);
-            const handleDeleteWish = (id) => setWishlist(prev => prev.filter(i => i.id !== id));
-            const handleAddBook = (book) => setBooks(prev => [...prev, { ...book, id: Date.now().toString() }]);
-            const handleDeleteBook = (id) => setBooks(prev => prev.filter(b => b.id !== id));
+            const handleAddTool = async (item) => {
+                const newItem = { ...item, id: Date.now().toString(), user_id: user.id };
+                setTools(prev => [...prev, newItem]);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('tools').insert(newItem);
+            };
+            const handleAddCategory = async (cat) => {
+                const newCats = [...toolCategories, cat];
+                setToolCategories(newCats);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('app_data').upsert({ user_id: user.id, tool_categories: newCats }, { onConflict: 'user_id' });
+            };
+            const handleAddWish = async (item) => {
+                const newItem = { ...item, id: Date.now().toString(), user_id: user.id };
+                setWishlist(prev => [...prev, newItem]);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('wishlist').insert(newItem);
+            };
+            const handleDeleteWish = async (id) => {
+                setWishlist(prev => prev.filter(i => i.id !== id));
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('wishlist').delete().eq('id', id);
+            };
+            const handleAddBook = async (book) => {
+                const newItem = { ...book, id: Date.now().toString(), user_id: user.id };
+                setBooks(prev => [...prev, newItem]);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('library').insert(newItem);
+            };
+            const handleDeleteBook = async (id) => {
+                setBooks(prev => prev.filter(b => b.id !== id));
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('library').delete().eq('id', id);
+            };
 
-            const handleAddSpiritualNote = (text) => setSpiritualNotes(prev => [...prev, { text, id: Date.now().toString() }]);
-            const handleDeleteSpiritualNote = (id) => setSpiritualNotes(prev => prev.filter(n => n.id !== id));
-            const handleUpdateMeal = (day, type, text) => setMeals(prev => {
-                const exists = prev.find(m => m.day === day && m.type === type);
-                if(exists) return prev.map(m => m.day === day && m.type === type ? { ...m, text } : m);
-                return [...prev, { day, type, text }];
-            });
-            const handleUpdateFitness = (type, newPlan) => setFitnessData(prev => ({ ...prev, [type]: newPlan }));
+            const handleAddSpiritualNote = async (text) => {
+                const newItem = { text, id: Date.now().toString(), user_id: user.id };
+                setSpiritualNotes(prev => [...prev, newItem]);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('spiritual_notes').insert(newItem);
+            };
+            const handleDeleteSpiritualNote = async (id) => {
+                setSpiritualNotes(prev => prev.filter(n => n.id !== id));
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('spiritual_notes').delete().eq('id', id);
+            };
+            const handleUpdateMeal = async (day, type, text) => {
+                setMeals(prev => {
+                    const exists = prev.find(m => m.day === day && m.type === type);
+                    if(exists) return prev.map(m => m.day === day && m.type === type ? { ...m, text } : m);
+                    return [...prev, { day, type, text, user_id: user.id }];
+                });
+                if (!user.isLocal && isSupabaseConfigured) {
+                    await supabase.from('meals').delete().match({ user_id: user.id, day, type });
+                    await supabase.from('meals').insert({ user_id: user.id, day, type, text });
+                }
+            };
+            const handleUpdateFitness = async (type, newPlan) => {
+                const newData = { ...fitnessData, [type]: newPlan };
+                setFitnessData(newData);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('app_data').upsert({ user_id: user.id, fitness_data: newData }, { onConflict: 'user_id' });
+            };
+            
+            const handleUpdateDashboard = async (newData) => {
+                setDashboardData(newData);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('app_data').upsert({ user_id: user.id, dashboard_config: newData }, { onConflict: 'user_id' });
+            };
+            
+            const handleUpdateGoals = async (newData) => {
+                setGoalsData(newData);
+                if (!user.isLocal && isSupabaseConfigured) await supabase.from('app_data').upsert({ user_id: user.id, goals_2026: newData }, { onConflict: 'user_id' });
+            };
 
             // AI Handlers
             const handleGenerateMealPlan = async () => {
@@ -1406,10 +1505,13 @@
                 const prompt = "Generate a structured weekly meal plan (Monday to Sunday) for Breakfast, Lunch, Dinner, and Snack. Return ONLY valid JSON array: [{ day: 'Monday', type: 'Breakfast', text: '...' }, ...]";
                 try {
                     const result = await callGemini(apiKey, prompt);
-                    // Basic parsing (Assuming the model follows instruction, often returns markdown code block)
                     const jsonStr = result.replace(/```json/g, '').replace(/```/g, '');
                     const newMeals = JSON.parse(jsonStr);
-                    setMeals(newMeals);
+                    setMeals(newMeals.map(m => ({ ...m, user_id: user.id })));
+                    if(!user.isLocal && isSupabaseConfigured) {
+                         await supabase.from('meals').delete().eq('user_id', user.id);
+                         await supabase.from('meals').insert(newMeals.map(m => ({ ...m, user_id: user.id })));
+                    }
                 } catch (e) { alert("AI Error: " + e.message); }
             };
 
@@ -1425,7 +1527,6 @@
             };
 
             const handleBreakDownGoal = async () => {
-                // Implementation for task breakdown would go here, simplified for this integration
                 if (!apiKey) { setShowSettings(true); return; }
                 const prompt = "Suggest 3 concrete daily tasks to achieve 'Financial Freedom'. Return JSON array of strings.";
                 try {
@@ -1459,13 +1560,13 @@
                 React.createElement(MobileNavBar, { activeTab, setActiveTab, tabConfig }),
                 React.createElement("main", { className: "md:ml-64 p-4 md:p-12 pb-24 pt-20 md:pt-12 max-w-7xl mx-auto" },
                     activeTab === 'dashboard' && React.createElement(DashboardView, { 
-                        onNavigate: setActiveTab, tasks, deadlines, dashboardData, onUpdateDashboard: setDashboardData,
+                        onNavigate: setActiveTab, tasks, deadlines, dashboardData, onUpdateDashboard: handleUpdateDashboard,
                         timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset,
                         books: books, meals: meals, fitnessData: fitnessData
                     }),
                     activeTab === 'deadlines' && React.createElement(DeadlinesView, { deadlines, onAddDeadline: handleAddDeadline, onDeleteDeadline: handleDeleteDeadline }),
                     activeTab === 'tasks' && React.createElement(TasksView, { tasks, onAddTask: handleAddTask, onDeleteTask: handleDeleteTask, onUpdateTask: handleUpdateTask, onAIGenerate: handleBreakDownGoal }),
-                    activeTab === 'goals2026' && React.createElement(Goals2026View, { goalsData, onUpdateGoals: setGoalsData }),
+                    activeTab === 'goals2026' && React.createElement(Goals2026View, { goalsData, onUpdateGoals: handleUpdateGoals }),
                     activeTab === 'focus' && React.createElement(FocusView, { activeSound, isPlayingSound, toggleSound, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset }),
                     activeTab === 'braindump' && React.createElement(BrainDumpView, { dumps, onAddDump: handleAddDump, onDeleteDump: handleDeleteDump }),
                     activeTab === 'spirituality' && React.createElement(SpiritualityView, { notes: spiritualNotes, onAddNote: handleAddSpiritualNote, onDeleteNote: handleDeleteSpiritualNote }),
