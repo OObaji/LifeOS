@@ -98,7 +98,7 @@
             List, Grid, Columns, Utensils, FileText, Trash, ShieldAlert, Flame, Volume2, ChevronLeft,
             ListTodo, ArrowUpRight, CheckSquare, Flower2, Dumbbell, Github, Bot, Newspaper, QrCode,
             Waves, Wind, Mountain, Footprints, Ban, ShieldCheck, Milestone, User, LogIn, ArrowLeft, Info,
-            Eye, EyeOff, Hourglass, AlertTriangle, Check, Cpu, Scroll, Gift, ShoppingBag, Code2, Terminal, Library, Globe, Laptop, Smartphone
+            Eye, EyeOff, Hourglass, AlertTriangle, Check, Cpu, Scroll, Gift, ShoppingBag, Code2, Terminal, Library, Globe, Laptop, Smartphone, Wand2
         } from "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0";
 
         // --- SUPABASE IMPORT ---
@@ -130,6 +130,7 @@
                  return v.toString(16);
              });
         };
+
         const getTodayString = () => new Date().toISOString().split('T')[0];
 
         // --- ICONS LIBRARY ---
@@ -529,6 +530,7 @@
                         React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 text-sm mt-1" }, "Prioritize and execute.")
                     ),
                     React.createElement("div", { className: "flex items-center gap-4" },
+                        React.createElement("button", { onClick: onAIGenerate, className: "p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 flex items-center gap-2 text-sm font-bold shadow-glow-sm" }, React.createElement(Wand2, { size: 16 }), "Break Down Goal"),
                         React.createElement("span", { className: "text-zinc-400 dark:text-zinc-500 text-xs font-mono uppercase tracking-widest hidden md:block" }, new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }))
                     )
                 ),
@@ -552,6 +554,7 @@
                         React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "Weekly Nutrition"),
                         React.createElement("div", { className: "text-zinc-500 dark:text-zinc-400 text-sm" }, "Plan your fuel.")
                     ),
+                    React.createElement("button", { onClick: onAIGenerate, className: "p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 flex items-center gap-2 text-sm font-bold shadow-glow-sm" }, React.createElement(Wand2, { size: 16 }), "Generate Plan")
                 ),
                 React.createElement("div", { className: "space-y-8" },
                     days.map(day => 
@@ -606,6 +609,7 @@
                         React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "Fitness Plan"),
                      ),
                      React.createElement("div", { className: "flex gap-2" },
+                         React.createElement("button", { onClick: onAIGenerate, className: "p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 flex items-center gap-2 text-sm font-bold shadow-glow-sm mr-2" }, React.createElement(Wand2, { size: 16 }), "Generate Routine"),
                          React.createElement("div", { className: "flex gap-2 p-1 bg-zinc-100 dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800" }, 
                              React.createElement("button", { onClick: () => setPlanType('gym'), className: `px-4 py-1.5 text-sm rounded-md transition-all ${planType === 'gym' ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}` }, "Gym"),
                              React.createElement("button", { onClick: () => setPlanType('home'), className: `px-4 py-1.5 text-sm rounded-md transition-all ${planType === 'home' ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}` }, "Home")
@@ -1242,6 +1246,7 @@
                         audioRef.current.pause(); 
                         setIsPlayingSound(false); 
                     } else { 
+                        // Stop current sound if playing
                         if (isPlayingSound) {
                             audioRef.current.pause();
                         }
@@ -1255,6 +1260,7 @@
                 } catch (err) {
                     console.error("Audio playback error:", err);
                     setIsPlayingSound(false);
+                    // Fallback or silent failure to prevent app crash
                 }
             };
 
