@@ -83,6 +83,7 @@
         const DEFAULT_GOALS_DATA = { mission: "Reshape my life by achieving financial stability, building iron discipline, and gaining clear direction for my future.", mainFocus: [{id: '1', text: 'Financial Freedom'}, {id: '2', text: 'Improved Fitness'}, {id: '3', text: 'Skill Mastery'}], dos: [], donts: [], milestones: [], quarters: { q1: [], q2: [], q3: [], q4: [] }, phases: { phase1: [], phase2: [], phase3: [] } };
         const DEFAULT_MEALS = [{ day: 'Monday', type: 'Breakfast', text: 'Oats + milk\n1 banana\n1 scoop protein powder' }];
         const DEFAULT_TOOLS_CATEGORIES = ['General', 'Development', 'Design', 'Productivity', 'Finance'];
+        const DEFAULT_BOOK_CATEGORIES = ['General', 'Fiction', 'Non-Fiction', 'Self-Help', 'Technical'];
         const DEFAULT_TOOLS = [{ id: 't1', category: 'General', name: 'ChatGPT', url: 'https://chat.openai.com/', icon: 'Bot' }];
         const GYM_WORKOUT_PLAN = [ { id: 'gym1', title: "Day 1: Chest & Triceps", icon: "Flame", color: "text-rose-500", warmup: ["5min Treadmill", "Arm Circles"], exercises: [{ name: "Bench Press", sets: "4", reps: "8-10" }, { name: "Incline DB Press", sets: "3", reps: "10-12" }, { name: "Cable Flys", sets: "3", reps: "12-15" }, { name: "Tricep Pushdowns", sets: "4", reps: "12-15" }, { name: "Skullcrushers", sets: "3", reps: "10-12" }], finisher: "Pushup burnout" }, { id: 'gym2', title: "Day 2: Back & Biceps", icon: "Activity", color: "text-blue-500", warmup: ["5min Rower", "Band Pull-aparts"], exercises: [{ name: "Lat Pulldowns", sets: "4", reps: "10-12" }, { name: "Seated Cable Row", sets: "4", reps: "10-12" }, { name: "DB Row", sets: "3", reps: "10/side" }, { name: "Barbell Curls", sets: "3", reps: "10-12" }, { name: "Hammer Curls", sets: "3", reps: "12" }], finisher: "Face Pulls 3x15" }, { id: 'gym3', title: "Day 3: Legs", icon: "Dumbbell", color: "text-emerald-500", warmup: ["Bodyweight Squats", "Leg Swings"], exercises: [{ name: "Barbell Squats", sets: "4", reps: "6-8" }, { name: "Leg Press", sets: "3", reps: "10-12" }, { name: "RDLs", sets: "4", reps: "10" }, { name: "Leg Extensions", sets: "3", reps: "15" }, { name: "Calf Raises", sets: "4", reps: "15-20" }], finisher: "Walking Lunges" }, { id: 'gym4', title: "Day 4: Shoulders & Abs", icon: "Zap", color: "text-purple-500", warmup: ["Dislocations", "Light DB press"], exercises: [{ name: "Overhead Press", sets: "4", reps: "8-10" }, { name: "Lateral Raises", sets: "4", reps: "12-15" }, { name: "Front Plate Raise", sets: "3", reps: "12" }, { name: "Cable Crunches", sets: "4", reps: "15" }, { name: "Leg Raises", sets: "3", reps: "12" }], finisher: "Plank (3 x 1 min)" } ];
         const HOME_WORKOUT_PLAN = [ { id: 'home1', title: "Day 1: Upper Push (DB)", icon: "Flame", color: "text-orange-500", warmup: ["Jumping Jacks"], exercises: [{ name: "DB Floor Press", sets: "4", reps: "12" }, { name: "Pushups", sets: "3", reps: "Failure" }, { name: "Shoulder Press", sets: "4", reps: "12" }, { name: "Lateral Raises", sets: "3", reps: "15" }], finisher: "Pushups to failure" }, { id: 'home2', title: "Day 2: Lower Body (DB)", icon: "Activity", color: "text-blue-500", warmup: ["Squats"], exercises: [{ name: "Goblet Squats", sets: "4", reps: "15" }, { name: "DB RDL", sets: "4", reps: "12" }, { name: "Lunges", sets: "3", reps: "12/leg" }], finisher: "Wall Sit" }, { id: 'home3', title: "Day 3: Full Body", icon: "Zap", color: "text-emerald-500", warmup: ["Run 10 mins"], exercises: [{ name: "Burpees", sets: "4", reps: "10" }, { name: "Thrusters", sets: "3", reps: "12" }, { name: "Renegade Rows", sets: "3", reps: "10/side" }], finisher: "Mountain Climbers" }, { id: 'home4', title: "Day 4: Core & Cardio", icon: "Heart", color: "text-rose-500", warmup: ["High Knees"], exercises: [{ name: "Plank", sets: "4", reps: "1 min" }, { name: "Leg Raises", sets: "3", reps: "15" }, { name: "Russian Twists", sets: "3", reps: "20" }], finisher: "Sprints" } ];
@@ -174,8 +175,8 @@
             return React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" }, React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-2xl p-6" }, React.createElement("h2", { className: "text-xl font-bold mb-4 text-zinc-900 dark:text-white" }, "Cloud Sync Setup"), React.createElement("input", { value: url, onChange: e => setUrl(e.target.value), placeholder: "Supabase URL", className: "w-full mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white" }), React.createElement("input", { value: key, onChange: e => setKey(e.target.value), type: "password", placeholder: "Anon Key", className: "w-full mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white" }), React.createElement("div", { className: "flex justify-end gap-3" }, React.createElement("button", { onClose, className: "px-4 py-2 text-zinc-500" }, "Cancel"), React.createElement("button", { onClick: handleSave, className: "px-6 py-2 bg-indigo-600 text-white rounded-lg" }, "Save"))));
         };
         
-        const LibraryView = ({ books, onAddBook, onDeleteBook, onUpdateBook }) => {
-             const [newBook, setNewBook] = useState({ title: "", author: "", status: "To Read" });
+        const LibraryView = ({ books, categories = [], onAddBook, onDeleteBook, onUpdateBook }) => {
+             const [newBook, setNewBook] = useState({ title: "", author: "", status: "To Read", category: "General" });
              const [showAdd, setShowAdd] = useState(false);
              const [editingBook, setEditingBook] = useState(null);
              
@@ -185,40 +186,65 @@
                  "To Read": "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400" 
              };
 
-             const handleAdd = () => { if(newBook.title) { onAddBook(newBook); setNewBook({ title: "", author: "", status: "To Read" }); setShowAdd(false); } };
+             const handleAdd = () => { 
+                 if(newBook.title) { 
+                     onAddBook(newBook); 
+                     setNewBook({ title: "", author: "", status: "To Read", category: "General" }); 
+                     setShowAdd(false); 
+                 } 
+             };
              const handleSaveEdit = () => { if(editingBook && editingBook.title) { onUpdateBook(editingBook); setEditingBook(null); } };
+
+             // Use passed categories or default if empty
+             const displayCategories = categories.length > 0 ? categories : ['General', 'Fiction', 'Non-Fiction', 'Self-Help', 'Technical'];
 
              return React.createElement("div", { className: "p-4 md:p-8 pb-24 h-full flex flex-col max-w-7xl mx-auto" }, 
                 React.createElement("div", { className: "flex justify-between items-center mb-6" }, 
                     React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "Library"), 
-                    React.createElement("button", { onClick: () => setShowAdd(!showAdd), className: "p-2 bg-indigo-600 rounded-lg text-white" }, React.createElement(Plus, { size: 20 }))
+                    React.createElement("button", { onClick: () => setShowAdd(!showAdd), className: "p-2 bg-indigo-600 rounded-lg text-white shadow-glow-sm hover:scale-105 transition-transform" }, React.createElement(Plus, { size: 20 }))
                 ), 
                 
-                showAdd && React.createElement("div", { className: "mb-6 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl animate-in fade-in slide-in-from-top-4" }, 
-                    React.createElement("input", { value: newBook.title, onChange: e=>setNewBook({...newBook, title:e.target.value}), placeholder: "Title", className: "w-full mb-3 p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none" }), 
-                    React.createElement("div", { className: "flex gap-4" },
-                        React.createElement("input", { value: newBook.author, onChange: e=>setNewBook({...newBook, author:e.target.value}), placeholder: "Author", className: "flex-1 p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none" }), 
-                        React.createElement("select", { value: newBook.status, onChange: e=>setNewBook({...newBook, status:e.target.value}), className: "flex-1 p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none" },
-                            ['Reading', 'To Read', 'Completed'].map(s => React.createElement("option", { key: s, value: s }, s))
-                        )
-                    ),
-                    React.createElement("button", { onClick: handleAdd, className: "mt-4 w-full py-2 bg-indigo-600 text-white rounded-lg font-bold" }, "Add Book")
+                showAdd && React.createElement("div", { className: "mb-8 p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl animate-in fade-in slide-in-from-top-4 shadow-xl" }, 
+                    React.createElement("h3", { className: "text-lg font-bold text-zinc-900 dark:text-white mb-4" }, "Add New Book"),
+                    React.createElement("div", { className: "space-y-4" },
+                        React.createElement("input", { value: newBook.title, onChange: e=>setNewBook({...newBook, title:e.target.value}), placeholder: "Book Title", className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors" }), 
+                        React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-4" },
+                            React.createElement("input", { value: newBook.author, onChange: e=>setNewBook({...newBook, author:e.target.value}), placeholder: "Author", className: "p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors" }), 
+                            React.createElement("select", { value: newBook.category, onChange: e=>setNewBook({...newBook, category:e.target.value}), className: "p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors" },
+                                displayCategories.map(c => React.createElement("option", { key: c, value: c }, c))
+                            ),
+                            React.createElement("select", { value: newBook.status, onChange: e=>setNewBook({...newBook, status:e.target.value}), className: "p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors" },
+                                ['Reading', 'To Read', 'Completed'].map(s => React.createElement("option", { key: s, value: s }, s))
+                            )
+                        ),
+                        React.createElement("button", { onClick: handleAdd, className: "w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 transition-colors" }, "Add to Library")
+                    )
                 ), 
 
-                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pb-4" }, 
-                    books.map(book => (
-                        React.createElement("div", { key: book.id, onClick: () => setEditingBook(book), className: "cursor-pointer p-5 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:border-indigo-500/30 transition-all hover:shadow-md flex flex-col gap-3 group relative" }, 
-                            React.createElement("div", { className: "flex justify-between items-start" },
-                                React.createElement("div", { className: `p-2 rounded-lg ${statusColors[book.status] || statusColors["To Read"]}` }, React.createElement(Book, { size: 20 })),
-                                React.createElement("button", { onClick: (e) => { e.stopPropagation(); onDeleteBook(book.id); }, className: "text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" }, React.createElement(Trash2, { size: 16 }))
-                            ),
-                            React.createElement("div", null,
-                                React.createElement("h3", { className: "font-bold text-zinc-900 dark:text-white line-clamp-2" }, book.title),
-                                React.createElement("p", { className: "text-sm text-zinc-500" }, book.author)
-                            ),
-                            React.createElement("span", { className: `self-start text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${statusColors[book.status]}` }, book.status)
-                        )
-                    ))
+                React.createElement("div", { className: "space-y-10 overflow-y-auto pb-4" }, 
+                    displayCategories.map(category => {
+                        const categoryBooks = books.filter(b => (b.category || 'General') === category);
+                        if (categoryBooks.length === 0) return null;
+
+                        return React.createElement("div", { key: category, className: "space-y-4" },
+                            React.createElement("h3", { className: "text-lg font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest pl-1 border-l-4 border-indigo-500 ml-1" }, category),
+                            React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" },
+                                categoryBooks.map(book => (
+                                    React.createElement("div", { key: book.id, onClick: () => setEditingBook(book), className: "cursor-pointer p-5 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:border-indigo-500/30 transition-all hover:shadow-md flex flex-col gap-3 group relative" }, 
+                                        React.createElement("div", { className: "flex justify-between items-start" },
+                                            React.createElement("div", { className: `p-2 rounded-lg ${statusColors[book.status] || statusColors["To Read"]}` }, React.createElement(Book, { size: 20 })),
+                                            React.createElement("button", { onClick: (e) => { e.stopPropagation(); onDeleteBook(book.id); }, className: "text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" }, React.createElement(Trash2, { size: 16 }))
+                                        ),
+                                        React.createElement("div", null,
+                                            React.createElement("h3", { className: "font-bold text-zinc-900 dark:text-white line-clamp-2" }, book.title),
+                                            React.createElement("p", { className: "text-sm text-zinc-500" }, book.author)
+                                        ),
+                                        React.createElement("span", { className: `self-start text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${statusColors[book.status]}` }, book.status)
+                                    )
+                                ))
+                            )
+                        );
+                    })
                 ),
 
                 editingBook && React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" },
@@ -228,19 +254,25 @@
                         React.createElement("div", { className: "space-y-4" },
                             React.createElement("div", null,
                                 React.createElement("label", { className: "text-xs text-zinc-500 mb-1 block" }, "Title"),
-                                React.createElement("input", { value: editingBook.title, onChange: e => setEditingBook({...editingBook, title: e.target.value}), className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none" })
+                                React.createElement("input", { value: editingBook.title, onChange: e => setEditingBook({...editingBook, title: e.target.value}), className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500" })
                             ),
                             React.createElement("div", null,
                                 React.createElement("label", { className: "text-xs text-zinc-500 mb-1 block" }, "Author"),
-                                React.createElement("input", { value: editingBook.author, onChange: e => setEditingBook({...editingBook, author: e.target.value}), className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none" })
+                                React.createElement("input", { value: editingBook.author, onChange: e => setEditingBook({...editingBook, author: e.target.value}), className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500" })
+                            ),
+                            React.createElement("div", null,
+                                React.createElement("label", { className: "text-xs text-zinc-500 mb-1 block" }, "Category"),
+                                React.createElement("select", { value: editingBook.category || "General", onChange: e => setEditingBook({...editingBook, category: e.target.value}), className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500" },
+                                    displayCategories.map(c => React.createElement("option", { key: c, value: c }, c))
+                                )
                             ),
                             React.createElement("div", null,
                                 React.createElement("label", { className: "text-xs text-zinc-500 mb-1 block" }, "Status"),
-                                React.createElement("select", { value: editingBook.status, onChange: e => setEditingBook({...editingBook, status: e.target.value}), className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none" },
+                                React.createElement("select", { value: editingBook.status, onChange: e => setEditingBook({...editingBook, status: e.target.value}), className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500" },
                                     ['Reading', 'To Read', 'Completed'].map(s => React.createElement("option", { key: s, value: s }, s))
                                 )
                             ),
-                            React.createElement("button", { onClick: handleSaveEdit, className: "w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl mt-2" }, "Save Changes")
+                            React.createElement("button", { onClick: handleSaveEdit, className: "w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl mt-2 shadow-glow-sm" }, "Save Changes")
                         )
                     )
                 )
@@ -990,7 +1022,7 @@
                     activeTab === 'fitness' && React.createElement(FitnessView, { fitnessData, onUpdateFitness: handleUpdateFitness }),
                     activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal, onAIGenerate: generateAIMealPlan }),
                     activeTab === 'tools' && React.createElement(ToolsView, { tools, categories: toolCategories, onAddTool: handleAddTool, onAddCategory: handleAddCategory, onDeleteCategory: handleDeleteCategory, onRenameCategory: handleRenameCategory, onDeleteTool: handleDeleteTool, onUpdateTool: handleUpdateTool }),
-                    activeTab === 'library' && React.createElement(LibraryView, { books, onAddBook: handleAddBook, onDeleteBook: handleDeleteBook, onUpdateBook: handleUpdateBook }),
+                    activeTab === 'library' && React.createElement(LibraryView, { books, categories: DEFAULT_BOOK_CATEGORIES, onAddBook: handleAddBook, onDeleteBook: handleDeleteBook, onUpdateBook: handleUpdateBook }),
                     activeTab === 'profile' && React.createElement(ProfileView, { user, onLogout: handleLogout, onUpdateProfile: handleUpdateProfile })
                 ),
                 showSettings && React.createElement(SettingsView, { onClose: () => setShowSettings(false), onSave: () => window.location.reload() })
