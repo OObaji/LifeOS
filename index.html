@@ -64,7 +64,7 @@
             ListTodo, ArrowUpRight, CheckSquare, Flower2, Dumbbell, Github, Bot, Newspaper, QrCode,
             Waves, Wind, Mountain, Footprints, Ban, ShieldCheck, Milestone, User, LogIn, ArrowLeft, Info,
             Eye, EyeOff, Hourglass, AlertTriangle, Check, Cpu, Scroll, Gift, ShoppingBag, Code2, Terminal, Library, Globe, Laptop, Smartphone, Wand2, Chrome,
-            Calendar, Loader2
+            Calendar, Loader2, CalendarRange
         } from "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0";
         import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
@@ -247,7 +247,6 @@
             );
         };
 
-        // ... (FoodView and FitnessView components remain the same as previous iteration)
         const FoodView = ({ meals, onUpdateMeal, onAIGenerate }) => {
             const [isGenerating, setIsGenerating] = useState(false);
             const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -258,6 +257,9 @@
                 setIsGenerating(true);
                 try {
                     await onAIGenerate();
+                } catch(e) {
+                    alert("Failed to generate plan. Please ensure API Key is configured or try again later.");
+                    console.error(e);
                 } finally {
                     setIsGenerating(false);
                 }
@@ -448,11 +450,6 @@
                             React.createElement("input", { value: newTool.url, onChange: e => setNewTool({...newTool, url: e.target.value}), placeholder: "URL (https://...)", className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:border-indigo-500 outline-none" }),
                             React.createElement("div", null,
                                 React.createElement("label", { className: "text-xs text-zinc-500 mb-1 block" }, "Category"),
-                                isCustomCategory ?
-                                React.createElement("div", { className: "flex gap-2" },
-                                    React.createElement("input", { value: customCategoryName, onChange: e => setCustomCategoryName(e.target.value), placeholder: "New Category Name", className: "flex-1 p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:border-indigo-500 outline-none" }),
-                                    React.createElement("button", { onClick: () => setIsCustomCategory(false), className: "p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-xl hover:text-zinc-900 dark:hover:text-white" }, React.createElement(X, { size: 18 }))
-                                ) :
                                 React.createElement("select", { value: newTool.category, onChange: e => { if (e.target.value === 'NEW') setIsCustomCategory(true); else setNewTool({...newTool, category: e.target.value}); }, className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:border-indigo-500 outline-none" },
                                     categories.map(c => React.createElement("option", { key: c, value: c }, c)),
                                     React.createElement("option", { value: "NEW", className: "text-indigo-500 font-bold" }, "+ Create New Category")
@@ -581,6 +578,108 @@
             );
         };
 
+        const MonthlyPlanView = ({ plan, onUpdate }) => {
+            const theme = plan.theme || "";
+            const goals = plan.goals || []; 
+            const weeks = plan.weeks || { week1: "", week2: "", week3: "", week4: "" };
+
+            const updateField = (field, value) => onUpdate({ ...plan, [field]: value });
+            
+            const addGoal = (text) => updateField('goals', [...goals, { id: generateUUID(), text, completed: false }]);
+            const toggleGoal = (id) => updateField('goals', goals.map(g => g.id === id ? { ...g, completed: !g.completed } : g));
+            const deleteGoal = (id) => updateField('goals', goals.filter(g => g.id !== id));
+            const updateWeek = (key, text) => updateField('weeks', { ...weeks, [key]: text });
+
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth();
+            const currentDay = now.getDate();
+            const monthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+            const getWeekInfo = (index) => {
+                let endDay;
+                let isCurrent = false;
+                
+                if (index === 0) {
+                    endDay = 7;
+                    isCurrent = currentDay <= 7;
+                } else if (index === 1) {
+                    endDay = 14;
+                    isCurrent = currentDay > 7 && currentDay <= 14;
+                } else if (index === 2) {
+                    endDay = 21;
+                    isCurrent = currentDay > 14 && currentDay <= 21;
+                } else {
+                    endDay = new Date(currentYear, currentMonth + 1, 0).getDate(); 
+                    isCurrent = currentDay > 21;
+                }
+
+                const endDate = new Date(currentYear, currentMonth, endDay);
+                const dayNum = endDate.getDate();
+                const suffix = (dayNum === 1 || dayNum === 21 || dayNum === 31) ? 'st' : (dayNum === 2 || dayNum === 22) ? 'nd' : (dayNum === 3 || dayNum === 23) ? 'rd' : 'th';
+                const formattedDate = `${dayNum}${suffix} ${endDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+                
+                return { isCurrent, label: `Week ending ${formattedDate}` };
+            };
+
+            return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-full flex flex-col overflow-y-auto max-w-7xl mx-auto" },
+                React.createElement("div", { className: "mb-8 flex flex-col items-center text-center" },
+                    React.createElement("div", { className: "text-indigo-500 dark:text-indigo-400 font-bold uppercase tracking-widest text-xs mb-2" }, monthName),
+                    React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "Monthly Blueprint"),
+                    React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 text-sm" }, "The big picture. One month at a time.")
+                ),
+
+                React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8" },
+                    React.createElement("div", { className: "lg:col-span-1" },
+                        React.createElement(Card, { title: "Monthly Theme", className: "h-full bg-purple-50/50 dark:bg-purple-900/10 border-purple-200 dark:border-purple-500/30" },
+                            React.createElement("textarea", { 
+                                value: theme, 
+                                onChange: (e) => updateField('theme', e.target.value),
+                                placeholder: "e.g., 'Relentless Consistency' or 'Deep Health'",
+                                className: "w-full h-full min-h-[120px] bg-transparent text-lg font-bold text-purple-900 dark:text-purple-100 placeholder:text-purple-300 dark:placeholder:text-purple-700/50 resize-none focus:outline-none"
+                            })
+                        )
+                    ),
+                    
+                    React.createElement("div", { className: "lg:col-span-2" },
+                         React.createElement(Card, { title: "Top Priorities", className: "h-full" },
+                            React.createElement(EditableList, { 
+                                items: goals, 
+                                onAdd: addGoal, 
+                                onToggle: toggleGoal, 
+                                onDelete: deleteGoal, 
+                                placeholder: "Add a major goal for this month..." 
+                            })
+                         )
+                    )
+                ),
+
+                React.createElement("div", null,
+                    React.createElement("h3", { className: "text-xl font-bold text-zinc-900 dark:text-white mb-4 flex items-center gap-2" },
+                        React.createElement(CalendarRange, { size: 20 }), "Weekly Sprints"
+                    ),
+                    React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4" },
+                        ['week1', 'week2', 'week3', 'week4'].map((wKey, i) => {
+                            const { isCurrent, label } = getWeekInfo(i);
+                            return React.createElement("div", { key: wKey, className: `p-4 border rounded-2xl shadow-sm flex flex-col h-full min-h-[180px] transition-all duration-300 ${isCurrent ? 'bg-indigo-50 dark:bg-indigo-900/10 border-indigo-500 ring-1 ring-indigo-500 transform scale-[1.02]' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'}` },
+                                React.createElement("div", { className: "flex justify-between items-center mb-3 border-b border-zinc-100 dark:border-zinc-800 pb-2" },
+                                    React.createElement("span", { className: `text-xs font-bold uppercase tracking-widest ${isCurrent ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400'}` }, `Week ${i + 1}`),
+                                    isCurrent && React.createElement("span", { className: "text-[10px] font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded-full" }, "Current")
+                                ),
+                                React.createElement("div", { className: "text-[10px] text-zinc-400 mb-2 font-medium" }, label),
+                                React.createElement("textarea", { 
+                                    value: weeks[wKey], 
+                                    onChange: (e) => updateWeek(wKey, e.target.value), 
+                                    className: "w-full h-full bg-transparent text-sm resize-none focus:outline-none text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:placeholder:text-zinc-700",
+                                    placeholder: "Main focus for this week..." 
+                                })
+                            )
+                        })
+                    )
+                )
+            );
+        };
+
         const DailyPlanView = ({ plan = {}, onUpdate }) => {
             const schedule = plan.schedule || {};
             const rawPriorities = Array.isArray(plan.priorities) ? plan.priorities : [];
@@ -667,7 +766,7 @@
         };
 
         const App = () => {
-            const tabConfig = { dashboard: { label: "Dashboard", icon: Layout }, dailyPlan: { label: "Daily Plan", icon: CalendarDays }, weeklyPlan: { label: "Weekly Plan", icon: Calendar }, goals2026: { label: "2026 Vision", icon: Flag }, braindump: { label: "Brain Dump", icon: Brain }, focus: { label: "Focus Timer", icon: Timer }, fitness: { label: "Fitness", icon: Dumbbell }, food: { label: "Nutrition", icon: Utensils }, tools: { label: "Tools", icon: Wrench }, library: { label: "Library", icon: Book }, profile: { label: "Profile", icon: User } };
+            const tabConfig = { dashboard: { label: "Dashboard", icon: Layout }, dailyPlan: { label: "Daily Plan", icon: CalendarDays }, weeklyPlan: { label: "Weekly Plan", icon: Calendar }, monthlyPlan: { label: "Monthly Plan", icon: CalendarRange }, goals2026: { label: "2026 Vision", icon: Flag }, braindump: { label: "Brain Dump", icon: Brain }, focus: { label: "Focus Timer", icon: Timer }, fitness: { label: "Fitness", icon: Dumbbell }, food: { label: "Nutrition", icon: Utensils }, tools: { label: "Tools", icon: Wrench }, library: { label: "Library", icon: Book }, profile: { label: "Profile", icon: User } };
             const VALID_TABS = [...Object.keys(tabConfig), 'deadlines'];
             const [activeTab, setActiveTab] = useState(() => { const saved = localStorage.getItem('lifeos_active_tab'); return (saved && VALID_TABS.includes(saved)) ? saved : "dashboard"; });
             const [darkMode, setDarkMode] = useState(() => { const saved = localStorage.getItem('lifeos_dark_mode'); return saved !== null ? JSON.parse(saved) : true; });
@@ -688,6 +787,7 @@
             const [toolCategories, setToolCategories] = useState(DEFAULT_TOOLS_CATEGORIES);
             const [dailyPlan, setDailyPlan] = useState({ priorities: ['', '', ''], schedule: {}, notes: '', minorTasks: [] });
             const [weeklyPlan, setWeeklyPlan] = useState({ focus: "", objectives: [], dailyTasks: {} });
+            const [monthlyPlan, setMonthlyPlan] = useState({ theme: "", goals: [], weeks: { week1: "", week2: "", week3: "", week4: "" } });
             const [fitnessData, setFitnessData] = useState({ gym: GYM_WORKOUT_PLAN, home: HOME_WORKOUT_PLAN, gymInfo: { pin: '', notes: '' } });
             
             const [activeSound, setActiveSound] = useState(null);
@@ -720,6 +820,7 @@
                             if(aData.tool_categories) setToolCategories(aData.tool_categories); 
                             if(aData.daily_plan) setDailyPlan(aData.daily_plan);
                             if(aData.weekly_plan) setWeeklyPlan(aData.weekly_plan);
+                            if(aData.monthly_plan) setMonthlyPlan(aData.monthly_plan);
                         }
                         const { data: tlData } = await supabase.from('tools').select('*').eq('user_id', user.id); if(tlData && tlData.length > 0) setTools(tlData);
                         const { data: lData } = await supabase.from('library').select('*').eq('user_id', user.id); if(lData && lData.length > 0) setBooks(lData);
@@ -742,6 +843,7 @@
                         setFitnessData(JSON.parse(localStorage.getItem(`${prefix}fitness`) || JSON.stringify({ gym: GYM_WORKOUT_PLAN, home: HOME_WORKOUT_PLAN })));
                         setDailyPlan(JSON.parse(localStorage.getItem(`${prefix}daily_plan`) || JSON.stringify({ priorities: ['', '', ''], schedule: {}, notes: '', minorTasks: [] })));
                         setWeeklyPlan(JSON.parse(localStorage.getItem(`${prefix}weekly_plan`) || JSON.stringify({ focus: "", objectives: [], dailyTasks: {} })));
+                        setMonthlyPlan(JSON.parse(localStorage.getItem(`${prefix}monthly_plan`) || JSON.stringify({ theme: "", goals: [], weeks: { week1: "", week2: "", week3: "", week4: "" } })));
                     } catch(e) {}
                     setIsDataLoaded(true);
                 }
@@ -761,8 +863,9 @@
                     localStorage.setItem(`${prefix}fitness`, JSON.stringify(fitnessData));
                     localStorage.setItem(`${prefix}daily_plan`, JSON.stringify(dailyPlan));
                     localStorage.setItem(`${prefix}weekly_plan`, JSON.stringify(weeklyPlan));
+                    localStorage.setItem(`${prefix}monthly_plan`, JSON.stringify(monthlyPlan));
                 }
-            }, [deadlines, dumps, meals, goalsData, dashboardData, tools, books, toolCategories, fitnessData, dailyPlan, weeklyPlan, user, isDataLoaded]);
+            }, [deadlines, dumps, meals, goalsData, dashboardData, tools, books, toolCategories, fitnessData, dailyPlan, weeklyPlan, monthlyPlan, user, isDataLoaded]);
 
             // AI Meal Plan Generation
             const generateAIMealPlan = async () => {
@@ -810,7 +913,11 @@
                     
                     if (!response.ok) throw new Error("API failed");
                     const result = await response.json();
-                    return JSON.parse(result.candidates[0].content.parts[0].text);
+                    
+                    // Robust parsing: strip potential markdown code fences
+                    const text = result.candidates[0].content.parts[0].text;
+                    const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                    return JSON.parse(jsonStr);
                 };
 
                 const executeWithRetry = async () => {
@@ -833,6 +940,7 @@
                             return executeWithRetry();
                         }
                         console.error("AI Generation failed after retries", error);
+                        throw error; // Re-throw to allow UI to show error
                     }
                 };
 
@@ -854,6 +962,7 @@
             const handleUpdateDailyPlan = async (newData) => { setDailyPlan(newData); if (!user.isLocal && isSupabaseConfigured) await supabase.from('app_data').upsert({ user_id: user.id, daily_plan: newData }, { onConflict: 'user_id' }); };
             const handleUpdateGoals2026 = async (newData) => { setGoalsData(newData); if (!user.isLocal && isSupabaseConfigured) await supabase.from('app_data').upsert({ user_id: user.id, goals_2026: newData }, { onConflict: 'user_id' }); };
             const handleUpdateWeeklyPlan = async (newData) => { setWeeklyPlan(newData); if (!user.isLocal && isSupabaseConfigured) await supabase.from('app_data').upsert({ user_id: user.id, weekly_plan: newData }, { onConflict: 'user_id' }); };
+            const handleUpdateMonthlyPlan = async (newData) => { setMonthlyPlan(newData); if (!user.isLocal && isSupabaseConfigured) await supabase.from('app_data').upsert({ user_id: user.id, monthly_plan: newData }, { onConflict: 'user_id' }); };
             const handleDeleteCategory = async (catToDelete) => { if (catToDelete === "General") return; if (confirm(`Delete category "${catToDelete}"? Tools will be moved to "General".`)) { const newCats = toolCategories.filter(c => c !== catToDelete); setToolCategories(newCats); const newTools = tools.map(t => t.category === catToDelete ? { ...t, category: "General" } : t); setTools(newTools); if (!user.isLocal && isSupabaseConfigured) { await supabase.from('app_data').upsert({ user_id: user.id, tool_categories: newCats }, { onConflict: 'user_id' }); const toolsToUpdate = tools.filter(t => t.category === catToDelete); for(const tool of toolsToUpdate) { await supabase.from('tools').update({ category: "General" }).eq('id', tool.id); } } } };
             const handleRenameCategory = async (oldName, newName) => { if (!newName.trim() || toolCategories.includes(newName)) return; const newCats = toolCategories.map(c => c === oldName ? newName : c); setToolCategories(newCats); const newTools = tools.map(t => t.category === oldName ? { ...t, category: newName } : t); setTools(newTools); if (!user.isLocal && isSupabaseConfigured) { await supabase.from('app_data').upsert({ user_id: user.id, tool_categories: newCats }, { onConflict: 'user_id' }); const toolsToUpdate = tools.filter(t => t.category === oldName); for(const tool of toolsToUpdate) { await supabase.from('tools').update({ category: newName }).eq('id', tool.id); } } };
             const handleUpdateProfile = async (newName) => { if (user.isLocal) { const updatedUser = { ...user, displayName: newName }; setUser(updatedUser); localStorage.setItem('lifeos_user_session', JSON.stringify(updatedUser)); localStorage.setItem('lifeos_user', JSON.stringify(updatedUser)); } else if (isSupabaseConfigured) { const { data, error } = await supabase.auth.updateUser({ data: { full_name: newName } }); if (!error && data.user) { setUser({ ...data.user, isLocal: false }); } } };
@@ -871,6 +980,7 @@
                 React.createElement(MobileNavBar, { activeTab, setActiveTab, tabConfig }),
                 React.createElement("main", { className: "md:ml-64 p-4 md:p-8 pb-24 pt-20 md:pt-8 min-h-screen box-border" },
                     activeTab === 'dashboard' && React.createElement(DashboardView, { onNavigate: setActiveTab, deadlines, dashboardData, onUpdateDashboard: handleUpdateDashboard, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset, meals, fitnessData, goalsData, dumps, books }),
+                    activeTab === 'monthlyPlan' && React.createElement(MonthlyPlanView, { plan: monthlyPlan, onUpdate: handleUpdateMonthlyPlan }),
                     activeTab === 'weeklyPlan' && React.createElement(WeeklyPlanView, { plan: weeklyPlan, onUpdate: handleUpdateWeeklyPlan }),
                     activeTab === 'dailyPlan' && React.createElement(DailyPlanView, { plan: dailyPlan, onUpdate: handleUpdateDailyPlan }),
                     activeTab === 'goals2026' && React.createElement(Goals2026View, { goalsData, onUpdateGoals: handleUpdateGoals2026 }),
