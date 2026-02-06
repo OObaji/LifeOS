@@ -671,12 +671,12 @@
             const now = new Date();
             const currentYear = now.getFullYear();
             const currentMonth = now.getMonth();
-            const currentDay = now.getDate();
             const monthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
             const getWeekInfo = (index) => {
                 let endDay;
                 let isCurrent = false;
+                const currentDay = now.getDate();
                 
                 if (index === 0) {
                     endDay = 7;
@@ -695,9 +695,9 @@
                 const endDate = new Date(currentYear, currentMonth, endDay);
                 const dayNum = endDate.getDate();
                 const suffix = (dayNum === 1 || dayNum === 21 || dayNum === 31) ? 'st' : (dayNum === 2 || dayNum === 22) ? 'nd' : (dayNum === 3 || dayNum === 23) ? 'rd' : 'th';
-                const formattedDate = `${dayNum}${suffix} ${endDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+                const formattedDate = `${dayNum}${suffix} ${endDate.toLocaleDateString('en-US', { month: 'short' })}`;
                 
-                return { isCurrent, label: `Week ending ${formattedDate}` };
+                return { isCurrent, label: `Ends ${formattedDate}` };
             };
 
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-full flex flex-col overflow-y-auto max-w-7xl mx-auto" },
@@ -736,20 +736,22 @@
                     React.createElement("h3", { className: "text-xl font-bold text-zinc-900 dark:text-white mb-4 flex items-center gap-2" },
                         React.createElement(CalendarRange, { size: 20 }), "Weekly Sprints"
                     ),
-                    React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4" },
+                    React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-6" },
                         ['week1', 'week2', 'week3', 'week4'].map((wKey, i) => {
                             const { isCurrent, label } = getWeekInfo(i);
-                            return React.createElement("div", { key: wKey, className: `p-4 border rounded-2xl shadow-sm flex flex-col h-full min-h-[180px] transition-all duration-300 ${isCurrent ? 'bg-indigo-50 dark:bg-indigo-900/10 border-indigo-500 ring-1 ring-indigo-500 transform scale-[1.02]' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'}` },
-                                React.createElement("div", { className: "flex justify-between items-center mb-3 border-b border-zinc-100 dark:border-zinc-800 pb-2" },
-                                    React.createElement("span", { className: `text-xs font-bold uppercase tracking-widest ${isCurrent ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400'}` }, `Week ${i + 1}`),
-                                    isCurrent && React.createElement("span", { className: "text-[10px] font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded-full" }, "Current")
+                            return React.createElement("div", { key: wKey, className: `p-6 border rounded-3xl shadow-sm flex flex-col h-full min-h-[450px] transition-all duration-300 ${isCurrent ? 'bg-indigo-50/30 dark:bg-indigo-900/10 border-indigo-500 ring-1 ring-indigo-500 transform scale-[1.01]' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'}` },
+                                React.createElement("div", { className: "flex justify-between items-center mb-4 border-b border-zinc-100 dark:border-zinc-800 pb-3" },
+                                    React.createElement("div", null,
+                                        React.createElement("span", { className: `text-sm font-bold uppercase tracking-widest block ${isCurrent ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400'}` }, `Sprint 0${i + 1}`),
+                                        React.createElement("span", { className: "text-[11px] text-zinc-400 font-medium" }, label)
+                                    ),
+                                    isCurrent && React.createElement("span", { className: "text-[10px] font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-500/30" }, "ACTIVE")
                                 ),
-                                React.createElement("div", { className: "text-[10px] text-zinc-400 mb-2 font-medium" }, label),
                                 React.createElement("textarea", { 
                                     value: weeks[wKey], 
                                     onChange: (e) => updateWeek(wKey, e.target.value), 
-                                    className: "w-full h-full bg-transparent text-sm resize-none focus:outline-none text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:placeholder:text-zinc-700",
-                                    placeholder: "Main focus for this week..." 
+                                    className: "w-full flex-1 bg-transparent text-sm leading-relaxed resize-none focus:outline-none text-zinc-700 dark:text-zinc-200 placeholder:text-zinc-300 dark:placeholder:text-zinc-700 font-mono",
+                                    placeholder: "🎓 Objectives & Tasks...\n- Task 1\n- Task 2" 
                                 })
                             )
                         })
