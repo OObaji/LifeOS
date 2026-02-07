@@ -816,7 +816,7 @@
             const startEditing = (cat) => setEditingCategory({ original: cat, current: cat });
             const saveCategory = () => { if(editingCategory && editingCategory.current.trim()) { onRenameCategory(editingCategory.original, editingCategory.current.trim()); setEditingCategory(null); }};
 
-            return React.createElement("div", { className: "p-6 md:p-10 pb-32 h-full flex flex-col max-w-7xl mx-auto" },
+            return React.createElement("div", { className: "p-4 md:p-10 pb-32 h-full flex flex-col max-w-7xl mx-auto" },
                 React.createElement("div", { className: "flex justify-between items-center mb-8" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "App Library"),
@@ -827,14 +827,14 @@
                         React.createElement("button", { onClick: () => setShowAddModal(true), className: "flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-glow-sm" }, React.createElement(Plus, { size: 18 }), "Add")
                     )
                 ),
-                React.createElement("div", { className: "grid grid-cols-3 sm:grid-cols-4 gap-4 pb-10" },
+                React.createElement("div", { className: "columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 pb-10 space-y-6" },
                     categories.map(cat => {
                         const catTools = tools.filter(t => t.category === cat);
                         if (catTools.length === 0) return null;
                         return React.createElement("div", { key: cat, className: "break-inside-avoid mb-6" },
-                            React.createElement("div", { className: "bg-zinc-100/50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-5 flex flex-col backdrop-blur-sm hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors h-full" },
+                            React.createElement("div", { className: "bg-zinc-100/50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 flex flex-col backdrop-blur-sm hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors w-full shadow-sm" },
                                 React.createElement("h3", { className: "text-lg font-bold text-zinc-700 dark:text-zinc-300 mb-4 ml-1 flex items-center gap-2" }, cat, React.createElement("span", { className: "text-[10px] font-bold text-zinc-400 bg-zinc-200 dark:bg-zinc-800 px-2 py-0.5 rounded-full" }, catTools.length)),
-                                React.createElement("div", { className: "grid grid-cols-3 gap-x-2 gap-y-4" },
+                                React.createElement("div", { className: "grid grid-cols-4 gap-4" },
                                     catTools.map(tool => {
                                         const IconComp = ICON_LIB[tool.icon] || Globe;
                                         return React.createElement("div", { key: tool.id, className: "relative group flex flex-col items-center gap-2 h-full" },
