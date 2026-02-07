@@ -960,6 +960,12 @@
                 }
             };
 
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter') {
+                    handleSubmit();
+                }
+            };
+
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-full flex flex-col max-w-7xl mx-auto" },
                 React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4" },
                     React.createElement("div", null,
@@ -970,6 +976,7 @@
                         React.createElement("input", { 
                             value: title, 
                             onChange: e => setTitle(e.target.value), 
+                            onKeyDown: handleKeyDown,
                             placeholder: "Project Title", 
                             className: "flex-1 md:w-64 p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white" 
                         }),
@@ -977,6 +984,7 @@
                             type: "date", 
                             value: date, 
                             onChange: e => setDate(e.target.value), 
+                            onKeyDown: handleKeyDown,
                             className: "p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white" 
                         }),
                         React.createElement("button", { 
@@ -1010,7 +1018,7 @@
                                     )
                             ),
                             React.createElement("h4", { className: "mt-4 font-bold text-zinc-900 dark:text-white text-center max-w-[150px] truncate" }, c.title),
-                            React.createElement("p", { className: "text-xs text-zinc-500" }, new Date(c.date).toLocaleDateString()),
+                            React.createElement("p", { className: "text-xs text-zinc-500" }, new Date(c.date).toLocaleDateString('en-GB')),
                             React.createElement("button", { 
                                 onClick: (e) => { e.stopPropagation(); onDelete(c.id); }, 
                                 className: "absolute -top-2 -right-2 bg-white dark:bg-zinc-800 text-zinc-400 hover:text-red-500 p-2 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity border border-zinc-200 dark:border-zinc-700" 
