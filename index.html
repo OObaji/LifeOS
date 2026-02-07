@@ -1132,30 +1132,123 @@
             const handleLoginSuccess = (u) => { setUser(u); localStorage.setItem('lifeos_user_session', JSON.stringify(u)); };
             const handleLogout = async () => { if (isSupabaseConfigured) await supabase.auth.signOut(); localStorage.removeItem('lifeos_user_session'); setUser(null); };
 
-            const handleAddDeadline = async (item) => { const newItem = { ...item, id: generateUUID(), user_id: user.id }; setDeadlines(prev => [...prev, newItem]); if (!user.isLocal && isSupabaseConfigured) await supabase.from('deadlines').insert(newItem); };
-            const handleDeleteDeadline = async (id) => { setDeadlines(prev => prev.filter(i => i.id !== id)); if (!user.isLocal && isSupabaseConfigured) await supabase.from('deadlines').delete().eq('id', id); };
-            const handleAddDump = async (text) => { const newItem = { text, id: generateUUID(), user_id: user.id }; setDumps(prev => [...prev, newItem]); if (!user.isLocal && isSupabaseConfigured) await supabase.from('brain_dumps').insert(newItem); };
-            const handleDeleteDump = async (id) => { setDumps(prev => prev.filter(d => d.id !== id)); if (!user.isLocal && isSupabaseConfigured) await supabase.from('brain_dumps').delete().eq('id', id); };
-            const handleAddTool = async (item) => { const newItem = { ...item, id: generateUUID(), user_id: user.id }; setTools(prev => [...prev, newItem]); if (!user.isLocal && isSupabaseConfigured) await supabase.from('tools').insert(newItem); };
-            const handleAddCategory = async (cat) => { const newCats = [...toolCategories, cat]; setToolCategories(newCats); if (!user.isLocal && isSupabaseConfigured) await supabase.from('app_data').upsert({ user_id: user.id, tool_categories: newCats }, { onConflict: 'user_id' }); };
-            const handleAddBookCategory = async (cat) => { const newCats = [...bookCategories, cat]; setBookCategories(newCats); if (!user.isLocal && isSupabaseConfigured) await supabase.from('app_data').upsert({ user_id: user.id, book_categories: newCats }, { onConflict: 'user_id' }); };
-            const handleUpdateMeal = async (day, type, text) => { setMeals(prev => { const exists = prev.find(m => m.day === day && m.type === type); if(exists) return prev.map(m => m.day === day && m.type === type ? { ...m, text } : m); return [...prev, { day, type, text, user_id: user.id, id: generateUUID() }]; }); if (!user.isLocal && isSupabaseConfigured) { await supabase.from('meals').delete().match({ user_id: user.id, day, type }); await supabase.from('meals').insert({ user_id: user.id, day, type, text }); } };
-            const handleUpdateFitness = async (type, newPlan) => { const newData = { ...fitnessData, [type]: newPlan }; setFitnessData(newData); if (!user.isLocal && isSupabaseConfigured) await supabase.from('app_data').upsert({ user_id: user.id, fitness_data: newData }, { onConflict: 'user_id' }); };
-            const handleUpdateDashboard = async (newData) => { setDashboardData(newData); if (!user.isLocal && isSupabaseConfigured) await supabase.from('app_data').upsert({ user_id: user.id, dashboard_config: newData }, { onConflict: 'user_id' }); };
-            const handleUpdateDailyPlan = async (newData) => { setDailyPlan(newData); if (!user.isLocal && isSupabaseConfigured) await supabase.from('app_data').upsert({ user_id: user.id, daily_plan: newData }, { onConflict: 'user_id' }); };
-            const handleUpdateGoals2026 = async (newData) => { setGoalsData(newData); if (!user.isLocal && isSupabaseConfigured) await supabase.from('app_data').upsert({ user_id: user.id, goals_2026: newData }, { onConflict: 'user_id' }); };
-            const handleUpdateWeeklyPlan = async (newData) => { setWeeklyPlan(newData); if (!user.isLocal && isSupabaseConfigured) await supabase.from('app_data').upsert({ user_id: user.id, weekly_plan: newData }, { onConflict: 'user_id' }); };
-            const handleUpdateMonthlyPlan = async (newData) => { setMonthlyPlan(newData); if (!user.isLocal && isSupabaseConfigured) await supabase.from('app_data').upsert({ user_id: user.id, monthly_plan: newData }, { onConflict: 'user_id' }); };
-            const handleDeleteCategory = async (catToDelete) => { if (catToDelete === "General") return; if (confirm(`Delete category "${catToDelete}"? Tools will be moved to "General".`)) { const newCats = toolCategories.filter(c => c !== catToDelete); setToolCategories(newCats); const newTools = tools.map(t => t.category === catToDelete ? { ...t, category: "General" } : t); setTools(newTools); if (!user.isLocal && isSupabaseConfigured) { await supabase.from('app_data').upsert({ user_id: user.id, tool_categories: newCats }, { onConflict: 'user_id' }); const toolsToUpdate = tools.filter(t => t.category === catToDelete); for(const tool of toolsToUpdate) { await supabase.from('tools').update({ category: "General" }).eq('id', tool.id); } } } };
-            const handleDeleteBookCategory = async (catToDelete) => { if (catToDelete === "General") return; if (confirm(`Delete category "${catToDelete}"? Books will be moved to "General".`)) { const newCats = bookCategories.filter(c => c !== catToDelete); setBookCategories(newCats); const newBooks = books.map(b => b.category === catToDelete ? { ...b, category: "General" } : b); setBooks(newBooks); if (!user.isLocal && isSupabaseConfigured) { await supabase.from('app_data').upsert({ user_id: user.id, book_categories: newCats }, { onConflict: 'user_id' }); const booksToUpdate = books.filter(b => b.category === catToDelete); for(const book of booksToUpdate) { await supabase.from('library').update({ category: "General" }).eq('id', book.id); } } } };
-            const handleRenameCategory = async (oldName, newName) => { if (!newName.trim() || toolCategories.includes(newName)) return; const newCats = toolCategories.map(c => c === oldName ? newName : c); setToolCategories(newCats); const newTools = tools.map(t => t.category === oldName ? { ...t, category: newName } : t); setTools(newTools); if (!user.isLocal && isSupabaseConfigured) { await supabase.from('app_data').upsert({ user_id: user.id, tool_categories: newCats }, { onConflict: 'user_id' }); const toolsToUpdate = tools.filter(t => t.category === oldName); for(const tool of toolsToUpdate) { await supabase.from('tools').update({ category: newName }).eq('id', tool.id); } } };
-            const handleRenameBookCategory = async (oldName, newName) => { if (!newName.trim() || bookCategories.includes(newName)) return; const newCats = bookCategories.map(c => c === oldName ? newName : c); setBookCategories(newCats); const newBooks = books.map(b => b.category === oldName ? { ...b, category: newName } : b); setBooks(newBooks); if (!user.isLocal && isSupabaseConfigured) { await supabase.from('app_data').upsert({ user_id: user.id, book_categories: newCats }, { onConflict: 'user_id' }); const booksToUpdate = books.filter(b => b.category === oldName); for(const book of booksToUpdate) { await supabase.from('library').update({ category: newName }).eq('id', book.id); } } };
+            const handleAddDeadline = async (item) => { 
+                const newItem = { ...item, id: generateUUID(), user_id: user.id }; 
+                setDeadlines(prev => [...prev, newItem]); 
+                if (!user.isLocal && isSupabaseConfigured) {
+                    try { await supabase.from('deadlines').insert(newItem); } catch(e) { console.error(e); }
+                }
+            };
+            const handleDeleteDeadline = async (id) => { 
+                setDeadlines(prev => prev.filter(i => i.id !== id)); 
+                if (!user.isLocal && isSupabaseConfigured) {
+                    try { await supabase.from('deadlines').delete().eq('id', id); } catch(e) { console.error(e); }
+                }
+            };
+            const handleAddDump = async (text) => { 
+                const newItem = { text, id: generateUUID(), user_id: user.id }; 
+                setDumps(prev => [...prev, newItem]); 
+                if (!user.isLocal && isSupabaseConfigured) {
+                    try { await supabase.from('brain_dumps').insert(newItem); } catch(e) { console.error(e); }
+                }
+            };
+            const handleDeleteDump = async (id) => { 
+                setDumps(prev => prev.filter(d => d.id !== id)); 
+                if (!user.isLocal && isSupabaseConfigured) {
+                    try { await supabase.from('brain_dumps').delete().eq('id', id); } catch(e) { console.error(e); }
+                }
+            };
+            const handleAddTool = async (item) => { 
+                const newItem = { ...item, id: generateUUID(), user_id: user.id }; 
+                setTools(prev => [...prev, newItem]); 
+                if (!user.isLocal && isSupabaseConfigured) {
+                    try { await supabase.from('tools').insert(newItem); } catch(e) { console.error(e); }
+                }
+            };
+            const handleAddCategory = async (cat) => { 
+                const newCats = [...toolCategories, cat]; 
+                setToolCategories(newCats); 
+                if (!user.isLocal && isSupabaseConfigured) {
+                    try { await supabase.from('app_data').upsert({ user_id: user.id, tool_categories: newCats }, { onConflict: 'user_id' }); } catch(e) { console.error(e); }
+                }
+            };
+            const handleAddBookCategory = async (cat) => { 
+                const newCats = [...bookCategories, cat]; 
+                setBookCategories(newCats); 
+                if (!user.isLocal && isSupabaseConfigured) {
+                    try { await supabase.from('app_data').upsert({ user_id: user.id, book_categories: newCats }, { onConflict: 'user_id' }); } catch(e) { console.error(e); }
+                }
+            };
+            const handleUpdateMeal = async (day, type, text) => { 
+                setMeals(prev => { const exists = prev.find(m => m.day === day && m.type === type); if(exists) return prev.map(m => m.day === day && m.type === type ? { ...m, text } : m); return [...prev, { day, type, text, user_id: user.id, id: generateUUID() }]; }); 
+                if (!user.isLocal && isSupabaseConfigured) { 
+                    try { await supabase.from('meals').delete().match({ user_id: user.id, day, type }); await supabase.from('meals').insert({ user_id: user.id, day, type, text }); } catch(e) { console.error(e); }
+                } 
+            };
+            const handleUpdateFitness = async (type, newPlan) => { 
+                const newData = { ...fitnessData, [type]: newPlan }; 
+                setFitnessData(newData); 
+                if (!user.isLocal && isSupabaseConfigured) {
+                    try { await supabase.from('app_data').upsert({ user_id: user.id, fitness_data: newData }, { onConflict: 'user_id' }); } catch(e) { console.error(e); }
+                }
+            };
+            const handleUpdateDashboard = async (newData) => { 
+                setDashboardData(newData); 
+                if (!user.isLocal && isSupabaseConfigured) {
+                    try { await supabase.from('app_data').upsert({ user_id: user.id, dashboard_config: newData }, { onConflict: 'user_id' }); } catch(e) { console.error(e); }
+                }
+            };
+            const handleUpdateDailyPlan = async (newData) => { 
+                setDailyPlan(newData); 
+                if (!user.isLocal && isSupabaseConfigured) {
+                    try { await supabase.from('app_data').upsert({ user_id: user.id, daily_plan: newData }, { onConflict: 'user_id' }); } catch(e) { console.error(e); }
+                }
+            };
+            const handleUpdateGoals2026 = async (newData) => { 
+                setGoalsData(newData); 
+                if (!user.isLocal && isSupabaseConfigured) {
+                    try { await supabase.from('app_data').upsert({ user_id: user.id, goals_2026: newData }, { onConflict: 'user_id' }); } catch(e) { console.error(e); }
+                }
+            };
+            const handleUpdateWeeklyPlan = async (newData) => { 
+                setWeeklyPlan(newData); 
+                if (!user.isLocal && isSupabaseConfigured) {
+                    try { await supabase.from('app_data').upsert({ user_id: user.id, weekly_plan: newData }, { onConflict: 'user_id' }); } catch(e) { console.error(e); }
+                }
+            };
+            const handleUpdateMonthlyPlan = async (newData) => { 
+                setMonthlyPlan(newData); 
+                if (!user.isLocal && isSupabaseConfigured) {
+                    try { await supabase.from('app_data').upsert({ user_id: user.id, monthly_plan: newData }, { onConflict: 'user_id' }); } catch(e) { console.error(e); }
+                }
+            };
+            const handleDeleteCategory = async (catToDelete) => { if (catToDelete === "General") return; if (confirm(`Delete category "${catToDelete}"? Tools will be moved to "General".`)) { const newCats = toolCategories.filter(c => c !== catToDelete); setToolCategories(newCats); const newTools = tools.map(t => t.category === catToDelete ? { ...t, category: "General" } : t); setTools(newTools); if (!user.isLocal && isSupabaseConfigured) { try { await supabase.from('app_data').upsert({ user_id: user.id, tool_categories: newCats }, { onConflict: 'user_id' }); const toolsToUpdate = tools.filter(t => t.category === catToDelete); for(const tool of toolsToUpdate) { await supabase.from('tools').update({ category: "General" }).eq('id', tool.id); } } catch(e) { console.error(e); } } } };
+            const handleDeleteBookCategory = async (catToDelete) => { if (catToDelete === "General") return; if (confirm(`Delete category "${catToDelete}"? Books will be moved to "General".`)) { const newCats = bookCategories.filter(c => c !== catToDelete); setBookCategories(newCats); const newBooks = books.map(b => b.category === catToDelete ? { ...b, category: "General" } : b); setBooks(newBooks); if (!user.isLocal && isSupabaseConfigured) { try { await supabase.from('app_data').upsert({ user_id: user.id, book_categories: newCats }, { onConflict: 'user_id' }); const booksToUpdate = books.filter(b => b.category === catToDelete); for(const book of booksToUpdate) { await supabase.from('library').update({ category: "General" }).eq('id', book.id); } } catch(e) { console.error(e); } } } };
+            const handleRenameCategory = async (oldName, newName) => { if (!newName.trim() || toolCategories.includes(newName)) return; const newCats = toolCategories.map(c => c === oldName ? newName : c); setToolCategories(newCats); const newTools = tools.map(t => t.category === oldName ? { ...t, category: newName } : t); setTools(newTools); if (!user.isLocal && isSupabaseConfigured) { try { await supabase.from('app_data').upsert({ user_id: user.id, tool_categories: newCats }, { onConflict: 'user_id' }); const toolsToUpdate = tools.filter(t => t.category === oldName); for(const tool of toolsToUpdate) { await supabase.from('tools').update({ category: newName }).eq('id', tool.id); } } catch(e) { console.error(e); } } };
+            const handleRenameBookCategory = async (oldName, newName) => { if (!newName.trim() || bookCategories.includes(newName)) return; const newCats = bookCategories.map(c => c === oldName ? newName : c); setBookCategories(newCats); const newBooks = books.map(b => b.category === oldName ? { ...b, category: newName } : b); setBooks(newBooks); if (!user.isLocal && isSupabaseConfigured) { try { await supabase.from('app_data').upsert({ user_id: user.id, book_categories: newCats }, { onConflict: 'user_id' }); const booksToUpdate = books.filter(b => b.category === oldName); for(const book of booksToUpdate) { await supabase.from('library').update({ category: newName }).eq('id', book.id); } } catch(e) { console.error(e); } } };
             const handleUpdateProfile = async (newName) => { if (user.isLocal) { const updatedUser = { ...user, displayName: newName }; setUser(updatedUser); localStorage.setItem('lifeos_user_session', JSON.stringify(updatedUser)); localStorage.setItem('lifeos_user', JSON.stringify(updatedUser)); } else if (isSupabaseConfigured) { const { data, error } = await supabase.auth.updateUser({ data: { full_name: newName } }); if (!error && data.user) { setUser({ ...data.user, isLocal: false }); } } };
-            const handleDeleteTool = async (id) => { if (confirm("Delete this tool?")) { setTools(prev => prev.filter(t => t.id !== id)); if (!user.isLocal && isSupabaseConfigured) await supabase.from('tools').delete().eq('id', id); } };
-            const handleUpdateTool = async (updatedTool) => { setTools(prev => prev.map(t => t.id === updatedTool.id ? updatedTool : t)); if (!user.isLocal && isSupabaseConfigured) await supabase.from('tools').update(updatedTool).eq('id', updatedTool.id); };
-            const handleAddBook = async (book) => { const newItem = { ...book, id: generateUUID(), user_id: user.id }; setBooks(prev => [...prev, newItem]); if (!user.isLocal && isSupabaseConfigured) await supabase.from('library').insert(newItem); };
-            const handleDeleteBook = async (id) => { setBooks(prev => prev.filter(b => b.id !== id)); if (!user.isLocal && isSupabaseConfigured) await supabase.from('library').delete().eq('id', id); };
-            const handleUpdateBook = async (updatedBook) => { setBooks(prev => prev.map(b => b.id === updatedBook.id ? updatedBook : b)); if (!user.isLocal && isSupabaseConfigured) await supabase.from('library').update(updatedBook).eq('id', updatedBook.id); };
+            const handleDeleteTool = async (id) => { if (confirm("Delete this tool?")) { setTools(prev => prev.filter(t => t.id !== id)); if (!user.isLocal && isSupabaseConfigured) { try { await supabase.from('tools').delete().eq('id', id); } catch(e) { console.error(e); } } } };
+            const handleUpdateTool = async (updatedTool) => { setTools(prev => prev.map(t => t.id === updatedTool.id ? updatedTool : t)); if (!user.isLocal && isSupabaseConfigured) { try { await supabase.from('tools').update(updatedTool).eq('id', updatedTool.id); } catch(e) { console.error(e); } } };
+            
+            const handleAddBook = async (book) => { 
+                const newItem = { ...book, id: generateUUID(), user_id: user.id }; 
+                setBooks(prev => [...prev, newItem]); 
+                if (!user.isLocal && isSupabaseConfigured) {
+                    try { await supabase.from('library').insert(newItem); } catch(e) { console.error(e); }
+                }
+            };
+            const handleDeleteBook = async (id) => { 
+                setBooks(prev => prev.filter(b => b.id !== id)); 
+                if (!user.isLocal && isSupabaseConfigured) {
+                    try { await supabase.from('library').delete().eq('id', id); } catch(e) { console.error(e); }
+                }
+            };
+            const handleUpdateBook = async (updatedBook) => { 
+                setBooks(prev => prev.map(b => b.id === updatedBook.id ? updatedBook : b)); 
+                if (!user.isLocal && isSupabaseConfigured) {
+                    try { await supabase.from('library').update(updatedBook).eq('id', updatedBook.id); } catch(e) { console.error(e); }
+                }
+            };
 
             if (!user) return React.createElement(LandingPage, { onLoginSuccess: handleLoginSuccess, onGuestLogin: handleLoginSuccess });
 
