@@ -816,7 +816,7 @@
             const startEditing = (cat) => setEditingCategory({ original: cat, current: cat });
             const saveCategory = () => { if(editingCategory && editingCategory.current.trim()) { onRenameCategory(editingCategory.original, editingCategory.current.trim()); setEditingCategory(null); }};
 
-            return React.createElement("div", { className: "p-4 md:p-10 pb-32 h-full flex flex-col max-w-7xl mx-auto" },
+            return React.createElement("div", { className: "p-6 md:p-10 pb-32 h-full flex flex-col max-w-7xl mx-auto" },
                 React.createElement("div", { className: "flex justify-between items-center mb-8" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "App Library"),
@@ -943,8 +943,86 @@
             );
         };
 
+        const CountdownView = ({ countdowns, onAdd, onToggle, onDelete }) => {
+            const [title, setTitle] = useState("");
+            const [date, setDate] = useState("");
+
+            const calculateDays = (targetDate) => {
+                const diff = new Date(targetDate) - new Date();
+                return Math.ceil(diff / (1000 * 60 * 60 * 24));
+            };
+
+            const handleSubmit = () => {
+                if(title && date) {
+                    onAdd({ title, date, completed: false });
+                    setTitle("");
+                    setDate("");
+                }
+            };
+
+            return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-full flex flex-col max-w-7xl mx-auto" },
+                React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4" },
+                    React.createElement("div", null,
+                        React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "Countdown"),
+                        React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 text-sm mt-1" }, "Visualize your deadlines.")
+                    ),
+                    React.createElement("div", { className: "flex gap-2 w-full md:w-auto" },
+                        React.createElement("input", { 
+                            value: title, 
+                            onChange: e => setTitle(e.target.value), 
+                            placeholder: "Project Title", 
+                            className: "flex-1 md:w-64 p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white" 
+                        }),
+                        React.createElement("input", { 
+                            type: "date", 
+                            value: date, 
+                            onChange: e => setDate(e.target.value), 
+                            className: "p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white" 
+                        }),
+                        React.createElement("button", { 
+                            onClick: handleSubmit, 
+                            className: "p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition-colors shadow-glow-sm" 
+                        }, React.createElement(Plus, { size: 18 }))
+                    )
+                ),
+                React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" },
+                    countdowns.map(c => {
+                        const days = calculateDays(c.date);
+                        const isPast = days < 0;
+                        const isToday = days === 0;
+                        const isUrgent = days > 0 && days <= 3;
+                        
+                        let borderColor = "border-indigo-500";
+                        if (isPast) borderColor = "border-red-500";
+                        else if (isUrgent) borderColor = "border-orange-500";
+                        else if (isToday) borderColor = "border-green-500";
+
+                        return React.createElement("div", { key: c.id, className: `flex flex-col items-center group relative transition-all duration-300 ${c.completed ? 'opacity-40 grayscale scale-95' : 'hover:scale-105'}` },
+                            React.createElement("div", { 
+                                onClick: () => onToggle(c.id),
+                                className: `w-32 h-32 rounded-full border-4 ${c.completed ? 'border-zinc-300 dark:border-zinc-700' : borderColor} flex flex-col items-center justify-center bg-white dark:bg-zinc-900 shadow-lg cursor-pointer relative overflow-hidden`
+                            },
+                                c.completed ? 
+                                    React.createElement(Check, { size: 40, className: "text-zinc-400" }) :
+                                    React.createElement(React.Fragment, null,
+                                        React.createElement("span", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, isPast ? Math.abs(days) : days),
+                                        React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider text-zinc-500" }, isPast ? "Days Ago" : isToday ? "Today" : "Days Left")
+                                    )
+                            ),
+                            React.createElement("h4", { className: "mt-4 font-bold text-zinc-900 dark:text-white text-center max-w-[150px] truncate" }, c.title),
+                            React.createElement("p", { className: "text-xs text-zinc-500" }, new Date(c.date).toLocaleDateString()),
+                            React.createElement("button", { 
+                                onClick: (e) => { e.stopPropagation(); onDelete(c.id); }, 
+                                className: "absolute -top-2 -right-2 bg-white dark:bg-zinc-800 text-zinc-400 hover:text-red-500 p-2 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity border border-zinc-200 dark:border-zinc-700" 
+                            }, React.createElement(Trash2, { size: 14 }))
+                        );
+                    })
+                )
+            );
+        };
+
         const App = () => {
-            const tabConfig = { dashboard: { label: "Dashboard", icon: Layout }, monthlyPlan: { label: "Monthly Plan", icon: CalendarRange }, weeklyPlan: { label: "Weekly Plan", icon: Calendar }, dailyPlan: { label: "Daily Plan", icon: CalendarDays }, goals2026: { label: "2026 Vision", icon: Flag }, braindump: { label: "Brain Dump", icon: Brain }, focus: { label: "Focus Timer", icon: Timer }, fitness: { label: "Fitness", icon: Dumbbell }, food: { label: "Nutrition", icon: Utensils }, tools: { label: "Tools", icon: Wrench }, library: { label: "Library", icon: Book }, profile: { label: "Profile", icon: User } };
+            const tabConfig = { dashboard: { label: "Dashboard", icon: Layout }, monthlyPlan: { label: "Monthly Plan", icon: CalendarRange }, weeklyPlan: { label: "Weekly Plan", icon: Calendar }, dailyPlan: { label: "Daily Plan", icon: CalendarDays }, goals2026: { label: "2026 Vision", icon: Flag }, countdown: { label: "Countdown", icon: Hourglass }, braindump: { label: "Brain Dump", icon: Brain }, focus: { label: "Focus Timer", icon: Timer }, fitness: { label: "Fitness", icon: Dumbbell }, food: { label: "Nutrition", icon: Utensils }, tools: { label: "Tools", icon: Wrench }, library: { label: "Library", icon: Book }, profile: { label: "Profile", icon: User } };
             const VALID_TABS = [...Object.keys(tabConfig), 'deadlines'];
             const [activeTab, setActiveTab] = useState(() => { const saved = localStorage.getItem('lifeos_active_tab'); return (saved && VALID_TABS.includes(saved)) ? saved : "dashboard"; });
             const [darkMode, setDarkMode] = useState(() => { const saved = localStorage.getItem('lifeos_dark_mode'); return saved !== null ? JSON.parse(saved) : true; });
@@ -957,6 +1035,7 @@
             const [showSettings, setShowSettings] = useState(false);
             const [deadlines, setDeadlines] = useState([]);
             const [dumps, setDumps] = useState([]);
+            const [countdowns, setCountdowns] = useState([]);
             const [meals, setMeals] = useState(DEFAULT_MEALS);
             const [goalsData, setGoalsData] = useState(DEFAULT_GOALS_DATA);
             const [dashboardData, setDashboardData] = useState({});
@@ -1001,6 +1080,7 @@
                             if(aData.daily_plan) setDailyPlan(aData.daily_plan);
                             if(aData.weekly_plan) setWeeklyPlan(aData.weekly_plan);
                             if(aData.monthly_plan) setMonthlyPlan(aData.monthly_plan);
+                            if(aData.countdowns) setCountdowns(aData.countdowns);
                         }
                         const { data: tlData } = await supabase.from('tools').select('*').eq('user_id', user.id); if(tlData && tlData.length > 0) setTools(tlData);
                         const { data: lData } = await supabase.from('library').select('*').eq('user_id', user.id); if(lData && lData.length > 0) setBooks(lData);
@@ -1025,6 +1105,7 @@
                         setDailyPlan(JSON.parse(localStorage.getItem(`${prefix}daily_plan`) || JSON.stringify({ priorities: ['', '', ''], schedule: {}, notes: '', minorTasks: [] })));
                         setWeeklyPlan(JSON.parse(localStorage.getItem(`${prefix}weekly_plan`) || JSON.stringify({ focus: "", objectives: [], dailyTasks: {} })));
                         setMonthlyPlan(JSON.parse(localStorage.getItem(`${prefix}monthly_plan`) || JSON.stringify({ theme: "", goals: [], weeks: { week1: [], week2: [], week3: [], week4: [] } })));
+                        setCountdowns(JSON.parse(localStorage.getItem(`${prefix}countdowns`) || '[]'));
                     } catch(e) {}
                     setIsDataLoaded(true);
                 }
@@ -1046,8 +1127,9 @@
                     localStorage.setItem(`${prefix}daily_plan`, JSON.stringify(dailyPlan));
                     localStorage.setItem(`${prefix}weekly_plan`, JSON.stringify(weeklyPlan));
                     localStorage.setItem(`${prefix}monthly_plan`, JSON.stringify(monthlyPlan));
+                    localStorage.setItem(`${prefix}countdowns`, JSON.stringify(countdowns));
                 }
-            }, [deadlines, dumps, meals, goalsData, dashboardData, tools, books, toolCategories, bookCategories, fitnessData, dailyPlan, weeklyPlan, monthlyPlan, user, isDataLoaded]);
+            }, [deadlines, dumps, meals, goalsData, dashboardData, tools, books, toolCategories, bookCategories, fitnessData, dailyPlan, weeklyPlan, monthlyPlan, countdowns, user, isDataLoaded]);
 
             // AI Meal Plan Generation
             const generateAIMealPlan = async () => {
@@ -1268,6 +1350,34 @@
                 }
             };
 
+            const handleAddCountdown = async (item) => {
+                const newItem = { ...item, id: generateUUID(), user_id: user.id };
+                const newCountdowns = [...countdowns, newItem];
+                setCountdowns(newCountdowns);
+                if (!user.isLocal && isSupabaseConfigured) {
+                    const { error } = await supabase.from('app_data').upsert({ user_id: user.id, countdowns: newCountdowns }, { onConflict: 'user_id' });
+                    if (error) console.error('Error adding countdown:', error);
+                }
+            };
+
+            const handleToggleCountdown = async (id) => {
+                const newCountdowns = countdowns.map(c => c.id === id ? { ...c, completed: !c.completed } : c);
+                setCountdowns(newCountdowns);
+                if (!user.isLocal && isSupabaseConfigured) {
+                    const { error } = await supabase.from('app_data').upsert({ user_id: user.id, countdowns: newCountdowns }, { onConflict: 'user_id' });
+                    if (error) console.error('Error toggling countdown:', error);
+                }
+            };
+
+            const handleDeleteCountdown = async (id) => {
+                const newCountdowns = countdowns.filter(c => c.id !== id);
+                setCountdowns(newCountdowns);
+                if (!user.isLocal && isSupabaseConfigured) {
+                    const { error } = await supabase.from('app_data').upsert({ user_id: user.id, countdowns: newCountdowns }, { onConflict: 'user_id' });
+                    if (error) console.error('Error deleting countdown:', error);
+                }
+            };
+
             if (!user) return React.createElement(LandingPage, { onLoginSuccess: handleLoginSuccess, onGuestLogin: handleLoginSuccess });
 
             return React.createElement("div", { className: "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300" },
@@ -1283,6 +1393,7 @@
                     activeTab === 'deadlines' && React.createElement(DeadlinesView, { deadlines, onAddDeadline: handleAddDeadline, onDeleteDeadline: handleDeleteDeadline }),
                     activeTab === 'focus' && React.createElement(FocusView, { activeSound, isPlayingSound, toggleSound, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset }),
                     activeTab === 'braindump' && React.createElement(BrainDumpView, { dumps, onAddDump: handleAddDump, onDeleteDump: handleDeleteDump }),
+                    activeTab === 'countdown' && React.createElement(CountdownView, { countdowns, onAdd: handleAddCountdown, onToggle: handleToggleCountdown, onDelete: handleDeleteCountdown }),
                     activeTab === 'fitness' && React.createElement(FitnessView, { fitnessData, onUpdateFitness: handleUpdateFitness }),
                     activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal, onAIGenerate: generateAIMealPlan }),
                     activeTab === 'tools' && React.createElement(ToolsView, { tools, categories: toolCategories, onAddTool: handleAddTool, onAddCategory: handleAddCategory, onDeleteCategory: handleDeleteCategory, onRenameCategory: handleRenameCategory, onDeleteTool: handleDeleteTool, onUpdateTool: handleUpdateTool }),
