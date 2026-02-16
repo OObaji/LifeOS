@@ -135,7 +135,7 @@
         const TimeWidget = () => { const [time, setTime] = useState(new Date()); useEffect(() => { const t = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(t); }, []); return React.createElement("div", { className: "text-right" }, React.createElement("div", { className: "text-3xl font-bold font-mono text-indigo-500 dark:text-indigo-400" }, time.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})), React.createElement("div", { className: "text-xs font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500" }, time.toLocaleDateString())); };
         const AuthModal = ({ onClose, onLogin, inline = false }) => { const [isLogin, setIsLogin] = useState(true); const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [showPassword, setShowPassword] = useState(false); const [error, setError] = useState(null); const [loading, setLoading] = useState(false); const handleSubmit = async (e) => { e.preventDefault(); setError(null); setLoading(true); if (isSupabaseConfigured) { try { const { data, error } = isLogin ? await supabase.auth.signInWithPassword({ email, password }) : await supabase.auth.signUp({ email, password }); if (error) throw error; if (data?.user) { onLogin({ email: data.user.email, id: data.user.id, isLocal: false }); if(!inline) onClose(); } } catch(err) { setError(err.message.includes("fetch") ? "Connection failed. Using Local Mode..." : err.message); if(err.message.includes("fetch")) setTimeout(handleLocalAuth, 1000); } finally { setLoading(false); } } else { handleLocalAuth(); } }; const handleLocalAuth = () => { try { const user = isLogin ? LocalAuth.login(email, password) : LocalAuth.signup(email, password); onLogin(user); if(!inline) onClose(); } catch(e) { setError(e.message); } finally { setLoading(false); } };
         const handleGoogleLogin = async () => { if (isSupabaseConfigured) { setLoading(true); const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } }); if (error) setError(error.message); setLoading(false); } else { setError("Cloud sync not configured. Cannot use Google Login."); } };
-        const content = React.createElement("div", { className: inline ? "" : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 max-w-sm w-full relative shadow-xl" }, !inline && React.createElement("button", { onClick: onClose, className: "absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200" }, React.createElement(X, { size: 20 })), React.createElement("h2", { className: "text-xl font-bold text-zinc-900 dark:text-white mb-6 text-center" }, isLogin ? "Welcome Back" : "Create Account"), React.createElement("form", { onSubmit: handleSubmit, className: "space-y-4" }, React.createElement("input", { type: "email", value: email, onChange: e => setEmail(e.target.value), placeholder: "Email", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:border-indigo-500 outline-none" }), React.createElement("div", { className: "relative" }, React.createElement("input", { type: showPassword ? "text" : "password", value: password, onChange: e => setPassword(e.target.value), placeholder: "Password", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:border-indigo-500 outline-none pr-10" }), React.createElement("button", { type: "button", onClick: () => setShowPassword(!showPassword), className: "absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors" }, showPassword ? React.createElement(EyeOff, { size: 18 }) : React.createElement(Eye, { size: 18 }))), error && React.createElement("div", { className: "text-red-500 text-xs" }, error), React.createElement("button", { type: "submit", disabled: loading, className: "w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500" }, loading ? "Processing..." : (isLogin ? "Login" : "Sign Up")), React.createElement("div", { className: "relative my-4" }, React.createElement("div", { className: "absolute inset-0 flex items-center" }, React.createElement("span", { className: "w-full border-t border-zinc-200 dark:border-zinc-700" })), React.createElement("div", { className: "relative flex justify-center text-xs uppercase" }, React.createElement("span", { className: "bg-white dark:bg-zinc-900 px-2 text-zinc-500" }, "Or continue with"))), React.createElement("button", { onClick: handleGoogleLogin, type: "button", className: "w-full py-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-xl font-bold hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-center gap-2 transition-colors" }, React.createElement(Chrome, { size: 18 }), "Google"), React.createElement("div", { className: "text-center text-xs text-zinc-500 mt-4 cursor-pointer hover:text-zinc-800 dark:hover:text-white", onClick: () => setIsLogin(!isLogin) }, isLogin ? "Need an account? Sign up" : "Have an account? Login"))); return inline ? content : React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" }, content); };
+        const content = React.createElement("div", { className: inline ? "" : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 max-w-sm w-full relative shadow-xl" }, !inline && React.createElement("button", { onClick: onClose, className: "absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200" }, React.createElement(X, { size: 20 })), React.createElement("h2", { className: "text-xl font-bold text-zinc-900 dark:text-white mb-6 text-center" }, isLogin ? "Welcome Back" : "Create Account"), React.createElement("form", { onSubmit: handleSubmit, className: "space-y-4" }, React.createElement("input", { type: "email", value: email, onChange: e => setEmail(e.target.value), placeholder: "Email", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:border-indigo-500 outline-none" }), React.createElement("div", { className: "relative" }, React.createElement("input", { type: showPassword ? "text" : "password", value: password, onChange: e => setPassword(e.target.value), placeholder: "Password", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:border-indigo-500 outline-none pr-10" }), React.createElement("button", { type: "button", onClick: () => setShowPassword(!showPassword), className: "absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-white transition-colors" }, showPassword ? React.createElement(EyeOff, { size: 18 }) : React.createElement(Eye, { size: 18 }))), error && React.createElement("div", { className: "text-red-500 text-xs" }, error), React.createElement("button", { type: "submit", disabled: loading, className: "w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500" }, loading ? "Processing..." : (isLogin ? "Login" : "Sign Up")), React.createElement("div", { className: "relative my-4" }, React.createElement("div", { className: "absolute inset-0 flex items-center" }, React.createElement("span", { className: "w-full border-t border-zinc-200 dark:border-zinc-700" })), React.createElement("div", { className: "relative flex justify-center text-xs uppercase" }, React.createElement("span", { className: "bg-white dark:bg-zinc-900 px-2 text-zinc-500" }, "Or continue with"))), React.createElement("button", { onClick: handleGoogleLogin, type: "button", className: "w-full py-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-xl font-bold hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-center gap-2 transition-colors" }, React.createElement(Chrome, { size: 18 }), "Google"), React.createElement("div", { className: "text-center text-xs text-zinc-500 mt-4 cursor-pointer hover:text-zinc-800 dark:hover:text-white", onClick: () => setIsLogin(!isLogin) }, isLogin ? "Need an account? Sign up" : "Have an account? Login"))); return inline ? content : React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" }, content); };
         const LandingPage = ({ onLoginSuccess, onGuestLogin }) => { return React.createElement("div", { className: "min-h-screen flex flex-col md:flex-row bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white font-sans overflow-hidden transition-colors duration-300" }, React.createElement("div", { className: "fixed inset-0 z-0 pointer-events-none" }, React.createElement("div", { className: "absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 dark:bg-indigo-600/20 rounded-full blur-[120px]" }), React.createElement("div", { className: "absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] bg-purple-500/10 dark:bg-purple-600/10 rounded-full blur-[100px]" })), React.createElement("div", { className: "md:w-1/2 p-8 md:p-16 flex flex-col justify-center relative z-10" }, React.createElement("div", { className: "mb-8 flex items-center gap-3" }, React.createElement("div", { className: "w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-glow" }, React.createElement(Brain, { size: 20 })), React.createElement("h1", { className: "text-2xl font-bold tracking-tight text-zinc-900 dark:text-white" }, "LifeOS")), React.createElement("h2", { className: "text-5xl md:text-7xl font-bold mb-6 leading-tight tracking-tight" }, "Design Your ", React.createElement("span", { className: "text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500" }, "Mind.")), React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 text-lg md:text-xl max-w-md leading-relaxed mb-10" }, "A futuristic operating system for your life. Organize habits, tasks, and goals in one unified interface."), React.createElement("div", { className: "grid grid-cols-2 gap-4 max-w-sm" }, [{l:"Focus", i:Timer}, {l:"Goals", i:Flag}, {l:"Habits", i:CheckCircle2}, {l:"Health", i:Activity}].map((f, i) => React.createElement("div", { key: i, className: "flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-white/5 border border-zinc-200 dark:border-white/5 shadow-sm dark:shadow-none" }, React.createElement(f.i, { className: "text-indigo-500 dark:text-indigo-400", size: 18 }), React.createElement("span", { className: "text-sm font-medium text-zinc-700 dark:text-zinc-300" }, f.l))))), React.createElement("div", { className: "md:w-1/2 bg-white/30 dark:bg-black/40 backdrop-blur-xl border-l border-zinc-200 dark:border-white/5 flex flex-col justify-center p-8 md:p-16 relative z-20" }, React.createElement(AuthModal, { onClose: () => {}, onLogin: onLoginSuccess, inline: true }), React.createElement("div", { className: "mt-6 text-center" }, React.createElement("button", { onClick: () => onGuestLogin({ email: "guest@lifeos.app", displayName: "Guest", uid: "guest-user", isLocal: true }), className: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-white text-xs font-medium transition-colors flex items-center justify-center gap-2 mx-auto" }, "Enter as Guest", React.createElement(ArrowRight, { size: 12 }))))); };
 
         const ProfileView = ({ user, onLogout, onUpdateProfile }) => {
@@ -173,7 +173,7 @@
                     ),
                     React.createElement("div", { className: "space-y-6" },
                         React.createElement("div", null, React.createElement("label", { className: "text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 block" }, "User ID"), React.createElement("div", { className: "p-4 bg-zinc-50 dark:bg-black/50 rounded-xl font-mono text-xs text-zinc-600 dark:text-zinc-400 break-all border border-zinc-200 dark:border-zinc-800" }, user.id)),
-                        React.createElement("button", { onClick: onLogout, className: "w-full py-4 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/20 rounded-xl font-bold hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors flex items-center justify-center gap-2" }, React.createElement(LogOut, { size: 18 }), "Sign Out")
+                        React.createElement("button", { onClick: handleLogout, className: "w-full py-4 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/20 rounded-xl font-bold hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors flex items-center justify-center gap-2" }, React.createElement(LogOut, { size: 18 }), "Sign Out")
                     )
                 )
             );
@@ -209,10 +209,9 @@
             const [url, setUrl] = useState(localStorage.getItem('lifeos_sb_url') || DEFAULT_SB_URL);
             const [key, setKey] = useState(localStorage.getItem('lifeos_sb_key') || "");
             const handleSave = () => { localStorage.setItem('lifeos_sb_url', url.trim()); localStorage.setItem('lifeos_sb_key', key.trim()); onSave(); };
-            return React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" }, React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-2xl p-6" }, React.createElement("h2", { className: "text-xl font-bold mb-4 text-zinc-900 dark:text-white" }, "Cloud Sync Setup"), React.createElement("input", { value: url, onChange: e => setUrl(e.target.value), placeholder: "Supabase URL", className: "w-full mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white" }), React.createElement("input", { value: key, onChange: e => setKey(e.target.value), type: "password", placeholder: "Anon Key", className: "w-full mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white" }), React.createElement("div", { className: "flex justify-end gap-3" }, React.createElement("button", { onClose, className: "px-4 py-2 text-zinc-500" }, "Cancel"), React.createElement("button", { onClick: handleSave, className: "px-6 py-2 bg-indigo-600 text-white rounded-lg" }, "Save"))));
+            return React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" }, React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-2xl p-6" }, React.createElement("h2", { className: "text-xl font-bold mb-4 text-zinc-900 dark:text-white" }, "Cloud Sync Setup"), React.createElement("input", { value: url, onChange: e => setUrl(e.target.value), placeholder: "Supabase URL", className: "w-full mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white" }), React.createElement("input", { value: key, onChange: e => setKey(e.target.value), type: "password", placeholder: "Anon Key", className: "w-full mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white" }), React.createElement("div", { className: "flex justify-end gap-3" }, React.createElement("button", { onClick: onClose, className: "px-4 py-2 text-zinc-500" }, "Cancel"), React.createElement("button", { onClick: handleSave, className: "px-6 py-2 bg-indigo-600 text-white rounded-lg" }, "Save"))));
         };
         
-        // --- NEW SCHEDULE VIEW ---
         const ScheduleView = ({ events, onAddEvent, onUpdateEvent, onDeleteEvent }) => {
             const [view, setView] = useState('week'); 
             const [currentDate, setCurrentDate] = useState(new Date());
@@ -441,7 +440,6 @@
             };
 
             return React.createElement("div", { className: "h-full flex flex-col p-4 md:p-8 max-w-[1600px] mx-auto" },
-                // Header & "Up Next"
                 React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8" },
                     React.createElement("div", null,
                         React.createElement("div", { className: "flex items-center gap-3 mb-2" },
@@ -457,7 +455,6 @@
                         React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 font-medium" }, "Stay organized, stay ahead.")
                     ),
                     
-                    // "Up Next" Card
                     React.createElement("div", { className: "flex items-center gap-4 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 p-4 rounded-2xl shadow-sm w-full md:w-auto min-w-[300px]" },
                         React.createElement("div", { className: `w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-glow ${nextEvent ? nextEvent.color : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-400'}` },
                             isHappeningNow ? React.createElement(Play, { size: 20, className: "animate-pulse" }) : React.createElement(Calendar, { size: 20 })
@@ -472,7 +469,6 @@
                     )
                 ),
 
-                // View Switcher
                 React.createElement("div", { className: "flex justify-between items-center mb-4" },
                     React.createElement("div", { className: "flex bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl" },
                         ['Day', 'Week', 'Month', 'Year'].map(v => 
@@ -482,7 +478,6 @@
                     React.createElement("button", { onClick: () => openModal(), className: "flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 shadow-glow transition-all font-bold" }, React.createElement(Plus, { size: 20 }), "New Event")
                 ),
 
-                // Main Calendar Area
                 React.createElement("div", { className: "flex-1 bg-white dark:bg-zinc-900/40 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden p-1" },
                     view === 'month' && React.createElement(Views.Month, null),
                     view === 'week' && React.createElement(Views.Week, null),
@@ -490,7 +485,6 @@
                     view === 'year' && React.createElement(Views.Year, null)
                 ),
 
-                // Edit/Add Modal
                 showModal && React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" },
                     React.createElement("div", { className: "bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-8 relative shadow-2xl animate-in fade-in zoom-in duration-200" },
                         React.createElement("button", { onClick: closeModal, className: "absolute top-6 right-6 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors" }, React.createElement(X, { size: 24 })),
@@ -899,7 +893,7 @@
                             value: milestoneEditValue, 
                             onChange: (e) => setMilestoneEditValue(e.target.value), 
                             onKeyDown: (e) => { if(e.key === 'Enter') saveMilestoneEdit(); },
-                            className: "flex-1 bg-white dark:bg-zinc-900 px-2 py-1 rounded border border-indigo-500 outline-none text-sm text-zinc-900 dark:text-white", 
+                            className: "flex-1 bg-white dark:bg-zinc-900 px-2 py-1 rounded border border-indigo-500 outline-none text-sm text-zinc-900 dark:white", 
                             autoFocus: true 
                         }),
                         React.createElement("button", { onClick: saveMilestoneEdit, className: "text-indigo-500 hover:text-indigo-600" }, React.createElement(Check, { size: 16 }))
@@ -1023,6 +1017,7 @@
                 ))
             );
         };
+
         const DeadlinesView = ({ deadlines = [], onAddDeadline, onDeleteDeadline, onUpdateDeadline }) => {
             const [newTitle, setNewTitle] = useState("");
             const [newDate, setNewDate] = useState("");
@@ -1085,7 +1080,7 @@
             const [showAddModal, setShowAddModal] = useState(false);
             const [showManageModal, setShowManageModal] = useState(false);
             const [editingCategory, setEditingCategory] = useState(null);
-            const [editingTool, setEditingTool] = useState(null); // State for editing tool
+            const [editingTool, setEditingTool] = useState(null);
             const [newTool, setNewTool] = useState({ name: "", url: "", category: "General", icon: "Link" });
             const [isCustomCategory, setIsCustomCategory] = useState(false);
             const [customCategoryName, setCustomCategoryName] = useState("");
@@ -1135,7 +1130,6 @@
                                     catTools.map(tool => {
                                         const IconComp = ICON_LIB[tool.icon] || Globe;
                                         return React.createElement("div", { key: tool.id, className: "relative group flex flex-col items-center gap-2 h-full" },
-                                            // Edit/Delete Controls (Absolute positioned)
                                             React.createElement("div", { className: "absolute -top-2 -right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20 scale-90" },
                                                  React.createElement("button", { onClick: (e) => {e.stopPropagation(); setEditingTool(tool);}, className: "p-1 bg-white dark:bg-zinc-800 rounded-full shadow-sm text-zinc-400 hover:text-indigo-500 border border-zinc-200 dark:border-zinc-700" }, React.createElement(Edit3, { size: 12 })),
                                                  React.createElement("button", { onClick: (e) => {e.stopPropagation(); onDeleteTool(tool.id);}, className: "p-1 bg-white dark:bg-zinc-800 rounded-full shadow-sm text-zinc-400 hover:text-red-500 border border-zinc-200 dark:border-zinc-700" }, React.createElement(Trash2, { size: 12 }))
@@ -1275,11 +1269,8 @@
 
             const handleKeyDown = (e) => { if (e.key === 'Enter') handleSubmit(); };
 
-            // Sort countdowns based on completion and dates
             const sortedCountdowns = [...countdowns].sort((a, b) => {
-                // Sort by completion: Active first
                 if (a.completed !== b.completed) return a.completed ? 1 : -1;
-                // Sort by date: Earliest/Overdue first
                 return new Date(a.date) - new Date(b.date);
             });
 
@@ -1362,7 +1353,6 @@
             );
         };
 
-        // --- NEW IDEA BOARD COMPONENT ---
         const IdeaBoardView = ({ notes, onAdd, onUpdate, onDelete }) => {
             const boardRef = useRef(null);
             const [draggingId, setDraggingId] = useState(null);
@@ -1375,37 +1365,26 @@
             ]);
 
             const handleMouseDown = (e, note) => {
-                if(e.target.tagName === "TEXTAREA" || e.target.tagName === "BUTTON") return; // Allow interaction with content
+                if(e.target.tagName === "TEXTAREA" || e.target.tagName === "BUTTON") return;
                 setDraggingId(note.id);
-                setOffset({
-                    x: e.clientX - note.x,
-                    y: e.clientY - note.y
-                });
+                setOffset({ x: e.clientX - note.x, y: e.clientY - note.y });
             };
 
             const handleMouseMove = (e) => {
                 if (draggingId) {
-                    const boardRect = boardRef.current.getBoundingClientRect();
                     let newX = e.clientX - offset.x;
                     let newY = e.clientY - offset.y;
-
-                    // Simple bounds checking
-                    // newX = Math.max(0, Math.min(newX, boardRect.width - 200)); 
-                    // newY = Math.max(0, Math.min(newY, boardRect.height - 200));
-
-                    onUpdate({ ...notes.find(n => n.id === draggingId), x: newX, y: newY }, false); // Pass false to avoid heavy DB syncing on every pixel move if implemented
+                    onUpdate({ ...notes.find(n => n.id === draggingId), x: newX, y: newY }, false);
                 }
             };
 
             const handleMouseUp = () => {
                 if (draggingId) {
-                    // Trigger save on mouse up
                     onUpdate(notes.find(n => n.id === draggingId), true); 
                     setDraggingId(null);
                 }
             };
 
-            // Global listeners for drag to work even if mouse leaves note
             useEffect(() => {
                 if(draggingId) {
                     window.addEventListener('mousemove', handleMouseMove);
@@ -1421,18 +1400,10 @@
             }, [draggingId, offset, notes]);
 
             const addNote = (colorIdx) => {
-                onAdd({
-                    text: "",
-                    x: Math.random() * 200 + 50,
-                    y: Math.random() * 200 + 50,
-                    color: colors[colorIdx],
-                    width: 200,
-                    height: 200
-                });
+                onAdd({ text: "", x: Math.random() * 200 + 50, y: Math.random() * 200 + 50, color: colors[colorIdx], width: 200, height: 200 });
             };
 
             return React.createElement("div", { ref: boardRef, className: "relative w-full h-[85vh] bg-zinc-100 dark:bg-zinc-900/50 rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-inner group" },
-                // Toolbar
                 React.createElement("div", { className: "absolute top-4 left-4 z-20 flex flex-col gap-2 p-3 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-lg" },
                     React.createElement("h3", { className: "text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1" }, "Add Note"),
                     React.createElement("div", { className: "flex gap-2" },
@@ -1442,7 +1413,6 @@
                     )
                 ),
                 
-                // Notes
                 notes.map(note => 
                     React.createElement("div", { 
                         key: note.id,
@@ -1452,7 +1422,7 @@
                     },
                         React.createElement("textarea", {
                             value: note.text,
-                            onChange: (e) => onUpdate({ ...note, text: e.target.value }, true), // Auto-save text
+                            onChange: (e) => onUpdate({ ...note, text: e.target.value }, true),
                             placeholder: "Write idea...",
                             className: `w-full h-full bg-transparent resize-none outline-none font-hand text-lg placeholder-black/30 dark:placeholder-black/30 leading-snug`
                         }),
@@ -1466,6 +1436,41 @@
                     React.createElement("div", { className: "text-center" },
                         React.createElement(Lightbulb, { size: 48, className: "mx-auto mb-2 opacity-50" }),
                         React.createElement("p", { className: "text-sm font-bold uppercase tracking-wider" }, "Idea Board Empty")
+                    )
+                )
+            );
+        };
+
+        const LibraryView = ({ books, categories, onAddBook, onDeleteBook, onUpdateBook, onAddCategory, onDeleteCategory, onRenameCategory }) => {
+            const [showAdd, setShowAdd] = useState(false);
+            const [newBook, setNewBook] = useState({ title: "", author: "", status: "Reading", category: "General", progress: 0 });
+            return React.createElement("div", { className: "p-4 md:p-8 pb-32 max-w-7xl mx-auto" },
+                React.createElement("div", { className: "flex justify-between items-center mb-8" },
+                    React.createElement("h2", { className: "text-3xl font-bold" }, "Library"),
+                    React.createElement("button", { onClick: () => setShowAdd(true), className: "flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold" }, React.createElement(Plus, { size: 18 }), "Add Book")
+                ),
+                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" },
+                    books.map(book => React.createElement("div", { key: book.id, className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl shadow-sm relative group" },
+                        React.createElement("div", { className: "absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity" },
+                            React.createElement("button", { onClick: () => onDeleteBook(book.id), className: "text-zinc-400 hover:text-red-500" }, React.createElement(Trash2, { size: 16 }))
+                        ),
+                        React.createElement("h3", { className: "text-lg font-bold" }, book.title),
+                        React.createElement("p", { className: "text-sm text-zinc-500" }, book.author),
+                        React.createElement("div", { className: "mt-4 flex items-center gap-2" },
+                            React.createElement("span", { className: `px-2 py-1 rounded-md text-[10px] font-bold uppercase ${book.status === 'Reading' ? 'bg-indigo-100 text-indigo-600' : 'bg-zinc-100 text-zinc-600'}` }, book.status),
+                            React.createElement("span", { className: "text-[10px] font-bold text-zinc-400 uppercase" }, book.category)
+                        )
+                    ))
+                ),
+                showAdd && React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" },
+                    React.createElement("div", { className: "bg-white dark:bg-zinc-900 p-6 rounded-2xl w-full max-w-md relative" },
+                        React.createElement("button", { onClick: () => setShowAdd(false), className: "absolute top-4 right-4" }, React.createElement(X, { size: 20 })),
+                        React.createElement("h3", { className: "text-xl font-bold mb-6" }, "New Book"),
+                        React.createElement("div", { className: "space-y-4" },
+                            React.createElement("input", { value: newBook.title, onChange: e => setNewBook({...newBook, title: e.target.value}), placeholder: "Title", className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl" }),
+                            React.createElement("input", { value: newBook.author, onChange: e => setNewBook({...newBook, author: e.target.value}), placeholder: "Author", className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl" }),
+                            React.createElement("button", { onClick: () => { onAddBook(newBook); setShowAdd(false); }, className: "w-full py-3 bg-indigo-600 text-white rounded-xl font-bold" }, "Save")
+                        )
                     )
                 )
             );
@@ -1512,7 +1517,6 @@
             
             const toggleSound = async (sound) => { try { if (activeSound === sound.id && isPlayingSound) { audioRef.current.pause(); setIsPlayingSound(false); } else { if (isPlayingSound) { audioRef.current.pause(); } audioRef.current.src = sound.url; audioRef.current.loop = true; await audioRef.current.play(); setIsPlayingSound(true); setActiveSound(sound.id); } } catch (err) { console.error("Audio playback error:", err); setIsPlayingSound(false); } };
 
-            useEffect(() => { if(isSupabaseConfigured) { supabase.from('deadlines').select('count', { count: 'exact', head: true }).then(({ error }) => { if(error) console.log("Cloud DB unreachable."); }); } }, []);
             useEffect(() => { const sessionUser = JSON.parse(localStorage.getItem('lifeos_user_session')); if (sessionUser) setUser(sessionUser); if (isSupabaseConfigured) { supabase.auth.getSession().then(({ data: { session } }) => { if (session) setUser({ ...session.user, isLocal: false }); }); const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { if (session) setUser({ ...session.user, isLocal: false }); }); return () => subscription.unsubscribe(); } }, []);
 
             useEffect(() => {
@@ -1541,28 +1545,24 @@
                         setIsDataLoaded(true);
                     };
                     fetchData();
-                    const channel = supabase.channel('db-changes').on('postgres_changes', { event: '*', schema: 'public' }, () => fetchData()).subscribe();
-                    return () => supabase.removeChannel(channel);
                 } else {
-                    try {
-                        const prefix = `lifeos_data_${user.id}_`;
-                        setDeadlines(JSON.parse(localStorage.getItem(`${prefix}deadlines`) || '[]'));
-                        setDumps(JSON.parse(localStorage.getItem(`${prefix}dumps`) || '[]'));
-                        setMeals(JSON.parse(localStorage.getItem(`${prefix}meals`) || JSON.stringify(DEFAULT_MEALS)));
-                        setGoalsData(JSON.parse(localStorage.getItem(`${prefix}goals_2026`) || JSON.stringify(DEFAULT_GOALS_DATA)));
-                        setTools(JSON.parse(localStorage.getItem(`${prefix}tools`) || JSON.stringify(DEFAULT_TOOLS)));
-                        setBooks(JSON.parse(localStorage.getItem(`${prefix}books`) || '[]'));
-                        setToolCategories(JSON.parse(localStorage.getItem(`${prefix}tool_categories`) || JSON.stringify(DEFAULT_TOOLS_CATEGORIES)));
-                        setBookCategories(JSON.parse(localStorage.getItem(`${prefix}book_categories`) || JSON.stringify(DEFAULT_BOOK_CATEGORIES)));
-                        setDashboardData(JSON.parse(localStorage.getItem(`${prefix}dashboard`) || '{}'));
-                        setFitnessData(JSON.parse(localStorage.getItem(`${prefix}fitness`) || JSON.stringify({ gym: GYM_WORKOUT_PLAN, home: HOME_WORKOUT_PLAN })));
-                        setDailyPlan(JSON.parse(localStorage.getItem(`${prefix}daily_plan`) || JSON.stringify({ priorities: ['', '', ''], schedule: {}, notes: '', minorTasks: [] })));
-                        setWeeklyPlan(JSON.parse(localStorage.getItem(`${prefix}weekly_plan`) || JSON.stringify({ focus: "", objectives: [], dailyTasks: {} })));
-                        setMonthlyPlan(JSON.parse(localStorage.getItem(`${prefix}monthly_plan`) || JSON.stringify({ theme: "", goals: [], weeks: { week1: [], week2: [], week3: [], week4: [] } })));
-                        setCountdowns(JSON.parse(localStorage.getItem(`${prefix}countdowns`) || '[]'));
-                        setIdeaNotes(JSON.parse(localStorage.getItem(`${prefix}idea_notes`) || '[]'));
-                        setEvents(JSON.parse(localStorage.getItem(`${prefix}events`) || '[]'));
-                    } catch(e) {}
+                    const prefix = `lifeos_data_${user.id}_`;
+                    setDeadlines(JSON.parse(localStorage.getItem(`${prefix}deadlines`) || '[]'));
+                    setDumps(JSON.parse(localStorage.getItem(`${prefix}dumps`) || '[]'));
+                    setMeals(JSON.parse(localStorage.getItem(`${prefix}meals`) || JSON.stringify(DEFAULT_MEALS)));
+                    setGoalsData(JSON.parse(localStorage.getItem(`${prefix}goals_2026`) || JSON.stringify(DEFAULT_GOALS_DATA)));
+                    setTools(JSON.parse(localStorage.getItem(`${prefix}tools`) || JSON.stringify(DEFAULT_TOOLS)));
+                    setBooks(JSON.parse(localStorage.getItem(`${prefix}books`) || '[]'));
+                    setToolCategories(JSON.parse(localStorage.getItem(`${prefix}tool_categories`) || JSON.stringify(DEFAULT_TOOLS_CATEGORIES)));
+                    setBookCategories(JSON.parse(localStorage.getItem(`${prefix}book_categories`) || JSON.stringify(DEFAULT_BOOK_CATEGORIES)));
+                    setDashboardData(JSON.parse(localStorage.getItem(`${prefix}dashboard`) || '{}'));
+                    setFitnessData(JSON.parse(localStorage.getItem(`${prefix}fitness`) || JSON.stringify({ gym: GYM_WORKOUT_PLAN, home: HOME_WORKOUT_PLAN })));
+                    setDailyPlan(JSON.parse(localStorage.getItem(`${prefix}daily_plan`) || JSON.stringify({ priorities: ['', '', ''], schedule: {}, notes: '', minorTasks: [] })));
+                    setWeeklyPlan(JSON.parse(localStorage.getItem(`${prefix}weekly_plan`) || JSON.stringify({ focus: "", objectives: [], dailyTasks: {} })));
+                    setMonthlyPlan(JSON.parse(localStorage.getItem(`${prefix}monthly_plan`) || JSON.stringify({ theme: "", goals: [], weeks: { week1: [], week2: [], week3: [], week4: [] } })));
+                    setCountdowns(JSON.parse(localStorage.getItem(`${prefix}countdowns`) || '[]'));
+                    setIdeaNotes(JSON.parse(localStorage.getItem(`${prefix}idea_notes`) || '[]'));
+                    setEvents(JSON.parse(localStorage.getItem(`${prefix}events`) || '[]'));
                     setIsDataLoaded(true);
                 }
             }, [user]);
@@ -1589,153 +1589,72 @@
                 }
             }, [deadlines, dumps, meals, goalsData, dashboardData, tools, books, toolCategories, bookCategories, fitnessData, dailyPlan, weeklyPlan, monthlyPlan, countdowns, ideaNotes, events, user, isDataLoaded]);
 
-            // AI Meal Plan Generation
             const generateAIMealPlan = async () => {
                 const apiKey = "";
                 const mission = goalsData.mission || "Be healthy and disciplined.";
-                const systemPrompt = `You are a world-class performance nutritionist. Your goal is to create a highly optimized weekly meal plan based on the user's mission: "${mission}".
-                The plan must cover Monday through Sunday, with exactly 4 entries per day: Breakfast, Lunch, Dinner, and Snack.
-                The meals should be varied, nutritious, and supportive of a high-performance lifestyle.
-                
-                You MUST return ONLY valid JSON in the following format:
-                [
-                    { "day": "Monday", "type": "Breakfast", "text": "Details..." },
-                    ...
-                ]`;
-                
-                const userQuery = "Generate my high-performance weekly meal plan.";
-                
-                let retries = 0;
-                const maxRetries = 5;
-                
-                const callGemini = async () => {
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: userQuery }] }],
-                            systemInstruction: { parts: [{ text: systemPrompt }] },
-                            generationConfig: {
-                                responseMimeType: "application/json",
-                                responseSchema: {
-                                    type: "ARRAY",
-                                    items: {
-                                        type: "OBJECT",
-                                        properties: {
-                                            day: { type: "STRING" },
-                                            type: { type: "STRING", enum: ["Breakfast", "Lunch", "Dinner", "Snack"] },
-                                            text: { type: "STRING" }
-                                        },
-                                        required: ["day", "type", "text"]
-                                    }
-                                }
-                            }
-                        })
-                    });
-                    
-                    if (!response.ok) throw new Error("API failed");
-                    const result = await response.json();
-                    
-                    const text = result.candidates[0].content.parts[0].text;
-                    const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
-                    return JSON.parse(jsonStr);
-                };
-
-                const executeWithRetry = async () => {
-                    try {
-                        const plan = await callGemini();
-                        
-                        // Update local state
-                        const planWithUser = plan.map(item => ({ ...item, id: generateUUID(), user_id: user.id }));
-                        setMeals(planWithUser);
-
-                        // Sync to database
-                        if (!user.isLocal && isSupabaseConfigured) {
-                            await supabase.from('meals').delete().eq('user_id', user.id);
-                            await supabase.from('meals').insert(planWithUser);
-                        }
-                    } catch (error) {
-                        if (retries < maxRetries) {
-                            retries++;
-                            await new Promise(resolve => setTimeout(resolve, Math.pow(2, retries) * 1000));
-                            return executeWithRetry();
-                        }
-                        console.error("AI Generation failed after retries", error);
-                        throw error;
-                    }
-                };
-
-                await executeWithRetry();
+                const systemPrompt = `Performance nutritionist meal plan based on mission: "${mission}". Valid JSON format only.`;
+                const userQuery = "Generate my weekly meal plan.";
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: userQuery }] }], systemInstruction: { parts: [{ text: systemPrompt }] }, generationConfig: { responseMimeType: "application/json" } })
+                });
+                const result = await response.json();
+                const plan = JSON.parse(result.candidates[0].content.parts[0].text);
+                const planWithUser = plan.map(item => ({ ...item, id: generateUUID(), user_id: user.id }));
+                setMeals(planWithUser);
             };
 
             const handleLoginSuccess = (u) => { setUser(u); localStorage.setItem('lifeos_user_session', JSON.stringify(u)); };
             const handleLogout = async () => { if (isSupabaseConfigured) await supabase.auth.signOut(); localStorage.removeItem('lifeos_user_session'); setUser(null); };
 
-            const handleAddDeadline = async (item) => { const newItem = { ...item, id: generateUUID(), user_id: user.id }; setDeadlines(prev => [...prev, newItem]); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('deadlines').insert(newItem); if (error) console.error('Error adding deadline:', error); } };
-            const handleDeleteDeadline = async (id) => { setDeadlines(prev => prev.filter(i => i.id !== id)); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('deadlines').delete().eq('id', id); if (error) console.error('Error deleting deadline:', error); } };
-            const handleUpdateDeadline = async (updatedItem) => { setDeadlines(prev => prev.map(i => i.id === updatedItem.id ? { ...i, ...updatedItem } : i)); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('deadlines').update(updatedItem).eq('id', updatedItem.id); if (error) console.error('Error updating deadline:', error); } };
-            const handleAddDump = async (text) => { const newItem = { text, id: generateUUID(), user_id: user.id }; setDumps(prev => [...prev, newItem]); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('brain_dumps').insert(newItem); if (error) console.error('Error adding dump:', error); } };
-            const handleDeleteDump = async (id) => { setDumps(prev => prev.filter(d => d.id !== id)); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('brain_dumps').delete().eq('id', id); if (error) console.error('Error deleting dump:', error); } };
-            const handleUpdateDump = async (updatedItem) => { setDumps(prev => prev.map(d => d.id === updatedItem.id ? updatedItem : d)); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('brain_dumps').update(updatedItem).eq('id', updatedItem.id); if (error) console.error('Error updating dump:', error); } };
-            const handleAddTool = async (item) => { const newItem = { ...item, id: generateUUID(), user_id: user.id }; setTools(prev => [...prev, newItem]); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('tools').insert(newItem); if (error) console.error('Error adding tool:', error); } };
-            const handleAddCategory = async (cat) => { const newCats = [...toolCategories, cat]; setToolCategories(newCats); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('app_data').upsert({ user_id: user.id, tool_categories: newCats }, { onConflict: 'user_id' }); if (error) console.error('Error adding tool category:', error); } };
-            const handleAddBookCategory = async (cat) => { const newCats = [...bookCategories, cat]; setBookCategories(newCats); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('app_data').upsert({ user_id: user.id, book_categories: newCats }, { onConflict: 'user_id' }); if (error) console.error('Error adding book category:', error); } };
-            const handleUpdateMeal = async (day, type, text) => { setMeals(prev => { const exists = prev.find(m => m.day === day && m.type === type); if(exists) return prev.map(m => m.day === day && m.type === type ? { ...m, text } : m); return [...prev, { day, type, text, user_id: user.id, id: generateUUID() }]; }); if (!user.isLocal && isSupabaseConfigured) { await supabase.from('meals').delete().match({ user_id: user.id, day, type }); const { error } = await supabase.from('meals').insert({ user_id: user.id, day, type, text }); if (error) console.error('Error updating meal:', error); } };
-            const handleUpdateFitness = async (type, newPlan) => { const newData = { ...fitnessData, [type]: newPlan }; setFitnessData(newData); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('app_data').upsert({ user_id: user.id, fitness_data: newData }, { onConflict: 'user_id' }); if (error) console.error('Error updating fitness:', error); } };
-            const handleUpdateDashboard = async (newData) => { setDashboardData(newData); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('app_data').upsert({ user_id: user.id, dashboard_config: newData }, { onConflict: 'user_id' }); if (error) console.error('Error updating dashboard:', error); } };
-            const handleUpdateDailyPlan = async (newData) => { setDailyPlan(newData); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('app_data').upsert({ user_id: user.id, daily_plan: newData }, { onConflict: 'user_id' }); if (error) console.error('Error updating daily plan:', error); } };
-            const handleUpdateGoals2026 = async (newData) => { setGoalsData(newData); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('app_data').upsert({ user_id: user.id, goals_2026: newData }, { onConflict: 'user_id' }); if (error) console.error('Error updating goals:', error); } };
-            const handleUpdateWeeklyPlan = async (newData) => { setWeeklyPlan(newData); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('app_data').upsert({ user_id: user.id, weekly_plan: newData }, { onConflict: 'user_id' }); if (error) console.error('Error updating weekly plan:', error); } };
-            const handleUpdateMonthlyPlan = async (newData) => { setMonthlyPlan(newData); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('app_data').upsert({ user_id: user.id, monthly_plan: newData }, { onConflict: 'user_id' }); if (error) console.error('Error updating monthly plan:', error); } };
-            const handleDeleteCategory = async (catToDelete) => { if (catToDelete === "General") return; if (confirm(`Delete category "${catToDelete}"? Tools will be moved to "General".`)) { const newCats = toolCategories.filter(c => c !== catToDelete); setToolCategories(newCats); const newTools = tools.map(t => t.category === catToDelete ? { ...t, category: "General" } : t); setTools(newTools); if (!user.isLocal && isSupabaseConfigured) { try { await supabase.from('app_data').upsert({ user_id: user.id, tool_categories: newCats }, { onConflict: 'user_id' }); const toolsToUpdate = tools.filter(t => t.category === catToDelete); for(const tool of toolsToUpdate) { await supabase.from('tools').update({ category: "General" }).eq('id', tool.id); } } catch(e) { console.error(e); } } } };
-            const handleDeleteBookCategory = async (catToDelete) => { if (catToDelete === "General") return; if (confirm(`Delete category "${catToDelete}"? Books will be moved to "General".`)) { const newCats = bookCategories.filter(c => c !== catToDelete); setBookCategories(newCats); const newBooks = books.map(b => b.category === catToDelete ? { ...b, category: "General" } : b); setBooks(newBooks); if (!user.isLocal && isSupabaseConfigured) { try { await supabase.from('app_data').upsert({ user_id: user.id, book_categories: newCats }, { onConflict: 'user_id' }); const booksToUpdate = books.filter(b => b.category === catToDelete); for(const book of booksToUpdate) { await supabase.from('library').update({ category: "General" }).eq('id', book.id); } } catch(e) { console.error(e); } } } };
-            const handleRenameCategory = async (oldName, newName) => { if (!newName.trim() || toolCategories.includes(newName)) return; const newCats = toolCategories.map(c => c === oldName ? newName : c); setToolCategories(newCats); const newTools = tools.map(t => t.category === oldName ? { ...t, category: newName } : t); setTools(newTools); if (!user.isLocal && isSupabaseConfigured) { try { await supabase.from('app_data').upsert({ user_id: user.id, tool_categories: newCats }, { onConflict: 'user_id' }); const toolsToUpdate = tools.filter(t => t.category === oldName); for(const tool of toolsToUpdate) { await supabase.from('tools').update({ category: newName }).eq('id', tool.id); } } catch(e) { console.error(e); } } };
-            const handleRenameBookCategory = async (oldName, newName) => { if (!newName.trim() || bookCategories.includes(newName)) return; const newCats = bookCategories.map(c => c === oldName ? newName : c); setBookCategories(newCats); const newBooks = books.map(b => b.category === oldName ? { ...b, category: newName } : b); setBooks(newBooks); if (!user.isLocal && isSupabaseConfigured) { try { await supabase.from('app_data').upsert({ user_id: user.id, book_categories: newCats }, { onConflict: 'user_id' }); const booksToUpdate = books.filter(b => b.category === oldName); for(const book of booksToUpdate) { await supabase.from('library').update({ category: newName }).eq('id', book.id); } } catch(e) { console.error(e); } } };
-            const handleUpdateProfile = async (newName) => { if (user.isLocal) { const updatedUser = { ...user, displayName: newName }; setUser(updatedUser); localStorage.setItem('lifeos_user_session', JSON.stringify(updatedUser)); localStorage.setItem('lifeos_user', JSON.stringify(updatedUser)); } else if (isSupabaseConfigured) { const { data, error } = await supabase.auth.updateUser({ data: { full_name: newName } }); if (!error && data.user) { setUser({ ...data.user, isLocal: false }); } } };
-            const handleDeleteTool = async (id) => { if (confirm("Delete this tool?")) { setTools(prev => prev.filter(t => t.id !== id)); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('tools').delete().eq('id', id); if(error) console.error('Error deleting tool', error); } } };
-            const handleUpdateTool = async (updatedTool) => { setTools(prev => prev.map(t => t.id === updatedTool.id ? updatedTool : t)); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('tools').update(updatedTool).eq('id', updatedTool.id); if(error) console.error('Error updating tool', error); } };
-            
-            const handleAddBook = async (book) => { const newItem = { ...book, id: generateUUID(), user_id: user.id }; setBooks(prev => [...prev, newItem]); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('library').insert(newItem); if (error) console.error('Error adding book:', error); } };
-            const handleDeleteBook = async (id) => { setBooks(prev => prev.filter(b => b.id !== id)); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('library').delete().eq('id', id); if (error) console.error('Error deleting book:', error); } };
-            const handleUpdateBook = async (updatedBook) => { setBooks(prev => prev.map(b => b.id === updatedBook.id ? updatedBook : b)); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('library').update(updatedBook).eq('id', updatedBook.id); if (error) console.error('Error updating book:', error); } };
-            const handleAddCountdown = async (item) => { const newItem = { ...item, id: generateUUID(), user_id: user.id }; const newCountdowns = [...countdowns, newItem]; setCountdowns(newCountdowns); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('app_data').upsert({ user_id: user.id, countdowns: newCountdowns }, { onConflict: 'user_id' }); if (error) console.error('Error adding countdown:', error); } };
-            const handleToggleCountdown = async (id) => { const newCountdowns = countdowns.map(c => c.id === id ? { ...c, completed: !c.completed } : c); setCountdowns(newCountdowns); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('app_data').upsert({ user_id: user.id, countdowns: newCountdowns }, { onConflict: 'user_id' }); if (error) console.error('Error toggling countdown:', error); } };
-            const handleDeleteCountdown = async (id) => { const newCountdowns = countdowns.filter(c => c.id !== id); setCountdowns(newCountdowns); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('app_data').upsert({ user_id: user.id, countdowns: newCountdowns }, { onConflict: 'user_id' }); if (error) console.error('Error deleting countdown:', error); } };
-            const handleUpdateCountdown = async (updatedItem) => { const newCountdowns = countdowns.map(c => c.id === updatedItem.id ? { ...c, ...updatedItem } : c); setCountdowns(newCountdowns); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('app_data').upsert({ user_id: user.id, countdowns: newCountdowns }, { onConflict: 'user_id' }); if (error) console.error('Error updating countdown:', error); } };
-            const handleAddIdeaNote = async (note) => { const newItem = { ...note, id: generateUUID(), user_id: user.id }; const newNotes = [...ideaNotes, newItem]; setIdeaNotes(newNotes); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('app_data').upsert({ user_id: user.id, idea_notes: newNotes }, { onConflict: 'user_id' }); if (error) console.error('Error adding note:', error); } };
-            const handleUpdateIdeaNote = async (updatedNote, syncToDb = true) => { const newNotes = ideaNotes.map(n => n.id === updatedNote.id ? updatedNote : n); setIdeaNotes(newNotes); if (syncToDb && !user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('app_data').upsert({ user_id: user.id, idea_notes: newNotes }, { onConflict: 'user_id' }); if (error) console.error('Error updating note:', error); } };
-            const handleDeleteIdeaNote = async (id) => { const newNotes = ideaNotes.filter(n => n.id !== id); setIdeaNotes(newNotes); if (!user.isLocal && isSupabaseConfigured) { const { error } = await supabase.from('app_data').upsert({ user_id: user.id, idea_notes: newNotes }, { onConflict: 'user_id' }); if (error) console.error('Error deleting note:', error); } };
-
-            const handleAddEvent = async (item) => {
-                const newItem = { ...item, id: generateUUID(), user_id: user.id };
-                const newEvents = [...events, newItem];
-                setEvents(newEvents);
-                if (!user.isLocal && isSupabaseConfigured) {
-                    const { error } = await supabase.from('app_data').upsert({ user_id: user.id, events: newEvents }, { onConflict: 'user_id' });
-                    if (error) console.error('Error adding event:', error);
-                }
+            const handleAddDeadline = (item) => setDeadlines([...deadlines, { ...item, id: generateUUID() }]);
+            const handleDeleteDeadline = (id) => setDeadlines(deadlines.filter(i => i.id !== id));
+            const handleUpdateDeadline = (item) => setDeadlines(deadlines.map(i => i.id === item.id ? item : i));
+            const handleAddDump = (text) => setDumps([...dumps, { text, id: generateUUID() }]);
+            const handleDeleteDump = (id) => setDumps(dumps.filter(d => d.id !== id));
+            const handleUpdateDump = (item) => setDumps(dumps.map(d => d.id === item.id ? item : d));
+            const handleAddTool = (item) => setTools([...tools, { ...item, id: generateUUID() }]);
+            const handleAddCategory = (cat) => setToolCategories([...toolCategories, cat]);
+            const handleAddBookCategory = (cat) => setBookCategories([...bookCategories, cat]);
+            const handleUpdateMeal = (day, type, text) => {
+                setMeals(prev => {
+                    const exists = prev.find(m => m.day === day && m.type === type);
+                    if(exists) return prev.map(m => m.day === day && m.type === type ? { ...m, text } : m);
+                    return [...prev, { day, type, text, id: generateUUID() }];
+                });
             };
-            const handleUpdateEvent = async (updatedItem) => {
-                const newEvents = events.map(e => e.id === updatedItem.id ? { ...e, ...updatedItem } : e);
-                setEvents(newEvents);
-                if (!user.isLocal && isSupabaseConfigured) {
-                    const { error } = await supabase.from('app_data').upsert({ user_id: user.id, events: newEvents }, { onConflict: 'user_id' });
-                    if (error) console.error('Error updating event:', error);
-                }
-            };
-            const handleDeleteEvent = async (id) => {
-                const newEvents = events.filter(e => e.id !== id);
-                setEvents(newEvents);
-                if (!user.isLocal && isSupabaseConfigured) {
-                    const { error } = await supabase.from('app_data').upsert({ user_id: user.id, events: newEvents }, { onConflict: 'user_id' });
-                    if (error) console.error('Error deleting event:', error);
-                }
-            };
+            const handleUpdateFitness = (type, newPlan) => setFitnessData({ ...fitnessData, [type]: newPlan });
+            const handleUpdateDashboard = (newData) => setDashboardData(newData);
+            const handleUpdateDailyPlan = (newData) => setDailyPlan(newData);
+            const handleUpdateGoals2026 = (newData) => setGoalsData(newData);
+            const handleUpdateWeeklyPlan = (newData) => setWeeklyPlan(newData);
+            const handleUpdateMonthlyPlan = (newData) => setMonthlyPlan(newData);
+            const handleDeleteCategory = (cat) => setToolCategories(toolCategories.filter(c => c !== cat));
+            const handleDeleteBookCategory = (cat) => setBookCategories(bookCategories.filter(c => c !== cat));
+            const handleRenameCategory = (oldN, newN) => setToolCategories(toolCategories.map(c => c === oldN ? newN : c));
+            const handleRenameBookCategory = (oldN, newN) => setBookCategories(bookCategories.map(c => c === oldN ? newN : c));
+            const handleUpdateProfile = (name) => setUser({ ...user, displayName: name });
+            const handleDeleteTool = (id) => setTools(tools.filter(t => t.id !== id));
+            const handleUpdateTool = (item) => setTools(tools.map(t => t.id === item.id ? item : t));
+            const handleAddBook = (book) => setBooks([...books, { ...book, id: generateUUID() }]);
+            const handleDeleteBook = (id) => setBooks(books.filter(b => b.id !== id));
+            const handleUpdateBook = (item) => setBooks(books.map(b => b.id === item.id ? item : b));
+            const handleAddCountdown = (item) => setCountdowns([...countdowns, { ...item, id: generateUUID() }]);
+            const handleToggleCountdown = (id) => setCountdowns(countdowns.map(c => c.id === id ? { ...c, completed: !c.completed } : c));
+            const handleDeleteCountdown = (id) => setCountdowns(countdowns.filter(c => c.id !== id));
+            const handleUpdateCountdown = (item) => setCountdowns(countdowns.map(c => c.id === item.id ? item : c));
+            const handleAddIdeaNote = (note) => setIdeaNotes([...ideaNotes, { ...note, id: generateUUID() }]);
+            const handleUpdateIdeaNote = (note) => setIdeaNotes(ideaNotes.map(n => n.id === note.id ? note : n));
+            const handleDeleteIdeaNote = (id) => setIdeaNotes(ideaNotes.filter(n => n.id !== id));
+            const handleAddEvent = (item) => setEvents([...events, { ...item, id: generateUUID() }]);
+            const handleUpdateEvent = (item) => setEvents(events.map(e => e.id === item.id ? item : e));
+            const handleDeleteEvent = (id) => setEvents(events.filter(e => e.id !== id));
 
             if (!user) return React.createElement(LandingPage, { onLoginSuccess: handleLoginSuccess, onGuestLogin: handleLoginSuccess });
 
             return React.createElement("div", { className: "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300" },
-                React.createElement("aside", { className: "fixed left-0 top-0 h-full w-64 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 hidden md:flex flex-col z-20" }, React.createElement("h1", { className: "text-2xl font-bold mb-8" }, "LifeOS"), React.createElement("nav", { className: "space-y-2 flex-1 overflow-y-auto no-scrollbar" }, Object.keys(tabConfig).filter(t => t !== 'profile').map(t => React.createElement(NavItem, { key: t, icon: tabConfig[t].icon, label: tabConfig[t].label, active: activeTab === t, onClick: () => setActiveTab(t) }))), React.createElement("div", { className: "pt-6 border-t border-zinc-200 dark:border-zinc-800 space-y-2" }, React.createElement("button", { onClick: () => setShowSettings(true), className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 mb-2 transition-colors" }, React.createElement(Settings, { size: 20 }), "Cloud Sync"), React.createElement("button", { onClick: () => setDarkMode(!darkMode), className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 mb-2 transition-colors" }, darkMode ? React.createElement(Sun, { size: 20 }) : React.createElement(Moon, { size: 20 }), darkMode ? "Light Mode" : "Dark Mode"), React.createElement("button", { onClick: () => setActiveTab('profile'), className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors" }, React.createElement("div", { className: "w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white uppercase" }, (user.user_metadata?.full_name || user.displayName || user.email)[0]), React.createElement("span", { className: "font-medium text-sm truncate" }, "My Profile")))),
+                React.createElement("aside", { className: "fixed left-0 top-0 h-full w-64 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 hidden md:flex flex-col z-20" }, React.createElement("h1", { className: "text-2xl font-bold mb-8" }, "LifeOS"), React.createElement("nav", { className: "space-y-2 flex-1 overflow-y-auto no-scrollbar" }, Object.keys(tabConfig).filter(t => t !== 'profile').map(t => React.createElement(NavItem, { key: t, icon: tabConfig[t].icon, label: tabConfig[t].label, active: activeTab === t, onClick: () => setActiveTab(t) }))), React.createElement("div", { className: "pt-6 border-t border-zinc-200 dark:border-zinc-800 space-y-2" }, React.createElement("button", { onClick: () => setShowSettings(true), className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 mb-2 transition-colors" }, React.createElement(Settings, { size: 20 }), "Cloud Sync"), React.createElement("button", { onClick: () => setDarkMode(!darkMode), className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 mb-2 transition-colors" }, darkMode ? React.createElement(Sun, { size: 20 }) : React.createElement(Moon, { size: 20 }), darkMode ? "Light Mode" : "Dark Mode"), React.createElement("button", { onClick: () => setActiveTab('profile'), className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors" }, React.createElement("div", { className: "w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white uppercase" }, (user.displayName || user.email)[0]), React.createElement("span", { className: "font-medium text-sm truncate" }, "My Profile")))),
                 React.createElement(MobileTopBar, { handleLogout, user, darkMode, toggleDarkMode: () => setDarkMode(!darkMode), onProfileClick: () => setActiveTab('profile') }),
                 React.createElement(MobileNavBar, { activeTab, setActiveTab, tabConfig }),
                 React.createElement("main", { className: "md:ml-64 p-4 md:p-8 pb-24 pt-20 md:pt-8 min-h-screen box-border" },
