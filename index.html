@@ -77,9 +77,7 @@
 
         const DEFAULT_GOALS_DATA = { mission: "Reshape my life by achieving financial stability, building iron discipline, and gaining clear direction for my future.", mainFocus: [{id: '1', text: 'Financial Freedom'}, {id: '2', text: 'Improved Fitness'}, {id: '3', text: 'Skill Mastery'}], dos: [], donts: [], milestones: [], quarters: { q1: [], q2: [], q3: [], q4: [] }, phases: { phase1: [], phase2: [], phase3: [] } };
         const DEFAULT_MEALS = [{ day: 'Monday', type: 'Breakfast', text: 'Oats + milk\n1 banana\n1 scoop protein powder' }];
-        const DEFAULT_TOOLS_CATEGORIES = ['General', 'Development', 'Design', 'Productivity', 'Finance'];
         const DEFAULT_BOOK_CATEGORIES = ['General', 'Fiction', 'Non-Fiction', 'Self-Help', 'Technical'];
-        const DEFAULT_TOOLS = [{ id: 't1', category: 'General', name: 'ChatGPT', url: 'https://chat.openai.com/', icon: 'Bot' }];
         const GYM_WORKOUT_PLAN = [ { id: 'gym1', title: "Day 1: Chest & Triceps", icon: "Flame", color: "text-rose-500", warmup: ["5min Treadmill", "Arm Circles"], exercises: [{ name: "Bench Press", sets: "4", reps: "8-10" }, { name: "Incline DB Press", sets: "3", reps: "10-12" }, { name: "Cable Flys", sets: "3", reps: "12-15" }, { name: "Tricep Pushdowns", sets: "4", reps: "12-15" }, { name: "Skullcrushers", sets: "3", reps: "10-12" }], finisher: "Pushup burnout" }, { id: 'gym2', title: "Day 2: Back & Biceps", icon: "Activity", color: "text-blue-500", warmup: ["5min Rower", "Band Pull-aparts"], exercises: [{ name: "Lat Pulldowns", sets: "4", reps: "10-12" }, { name: "Seated Cable Row", sets: "4", reps: "10-12" }, { name: "DB Row", sets: "3", reps: "10/side" }, { name: "Barbell Curls", sets: "3", reps: "10-12" }, { name: "Hammer Curls", sets: "3", reps: "12" }], finisher: "Face Pulls 3x15" }, { id: 'gym3', title: "Day 3: Legs", icon: "Dumbbell", color: "text-emerald-500", warmup: ["Bodyweight Squats", "Leg Swings"], exercises: [{ name: "Barbell Squats", sets: "4", reps: "6-8" }, { name: "Leg Press", sets: "3", reps: "10-12" }, { name: "RDLs", sets: "4", reps: "10" }, { name: "Leg Extensions", sets: "3", reps: "15" }, { name: "Calf Raises", sets: "4", reps: "15-20" }], finisher: "Walking Lunges" }, { id: 'gym4', title: "Day 4: Shoulders & Abs", icon: "Zap", color: "text-purple-500", warmup: ["Dislocations", "Light DB press"], exercises: [{ name: "Overhead Press", sets: "4", reps: "8-10" }, { name: "Lateral Raises", sets: "4", reps: "12-15" }, { name: "Front Plate Raise", sets: "3", reps: "12" }, { name: "Cable Crunches", sets: "4", reps: "15" }, { name: "Leg Raises", sets: "3", reps: "12" }], finisher: "Plank (3 x 1 min)" } ];
         const HOME_WORKOUT_PLAN = [ { id: 'home1', title: "Day 1: Upper Push (DB)", icon: "Flame", color: "text-orange-500", warmup: ["Jumping Jacks"], exercises: [{ name: "DB Floor Press", sets: "4", reps: "12" }, { name: "Pushups", sets: "3", reps: "Failure" }, { name: "Shoulder Press", sets: "4", reps: "12" }, { name: "Lateral Raises", sets: "3", reps: "15" }], finisher: "Pushups to failure" }, { id: 'home2', title: "Day 2: Lower Body (DB)", icon: "Activity", color: "text-blue-500", warmup: ["Squats"], exercises: [{ name: "Goblet Squats", sets: "4", reps: "15" }, { name: "DB RDL", sets: "4", reps: "12" }, { name: "Lunges", sets: "3", reps: "12/leg" }], finisher: "Wall Sit" }, { id: 'home3', title: "Day 3: Full Body", icon: "Zap", color: "text-emerald-500", warmup: ["Run 10 mins"], exercises: [{ name: "Burpees", sets: "4", reps: "10" }, { name: "Thrusters", sets: "3", reps: "12" }, { name: "Renegade Rows", sets: "3", reps: "10/side" }], finisher: "Mountain Climbers" }, { id: 'home4', title: "Day 4: Core & Cardio", icon: "Heart", color: "text-rose-500", warmup: ["High Knees"], exercises: [{ name: "Plank", sets: "4", reps: "1 min" }, { name: "Leg Raises", sets: "3", reps: "15" }, { name: "Russian Twists", sets: "3", reps: "20" }], finisher: "Sprints" } ];
         const FOCUS_SOUNDS = [ { id: 'rain', label: 'Rain', icon: CloudRain, url: 'https://cdn.pixabay.com/audio/2021/09/06/audio_2e22c07659.mp3' }, { id: 'lofi', label: 'Lofi', icon: Music, url: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3' } ];
@@ -1842,7 +1840,7 @@
         };
 
         const App = () => {
-            const tabConfig = { dashboard: { label: "Dashboard", icon: Layout }, schedule: { label: "Schedule", icon: Calendar }, monthlyPlan: { label: "Monthly Plan", icon: CalendarRange }, weeklyPlan: { label: "Weekly Plan", icon: Calendar }, dailyPlan: { label: "Daily Plan", icon: CalendarDays }, goals2026: { label: "2026 Vision", icon: Flag }, countdown: { label: "Countdown", icon: Hourglass }, ideaBoard: { label: "Idea Board", icon: Lightbulb }, braindump: { label: "Brain Dump", icon: Brain }, focus: { label: "Focus Timer", icon: Timer }, fitness: { label: "Fitness", icon: Dumbbell }, food: { label: "Nutrition", icon: Utensils }, tools: { label: "Tools", icon: Wrench }, library: { label: "Library", icon: Book }, profile: { label: "Profile", icon: User } };
+            const tabConfig = { dashboard: { label: "Dashboard", icon: Layout }, schedule: { label: "Schedule", icon: Calendar }, monthlyPlan: { label: "Monthly Plan", icon: CalendarRange }, weeklyPlan: { label: "Weekly Plan", icon: Calendar }, dailyPlan: { label: "Daily Plan", icon: CalendarDays }, goals2026: { label: "2026 Vision", icon: Flag }, countdown: { label: "Countdown", icon: Hourglass }, ideaBoard: { label: "Idea Board", icon: Lightbulb }, braindump: { label: "Brain Dump", icon: Brain }, focus: { label: "Focus Timer", icon: Timer }, fitness: { label: "Fitness", icon: Dumbbell }, food: { label: "Nutrition", icon: Utensils }, library: { label: "Library", icon: Book }, profile: { label: "Profile", icon: User } };
             const VALID_TABS = [...Object.keys(tabConfig), 'deadlines'];
             const [activeTab, setActiveTab] = useState(() => { const saved = localStorage.getItem('lifeos_active_tab'); return (saved && VALID_TABS.includes(saved)) ? saved : "dashboard"; });
             const [darkMode, setDarkMode] = useState(() => { const saved = localStorage.getItem('lifeos_dark_mode'); return saved !== null ? JSON.parse(saved) : true; });
@@ -1861,9 +1859,7 @@
             const [meals, setMeals] = useState(DEFAULT_MEALS);
             const [goalsData, setGoalsData] = useState(DEFAULT_GOALS_DATA);
             const [dashboardData, setDashboardData] = useState({});
-            const [tools, setTools] = useState(DEFAULT_TOOLS);
             const [books, setBooks] = useState([]);
-            const [toolCategories, setToolCategories] = useState(DEFAULT_TOOLS_CATEGORIES);
             const [bookCategories, setBookCategories] = useState(DEFAULT_BOOK_CATEGORIES);
             const [dailyPlan, setDailyPlan] = useState({ priorities: ['', '', ''], schedule: {}, notes: '', minorTasks: [] });
             const [weeklyPlan, setWeeklyPlan] = useState({ focus: "", objectives: [], dailyTasks: {} });
@@ -1896,7 +1892,6 @@
                             if(aData.goals_2026) setGoalsData(aData.goals_2026); 
                             if(aData.dashboard_config) setDashboardData(aData.dashboard_config); 
                             if(aData.fitness_data) setFitnessData(aData.fitness_data); 
-                            if(aData.tool_categories) setToolCategories(aData.tool_categories); 
                             if(aData.book_categories) setBookCategories(aData.book_categories);
                             if(aData.daily_plan) setDailyPlan(aData.daily_plan);
                             if(aData.weekly_plan) setWeeklyPlan(aData.weekly_plan);
@@ -1905,7 +1900,6 @@
                             if(aData.idea_notes) setIdeaNotes(aData.idea_notes);
                             if(aData.events) setEvents(aData.events);
                         }
-                        const { data: tlData } = await supabase.from('tools').select('*').eq('user_id', user.id); if(tlData && tlData.length > 0) setTools(tlData);
                         const { data: lData } = await supabase.from('library').select('*').eq('user_id', user.id); if(lData && lData.length > 0) setBooks(lData);
                         setIsDataLoaded(true);
                     };
@@ -1916,9 +1910,7 @@
                     setDumps(JSON.parse(localStorage.getItem(`${prefix}dumps`) || '[]'));
                     setMeals(JSON.parse(localStorage.getItem(`${prefix}meals`) || JSON.stringify(DEFAULT_MEALS)));
                     setGoalsData(JSON.parse(localStorage.getItem(`${prefix}goals_2026`) || JSON.stringify(DEFAULT_GOALS_DATA)));
-                    setTools(JSON.parse(localStorage.getItem(`${prefix}tools`) || JSON.stringify(DEFAULT_TOOLS)));
                     setBooks(JSON.parse(localStorage.getItem(`${prefix}books`) || '[]'));
-                    setToolCategories(JSON.parse(localStorage.getItem(`${prefix}tool_categories`) || JSON.stringify(DEFAULT_TOOLS_CATEGORIES)));
                     setBookCategories(JSON.parse(localStorage.getItem(`${prefix}book_categories`) || JSON.stringify(DEFAULT_BOOK_CATEGORIES)));
                     setDashboardData(JSON.parse(localStorage.getItem(`${prefix}dashboard`) || '{}'));
                     setFitnessData(JSON.parse(localStorage.getItem(`${prefix}fitness`) || JSON.stringify({ gym: GYM_WORKOUT_PLAN, home: HOME_WORKOUT_PLAN })));
@@ -1940,9 +1932,7 @@
                     localStorage.setItem(`${prefix}meals`, JSON.stringify(meals));
                     localStorage.setItem(`${prefix}goals_2026`, JSON.stringify(goalsData));
                     localStorage.setItem(`${prefix}dashboard`, JSON.stringify(dashboardData));
-                    localStorage.setItem(`${prefix}tools`, JSON.stringify(tools));
                     localStorage.setItem(`${prefix}books`, JSON.stringify(books));
-                    localStorage.setItem(`${prefix}tool_categories`, JSON.stringify(toolCategories));
                     localStorage.setItem(`${prefix}book_categories`, JSON.stringify(bookCategories));
                     localStorage.setItem(`${prefix}fitness`, JSON.stringify(fitnessData));
                     localStorage.setItem(`${prefix}daily_plan`, JSON.stringify(dailyPlan));
@@ -1952,7 +1942,7 @@
                     localStorage.setItem(`${prefix}idea_notes`, JSON.stringify(ideaNotes));
                     localStorage.setItem(`${prefix}events`, JSON.stringify(events));
                 }
-            }, [deadlines, dumps, meals, goalsData, dashboardData, tools, books, toolCategories, bookCategories, fitnessData, dailyPlan, weeklyPlan, monthlyPlan, countdowns, ideaNotes, events, user, isDataLoaded]);
+            }, [deadlines, dumps, meals, goalsData, dashboardData, books, bookCategories, fitnessData, dailyPlan, weeklyPlan, monthlyPlan, countdowns, ideaNotes, events, user, isDataLoaded]);
 
             const generateAIMealPlan = async () => {
                 const apiKey = "";
@@ -1979,8 +1969,6 @@
             const handleAddDump = (text) => setDumps([...dumps, { text, id: generateUUID() }]);
             const handleDeleteDump = (id) => setDumps(dumps.filter(d => d.id !== id));
             const handleUpdateDump = (item) => setDumps(dumps.map(d => d.id === item.id ? item : d));
-            const handleAddTool = (item) => setTools([...tools, { ...item, id: generateUUID() }]);
-            const handleAddCategory = (cat) => setToolCategories([...toolCategories, cat]);
             const handleAddBookCategory = (cat) => setBookCategories([...bookCategories, cat]);
             const handleUpdateMeal = (day, type, text) => {
                 setMeals(prev => {
@@ -1995,13 +1983,9 @@
             const handleUpdateGoals2026 = (newData) => setGoalsData(newData);
             const handleUpdateWeeklyPlan = (newData) => setWeeklyPlan(newData);
             const handleUpdateMonthlyPlan = (newData) => setMonthlyPlan(newData);
-            const handleDeleteCategory = (cat) => setToolCategories(toolCategories.filter(c => c !== cat));
             const handleDeleteBookCategory = (cat) => setBookCategories(bookCategories.filter(c => c !== cat));
-            const handleRenameCategory = (oldN, newN) => setToolCategories(toolCategories.map(c => c === oldN ? newN : c));
             const handleRenameBookCategory = (oldN, newN) => setBookCategories(bookCategories.map(c => c === oldN ? newN : c));
             const handleUpdateProfile = (name) => setUser({ ...user, displayName: name });
-            const handleDeleteTool = (id) => setTools(tools.filter(t => t.id !== id));
-            const handleUpdateTool = (item) => setTools(tools.map(t => t.id === item.id ? item : t));
             const handleAddBook = (book) => setBooks([...books, { ...book, id: generateUUID() }]);
             const handleDeleteBook = (id) => setBooks(books.filter(b => b.id !== id));
             const handleUpdateBook = (item) => setBooks(books.map(b => b.id === item.id ? item : b));
@@ -2036,7 +2020,6 @@
                     activeTab === 'ideaBoard' && React.createElement(IdeaBoardView, { notes: ideaNotes, onAdd: handleAddIdeaNote, onUpdate: handleUpdateIdeaNote, onDelete: handleDeleteIdeaNote }),
                     activeTab === 'fitness' && React.createElement(FitnessView, { fitnessData, onUpdateFitness: handleUpdateFitness }),
                     activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal, onAIGenerate: generateAIMealPlan }),
-                    activeTab === 'tools' && React.createElement(ToolsView, { tools, categories: toolCategories, onAddTool: handleAddTool, onAddCategory: handleAddCategory, onDeleteCategory: handleDeleteCategory, onRenameCategory: handleRenameCategory, onDeleteTool: handleDeleteTool, onUpdateTool: handleUpdateTool }),
                     activeTab === 'library' && React.createElement(LibraryView, { books, categories: bookCategories, onAddBook: handleAddBook, onDeleteBook: handleDeleteBook, onUpdateBook: handleUpdateBook, onAddCategory: handleAddBookCategory, onDeleteCategory: handleDeleteBookCategory, onRenameCategory: handleRenameBookCategory }),
                     activeTab === 'profile' && React.createElement(ProfileView, { user, onLogout: handleLogout, onUpdateProfile: handleUpdateProfile })
                 ),
