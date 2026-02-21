@@ -272,6 +272,7 @@
             const containerRef = useRef(null);
             const dragStartPos = useRef({ x: 0, y: 0 });
             const isDraggingRef = useRef(false);
+            const gridRef = useRef(null);
 
             useEffect(() => {
                 const t = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -341,25 +342,27 @@
             };
 
             const handleMouseMove = (e) => {
-                if (!draggedEventId) return;
+                if (!draggedEventId || !gridRef.current) return;
                 isDraggingRef.current = true;
                 
-                const grid = e.currentTarget.getBoundingClientRect();
-                const scrollY = e.currentTarget.scrollTop;
-                const relativeY = e.clientY - grid.top + scrollY - dragOffset.y;
-                const relativeX = e.clientX - grid.left;
+                const gridRect = gridRef.current.getBoundingClientRect();
+                const relativeY = e.clientY - gridRect.top - dragOffset.y;
                 
-                const totalMinutes = Math.max(0, Math.min(1439, Math.floor(relativeY)));
+                let totalMinutes = Math.max(0, Math.min(1439, Math.floor(relativeY)));
+                totalMinutes = Math.round(totalMinutes / 15) * 15;
+                
                 const hours = Math.floor(totalMinutes / 60);
                 const minutes = totalMinutes % 60;
 
                 let targetDate = selectedDate;
                 if (view === 'week') {
+                    const relativeX = e.clientX - gridRect.left;
+                    const colWidth = gridRect.width / 7; 
+                    const dayIdx = Math.max(0, Math.min(6, Math.floor(relativeX / colWidth)));
+                    
                     const start = getWeekStart(selectedDate);
                     const weekDays = Array.from({length: 7}, (_, i) => { const d = new Date(start); d.setDate(d.getDate() + i); return d; });
-                    const colWidth = (grid.width - 48) / 7; 
-                    const dayIdx = Math.max(0, Math.min(6, Math.floor((relativeX - 48) / colWidth)));
-                    targetDate = weekDays[dayIdx];
+                    targetDate = weekDays[dayIdx] || weekDays[0];
                 }
 
                 const ev = events.find(item => item.id === draggedEventId);
@@ -407,7 +410,7 @@
                     onMouseLeave: handleMouseUp
                 },
                     React.createElement("div", { className: "flex-1 overflow-y-auto relative no-scrollbar" },
-                        React.createElement("div", { className: "calendar-grid h-[1440px] relative pb-12" },
+                        React.createElement("div", { ref: gridRef, className: "calendar-grid h-[1440px] relative pb-12" },
                             isSameDay(selectedDate, new Date()) && React.createElement(CurrentTimeLine, { className: "absolute left-16 right-0" }),
                             hours.map(h => React.createElement("div", { key: h, onClick: () => { const d = new Date(selectedDate); d.setHours(h, 0, 0, 0); openNewEvent(d); }, className: "h-[60px] border-b border-zinc-200 dark:border-zinc-800/80 flex hover:bg-zinc-50 dark:hover:bg-zinc-800/20 cursor-pointer group" },
                                 React.createElement("div", { className: "w-16 text-right pr-4 text-[10px] text-zinc-400 dark:text-zinc-500 pt-1 font-mono" }, `${h}:00`),
@@ -427,7 +430,7 @@
                                         const dy = Math.abs(e.clientY - dragStartPos.current.y);
                                         if (dx < 5 && dy < 5) setEditingEvent(ev); 
                                     },
-                                    className: `absolute left-[70px] right-8 rounded px-3 py-1.5 text-white shadow-sm transition-all cursor-pointer hover:shadow-md ${isDragging ? 'opacity-80 z-50 scale-[1.01] shadow-2xl ring-1 ring-white/20' : 'hover:z-30'} flex flex-col justify-start overflow-hidden ${ev.isHabit ? 'bg-emerald-600' : ev.color}`,
+                                    className: `absolute left-[70px] right-8 rounded px-3 py-1.5 text-white shadow-sm cursor-pointer hover:shadow-md ${isDragging ? 'opacity-80 z-50 scale-[1.01] shadow-2xl ring-1 ring-white/20 transition-none' : 'transition-all hover:z-30'} flex flex-col justify-start overflow-hidden ${ev.isHabit ? 'bg-emerald-600' : ev.color}`,
                                     style: { top: `${top}px`, height: `${duration}px` }
                                 },
                                     React.createElement("div", { className: "flex justify-between items-start pointer-events-none" },
@@ -470,7 +473,7 @@
                             React.createElement("div", { className: "w-12 md:w-[60px] shrink-0 border-r border-zinc-200 dark:border-zinc-800/80 sticky left-0 z-20 bg-zinc-50 dark:bg-[#111113]" },
                                 hours.map(h => React.createElement("div", { key: h, className: "h-[60px] text-[10px] text-zinc-400 dark:text-zinc-500 text-right pr-2 pt-1 font-mono border-b border-transparent" }, `${h}:00`))
                             ),
-                            React.createElement("div", { className: "flex-1 grid grid-cols-7 relative" },
+                            React.createElement("div", { ref: gridRef, className: "flex-1 grid grid-cols-7 relative" },
                                 weekDays.map((d, i) => React.createElement("div", { key: i, className: `border-r border-zinc-200 dark:border-zinc-800/80 relative` },
                                     isSameDay(d, new Date()) && React.createElement(CurrentTimeLine, { className: "absolute left-0 right-0" }),
                                     hours.map(h => React.createElement("div", { key: h, onClick: () => { const newD = new Date(d); newD.setHours(h,0,0,0); openNewEvent(newD); }, className: "h-[60px] border-b border-zinc-200 dark:border-zinc-800/80 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/20" })),
@@ -488,7 +491,7 @@
                                                 const dy = Math.abs(e.clientY - dragStartPos.current.y);
                                                 if (dx < 5 && dy < 5) setEditingEvent(ev); 
                                             }, 
-                                            className: `absolute left-0.5 right-0.5 rounded px-1.5 py-1 text-[10px] leading-tight text-white shadow-sm overflow-hidden cursor-pointer hover:z-30 transition-transform ${isDragging ? 'opacity-80 z-50 scale-105 ring-1 ring-white/50' : ''} ${ev.color}`, 
+                                            className: `absolute left-0.5 right-0.5 rounded px-1.5 py-1 text-[10px] leading-tight text-white shadow-sm overflow-hidden cursor-pointer hover:z-30 hover:shadow-md ${isDragging ? 'opacity-80 z-50 scale-105 ring-1 ring-white/50 transition-none' : 'transition-transform'} ${ev.color}`, 
                                             style: { top: `${top}px`, height: `${duration}px` }
                                         },
                                             React.createElement("div", { className: "font-semibold truncate" }, ev.title),
