@@ -388,14 +388,14 @@
             const nextEvent = upcomingEvents[0];
             const isHappeningNow = nextEvent && new Date(nextEvent.start) <= new Date() && new Date(nextEvent.end) >= new Date();
 
-            const CurrentTimeLine = () => {
+            const CurrentTimeLine = ({ className = "absolute left-0 right-0" }) => {
                 const hour = currentTime.getHours();
                 const min = currentTime.getMinutes();
                 const top = (hour * 60 + min);
                 return React.createElement("div", {
-                    className: "absolute left-0 right-0 border-t border-red-500 z-20 pointer-events-none flex items-center shadow-[0_0_8px_rgba(239,68,68,0.5)]",
+                    className: `${className} h-[1.5px] bg-red-500 z-40 pointer-events-none flex items-center shadow-[0_0_8px_rgba(239,68,68,0.5)]`,
                     style: { top: `${top}px` }
-                }, React.createElement("div", { className: "w-1.5 h-1.5 bg-red-500 rounded-full -ml-[3px] -mt-[0.5px]" }));
+                }, React.createElement("div", { className: "w-2 h-2 bg-red-500 rounded-full -ml-[3px]" }));
             };
 
             const renderDayView = () => {
@@ -408,7 +408,7 @@
                 },
                     React.createElement("div", { className: "flex-1 overflow-y-auto relative no-scrollbar" },
                         React.createElement("div", { className: "calendar-grid h-[1440px] relative pb-12" },
-                            isSameDay(selectedDate, new Date()) && React.createElement(CurrentTimeLine, null),
+                            isSameDay(selectedDate, new Date()) && React.createElement(CurrentTimeLine, { className: "absolute left-16 right-0" }),
                             hours.map(h => React.createElement("div", { key: h, onClick: () => { const d = new Date(selectedDate); d.setHours(h, 0, 0, 0); openNewEvent(d); }, className: "h-[60px] border-b border-zinc-200 dark:border-zinc-800/80 flex hover:bg-zinc-50 dark:hover:bg-zinc-800/20 cursor-pointer group" },
                                 React.createElement("div", { className: "w-16 text-right pr-4 text-[10px] text-zinc-400 dark:text-zinc-500 pt-1 font-mono" }, `${h}:00`),
                                 React.createElement("div", { className: "flex-1 border-l border-zinc-200 dark:border-zinc-800/80" })
@@ -471,8 +471,8 @@
                                 hours.map(h => React.createElement("div", { key: h, className: "h-[60px] text-[10px] text-zinc-400 dark:text-zinc-500 text-right pr-2 pt-1 font-mono border-b border-transparent" }, `${h}:00`))
                             ),
                             React.createElement("div", { className: "flex-1 grid grid-cols-7 relative" },
-                                weekDays.some(d => isSameDay(d, new Date())) && React.createElement(CurrentTimeLine, null),
                                 weekDays.map((d, i) => React.createElement("div", { key: i, className: `border-r border-zinc-200 dark:border-zinc-800/80 relative` },
+                                    isSameDay(d, new Date()) && React.createElement(CurrentTimeLine, { className: "absolute left-0 right-0" }),
                                     hours.map(h => React.createElement("div", { key: h, onClick: () => { const newD = new Date(d); newD.setHours(h,0,0,0); openNewEvent(newD); }, className: "h-[60px] border-b border-zinc-200 dark:border-zinc-800/80 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/20" })),
                                     events.filter(e => isSameDay(new Date(e.start), d)).map(ev => {
                                         const dateObj = new Date(ev.start);
