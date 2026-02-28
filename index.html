@@ -182,7 +182,16 @@
         };
 
         const TimeWidget = () => { const [time, setTime] = useState(new Date()); useEffect(() => { const t = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(t); }, []); return React.createElement("div", { className: "text-right" }, React.createElement("div", { className: "text-3xl font-bold font-mono text-indigo-500 dark:text-indigo-400" }, time.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})), React.createElement("div", { className: "text-xs font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500" }, time.toLocaleDateString())); };
-        const AuthModal = ({ onClose, onLogin, inline = false }) => { const [isLogin, setIsLogin] = useState(true); const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [showPassword, setShowPassword] = useState(false); const [error, setError] = useState(null); const [loading, setLoading] = useState(false); const handleSubmit = async (e) => { e.preventDefault(); setError(null); setLoading(true); if (isSupabaseConfigured) { try { const { data, error } = isLogin ? await supabase.auth.signInWithPassword({ email, password }) : await supabase.auth.signUp({ email, password }); if (error) throw error; if (data?.user) { onLogin({ email: data.user.email, id: data.user.id, isLocal: false }); if(!inline) onClose(); } } catch(err) { setError(err.message.includes("fetch") ? "Connection failed. Using Local Mode..." : err.message); if(err.message.includes("fetch")) setTimeout(handleLocalAuth, 1000); } finally { setLoading(false); } } else { handleLocalAuth(); } }; const handleLocalAuth = () => { try { const user = isLogin ? LocalAuth.login(email, password) : LocalAuth.signup(email, password); onLogin(user); if(!inline) onClose(); } catch(e) { setError(e.message); } finally { setLoading(false); } };
+        const AuthModal = ({ onClose, onLogin, inline = false }) => { 
+            const [isLogin, setIsLogin] = useState(true); const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [showPassword, setShowPassword] = useState(false); const [error, setError] = useState(null); const [loading, setLoading] = useState(false); 
+            
+            useEffect(() => {
+                const handleEsc = (e) => { if (e.key === 'Escape' && !inline) onClose(); };
+                window.addEventListener('keydown', handleEsc);
+                return () => window.removeEventListener('keydown', handleEsc);
+            }, [inline, onClose]);
+
+            const handleSubmit = async (e) => { e.preventDefault(); setError(null); setLoading(true); if (isSupabaseConfigured) { try { const { data, error } = isLogin ? await supabase.auth.signInWithPassword({ email, password }) : await supabase.auth.signUp({ email, password }); if (error) throw error; if (data?.user) { onLogin({ email: data.user.email, id: data.user.id, isLocal: false }); if(!inline) onClose(); } } catch(err) { setError(err.message.includes("fetch") ? "Connection failed. Using Local Mode..." : err.message); if(err.message.includes("fetch")) setTimeout(handleLocalAuth, 1000); } finally { setLoading(false); } } else { handleLocalAuth(); } }; const handleLocalAuth = () => { try { const user = isLogin ? LocalAuth.login(email, password) : LocalAuth.signup(email, password); onLogin(user); if(!inline) onClose(); } catch(e) { setError(e.message); } finally { setLoading(false); } };
         const handleGoogleLogin = async () => { if (isSupabaseConfigured) { setLoading(true); const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } }); if (error) setError(error.message); setLoading(false); } else { setError("Cloud sync not configured. Cannot use Google Login."); } };
         const content = React.createElement("div", { className: inline ? "" : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 max-w-sm w-full relative shadow-xl" }, !inline && React.createElement("button", { onClick: onClose, className: "absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200" }, React.createElement(X, { size: 20 })), React.createElement("h2", { className: "text-xl font-bold text-zinc-900 dark:text-white mb-6 text-center" }, isLogin ? "Welcome Back" : "Create Account"), React.createElement("form", { onSubmit: handleSubmit, className: "space-y-4" }, React.createElement("input", { type: "email", value: email, onChange: e => setEmail(e.target.value), placeholder: "Email", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:border-indigo-500 outline-none" }), React.createElement("div", { className: "relative" }, React.createElement("input", { type: showPassword ? "text" : "password", value: password, onChange: e => setPassword(e.target.value), placeholder: "Password", className: "w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:border-indigo-500 outline-none pr-10" }), React.createElement("button", { type: "button", onClick: () => setShowPassword(!showPassword), className: "absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-white transition-colors" }, showPassword ? React.createElement(EyeOff, { size: 18 }) : React.createElement(Eye, { size: 18 }))), error && React.createElement("div", { className: "text-red-500 text-xs" }, error), React.createElement("button", { type: "submit", disabled: loading, className: "w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500" }, loading ? "Processing..." : (isLogin ? "Login" : "Sign Up")), React.createElement("div", { className: "relative my-4" }, React.createElement("div", { className: "absolute inset-0 flex items-center" }, React.createElement("span", { className: "w-full border-t border-zinc-200 dark:border-zinc-700" })), React.createElement("div", { className: "relative flex justify-center text-xs uppercase" }, React.createElement("span", { className: "bg-white dark:bg-zinc-900 px-2 text-zinc-500" }, "Or continue with"))), React.createElement("button", { onClick: handleGoogleLogin, type: "button", className: "w-full py-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-xl font-bold hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-center gap-2 transition-colors" }, React.createElement(Chrome, { size: 18 }), "Google"), React.createElement("div", { className: "text-center text-xs text-zinc-500 mt-4 cursor-pointer hover:text-zinc-800 dark:hover:text-white", onClick: () => setIsLogin(!isLogin) }, isLogin ? "Need an account? Sign up" : "Have an account? Login"))); return inline ? content : React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" }, content); };
         const LandingPage = ({ onLoginSuccess, onGuestLogin }) => { return React.createElement("div", { className: "min-h-screen flex flex-col md:flex-row bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white font-sans overflow-hidden transition-colors duration-300" }, React.createElement("div", { className: "fixed inset-0 z-0 pointer-events-none" }, React.createElement("div", { className: "absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 dark:bg-indigo-600/20 rounded-full blur-[120px]" }), React.createElement("div", { className: "absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] bg-purple-500/10 dark:bg-purple-600/10 rounded-full blur-[100px]" })), React.createElement("div", { className: "md:w-1/2 p-8 md:p-16 flex flex-col justify-center relative z-10" }, React.createElement("div", { className: "mb-8 flex items-center gap-3" }, React.createElement("div", { className: "w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-glow" }, React.createElement(Brain, { size: 20 })), React.createElement("h1", { className: "text-2xl font-bold tracking-tight text-zinc-900 dark:text-white" }, "LifeOS")), React.createElement("h2", { className: "text-5xl md:text-7xl font-bold mb-6 leading-tight tracking-tight" }, "Design Your ", React.createElement("span", { className: "text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500" }, "Mind.")), React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 text-lg md:text-xl max-w-md leading-relaxed mb-10" }, "A futuristic operating system for your life. Organize habits, tasks, and goals in one unified interface."), React.createElement("div", { className: "grid grid-cols-2 gap-4 max-w-sm" }, [{l:"Focus", i:Timer}, {l:"Goals", i:Flag}, {l:"Habits", i:CheckCircle2}, {l:"Health", i:Activity}].map((f, i) => React.createElement("div", { key: i, className: "flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-white/5 border border-zinc-200 dark:border-white/5 shadow-sm dark:shadow-none" }, React.createElement(f.i, { className: "text-indigo-500 dark:text-indigo-400", size: 18 }), React.createElement("span", { className: "text-sm font-medium text-zinc-700 dark:text-zinc-300" }, f.l))))), React.createElement("div", { className: "md:w-1/2 bg-white/30 dark:bg-black/40 backdrop-blur-xl border-l border-zinc-200 dark:border-white/5 flex flex-col justify-center p-8 md:p-16 relative z-20" }, React.createElement(AuthModal, { onClose: () => {}, onLogin: onLoginSuccess, inline: true }), React.createElement("div", { className: "mt-6 text-center" }, React.createElement("button", { onClick: () => onGuestLogin({ email: "guest@lifeos.app", displayName: "Guest", uid: "guest-user", isLocal: true }), className: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-white text-xs font-medium transition-colors flex items-center justify-center gap-2 mx-auto" }, "Enter as Guest", React.createElement(ArrowRight, { size: 12 }))))); };
@@ -205,7 +214,7 @@
                             React.createElement("div", { className: "mb-1" },
                                 isEditing ? 
                                 React.createElement("div", { className: "flex items-center gap-2" },
-                                    React.createElement("input", { ref: inputRef, value: name, onChange: e => setName(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), className: "bg-transparent border-b-2 border-indigo-500 text-2xl font-bold text-zinc-900 dark:text-white focus:outline-none w-full max-w-[200px]" }),
+                                    React.createElement("input", { ref: inputRef, value: name, onChange: e => setName(e.target.value), onKeyDown: e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') { setIsEditing(false); setName(user.user_metadata?.full_name || user.user_metadata?.name || user.displayName || user.email?.split('@')[0] || "User"); } }, className: "bg-transparent border-b-2 border-indigo-500 text-2xl font-bold text-zinc-900 dark:text-white focus:outline-none w-full max-w-[200px]" }),
                                     React.createElement("button", { onClick: handleSave, className: "p-1 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200" }, React.createElement(Check, { size: 18 }))
                                 ) :
                                 React.createElement("div", { className: "flex items-center gap-3 group" },
@@ -258,7 +267,14 @@
             const [url, setUrl] = useState(localStorage.getItem('lifeos_sb_url') || DEFAULT_SB_URL);
             const [key, setKey] = useState(localStorage.getItem('lifeos_sb_key') || "");
             const handleSave = () => { localStorage.setItem('lifeos_sb_url', url.trim()); localStorage.setItem('lifeos_sb_key', key.trim()); onSave(); };
-            return React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" }, React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-2xl p-6" }, React.createElement("h2", { className: "text-xl font-bold mb-4 text-zinc-900 dark:text-white" }, "Cloud Sync Setup"), React.createElement("input", { value: url, onChange: e => setUrl(e.target.value), placeholder: "Supabase URL", className: "w-full mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white" }), React.createElement("input", { value: key, onChange: e => setKey(e.target.value), type: "password", placeholder: "Anon Key", className: "w-full mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white" }), React.createElement("div", { className: "flex justify-end gap-3" }, React.createElement("button", { onClick: onClose, className: "px-4 py-2 text-zinc-500" }, "Cancel"), React.createElement("button", { onClick: handleSave, className: "px-6 py-2 bg-indigo-600 text-white rounded-lg" }, "Save"))));
+            
+            useEffect(() => {
+                const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
+                window.addEventListener('keydown', handleEsc);
+                return () => window.removeEventListener('keydown', handleEsc);
+            }, [onClose]);
+
+            return React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" }, React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-2xl p-6" }, React.createElement("h2", { className: "text-xl font-bold mb-4 text-zinc-900 dark:text-white" }, "Cloud Sync Setup"), React.createElement("input", { value: url, onChange: e => setUrl(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), placeholder: "Supabase URL", className: "w-full mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white" }), React.createElement("input", { value: key, onChange: e => setKey(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), type: "password", placeholder: "Anon Key", className: "w-full mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white" }), React.createElement("div", { className: "flex justify-end gap-3" }, React.createElement("button", { onClick: onClose, className: "px-4 py-2 text-zinc-500" }, "Cancel"), React.createElement("button", { onClick: handleSave, className: "px-6 py-2 bg-indigo-600 text-white rounded-lg" }, "Save"))));
         };
         
         const ScheduleView = ({ events, onAddEvent, onUpdateEvent, onDeleteEvent }) => {
@@ -269,6 +285,7 @@
             const [currentTime, setCurrentTime] = useState(new Date());
             const [draggedEventId, setDraggedEventId] = useState(null);
             const [dragOffset, setDragOffset] = useState({ y: 0 });
+            const [timeSelection, setTimeSelection] = useState(null);
             const containerRef = useRef(null);
             const dragStartPos = useRef({ x: 0, y: 0 });
             const isDraggingRef = useRef(false);
@@ -278,6 +295,17 @@
                 const t = setInterval(() => setCurrentTime(new Date()), 60000);
                 return () => clearInterval(t);
             }, []);
+
+            useEffect(() => {
+                const handleEsc = (e) => {
+                    if (e.key === 'Escape') {
+                        if (editingEvent) setEditingEvent(null);
+                        if (timeSelection) setTimeSelection(null);
+                    }
+                };
+                window.addEventListener('keydown', handleEsc);
+                return () => window.removeEventListener('keydown', handleEsc);
+            }, [editingEvent, timeSelection]);
 
             const isSameDay = (d1, d2) => d1.toDateString() === d2.toDateString();
             const getWeekStart = (date) => { const d = new Date(date); const day = d.getDay(); const diff = d.getDate() - day + (day === 0 ? -6 : 1); return new Date(d.setDate(diff)); };
@@ -295,14 +323,16 @@
                 setCalendarMonth(newDate);
             };
 
-            const openNewEvent = (defaultDate = null) => {
-                const start = defaultDate ? new Date(defaultDate) : new Date(selectedDate);
-                if(!defaultDate) {
+            const openNewEvent = (defaultStart = null, defaultEnd = null) => {
+                const start = defaultStart ? new Date(defaultStart) : new Date(selectedDate);
+                if(!defaultStart) {
                     const now = new Date();
-                    start.setHours(now.getHours() + 1, 0, 0);
+                    start.setHours(now.getHours() + 1, 0, 0, 0);
                 }
-                const end = new Date(start);
-                end.setHours(start.getHours() + 1);
+                const end = defaultEnd ? new Date(defaultEnd) : new Date(start);
+                if(!defaultEnd) {
+                    end.setHours(start.getHours() + 1, 0, 0, 0);
+                }
                 
                 setEditingEvent({
                     title: "",
@@ -329,6 +359,14 @@
                 }
             };
 
+            const handleTimeSelectStart = (e, date) => {
+                if(e.button !== 0 || draggedEventId) return;
+                const targetElement = e.currentTarget;
+                const rect = targetElement.getBoundingClientRect();
+                const y = e.clientY - rect.top;
+                setTimeSelection({ date, startY: y, currentY: y, targetElement });
+            };
+
             // --- SEAMLESS DRAG LOGIC ---
             const handleMouseDown = (e, ev) => {
                 if(e.button !== 0) return; 
@@ -342,10 +380,10 @@
             };
 
             const handleMouseMove = (e) => {
-                if (!draggedEventId || !gridRef.current) return;
-                isDraggingRef.current = true;
-                
-                const gridRect = gridRef.current.getBoundingClientRect();
+                if (draggedEventId && gridRef.current) {
+                    isDraggingRef.current = true;
+                    
+                    const gridRect = gridRef.current.getBoundingClientRect();
                 const relativeY = e.clientY - gridRect.top - dragOffset.y;
                 
                 let totalMinutes = Math.max(0, Math.min(1439, Math.floor(relativeY)));
@@ -378,11 +416,39 @@
                     start: toLocalISO(newStart),
                     end: toLocalISO(newEnd)
                 });
+                } else if (timeSelection) {
+                    const rect = timeSelection.targetElement.getBoundingClientRect();
+                    const y = Math.max(0, Math.min(1440, e.clientY - rect.top));
+                    setTimeSelection(prev => prev ? { ...prev, currentY: y } : null);
+                }
             };
 
             const handleMouseUp = () => {
-                setDraggedEventId(null);
-                setTimeout(() => { isDraggingRef.current = false; }, 0);
+                if (draggedEventId) {
+                    setDraggedEventId(null);
+                    setTimeout(() => { isDraggingRef.current = false; }, 0);
+                }
+                if (timeSelection) {
+                    const { date, startY, currentY } = timeSelection;
+                    const startMin = Math.min(startY, currentY);
+                    const endMin = Math.max(startY, currentY);
+                    
+                    const snappedStart = Math.floor(startMin / 15) * 15;
+                    let snappedEnd = Math.ceil(endMin / 15) * 15;
+                    
+                    if (snappedEnd - snappedStart < 15) {
+                        snappedEnd = snappedStart + 60;
+                    }
+
+                    const startDate = new Date(date);
+                    startDate.setHours(Math.floor(snappedStart / 60), snappedStart % 60, 0, 0);
+                    
+                    const endDate = new Date(date);
+                    endDate.setHours(Math.floor(snappedEnd / 60), snappedEnd % 60, 0, 0);
+
+                    openNewEvent(startDate, endDate);
+                    setTimeSelection(null);
+                }
             };
 
             // Setup Details
@@ -410,9 +476,9 @@
                     onMouseLeave: handleMouseUp
                 },
                     React.createElement("div", { className: "flex-1 overflow-y-auto relative no-scrollbar" },
-                        React.createElement("div", { ref: gridRef, className: "calendar-grid h-[1440px] relative pb-12" },
+                        React.createElement("div", { ref: gridRef, className: "calendar-grid h-[1440px] relative pb-12", onMouseDown: (e) => handleTimeSelectStart(e, selectedDate) },
                             isSameDay(selectedDate, new Date()) && React.createElement(CurrentTimeLine, { className: "absolute left-16 right-0" }),
-                            hours.map(h => React.createElement("div", { key: h, onClick: () => { const d = new Date(selectedDate); d.setHours(h, 0, 0, 0); openNewEvent(d); }, className: "h-[60px] border-b border-zinc-200 dark:border-zinc-800/80 flex hover:bg-zinc-50 dark:hover:bg-zinc-800/20 cursor-pointer group" },
+                            hours.map(h => React.createElement("div", { key: h, className: "h-[60px] border-b border-zinc-200 dark:border-zinc-800/80 flex hover:bg-zinc-50 dark:hover:bg-zinc-800/20 cursor-crosshair group" },
                                 React.createElement("div", { className: "w-16 text-right pr-4 text-[10px] text-zinc-400 dark:text-zinc-500 pt-1 font-mono" }, `${h}:00`),
                                 React.createElement("div", { className: "flex-1 border-l border-zinc-200 dark:border-zinc-800/80" })
                             )),
@@ -439,6 +505,10 @@
                                     ),
                                     duration >= 60 && ev.description && React.createElement("p", { className: "text-[10px] opacity-80 mt-1 line-clamp-2 pointer-events-none leading-snug" }, ev.description)
                                 );
+                            }),
+                            timeSelection && isSameDay(timeSelection.date, selectedDate) && React.createElement("div", {
+                                className: "absolute left-[70px] right-8 rounded bg-indigo-500/30 border border-indigo-500/50 z-40 pointer-events-none",
+                                style: { top: `${Math.min(timeSelection.startY, timeSelection.currentY)}px`, height: `${Math.max(15, Math.abs(timeSelection.currentY - timeSelection.startY))}px` }
                             })
                         )
                     )
@@ -474,9 +544,9 @@
                                 hours.map(h => React.createElement("div", { key: h, className: "h-[60px] text-[10px] text-zinc-400 dark:text-zinc-500 text-right pr-2 pt-1 font-mono border-b border-transparent" }, `${h}:00`))
                             ),
                             React.createElement("div", { ref: gridRef, className: "flex-1 grid grid-cols-7 relative" },
-                                weekDays.map((d, i) => React.createElement("div", { key: i, className: `border-r border-zinc-200 dark:border-zinc-800/80 relative` },
+                                weekDays.map((d, i) => React.createElement("div", { key: i, className: `border-r border-zinc-200 dark:border-zinc-800/80 relative`, onMouseDown: (e) => handleTimeSelectStart(e, d) },
                                     isSameDay(d, new Date()) && React.createElement(CurrentTimeLine, { className: "absolute left-0 right-0" }),
-                                    hours.map(h => React.createElement("div", { key: h, onClick: () => { const newD = new Date(d); newD.setHours(h,0,0,0); openNewEvent(newD); }, className: "h-[60px] border-b border-zinc-200 dark:border-zinc-800/80 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/20" })),
+                                    hours.map(h => React.createElement("div", { key: h, className: "h-[60px] border-b border-zinc-200 dark:border-zinc-800/80 cursor-crosshair hover:bg-zinc-50 dark:hover:bg-zinc-800/20" })),
                                     events.filter(e => isSameDay(new Date(e.start), d)).map(ev => {
                                         const dateObj = new Date(ev.start);
                                         const top = dateObj.getHours() * 60 + dateObj.getMinutes();
@@ -497,6 +567,10 @@
                                             React.createElement("div", { className: "font-semibold truncate" }, ev.title),
                                             duration > 35 && React.createElement("div", { className: "opacity-80 text-[8px] font-mono mt-0.5 pointer-events-none truncate" }, `${formatTime(ev.start)} - ${formatTime(ev.end)}`)
                                         )
+                                    }),
+                                    timeSelection && isSameDay(timeSelection.date, d) && React.createElement("div", {
+                                        className: "absolute left-0.5 right-0.5 rounded bg-indigo-500/30 border border-indigo-500/50 z-40 pointer-events-none",
+                                        style: { top: `${Math.min(timeSelection.startY, timeSelection.currentY)}px`, height: `${Math.max(15, Math.abs(timeSelection.currentY - timeSelection.startY))}px` }
                                     })
                                 ))
                             )
@@ -592,17 +666,17 @@
                         React.createElement("div", { className: "space-y-5" },
                             React.createElement("div", null,
                                 React.createElement("label", { className: "text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 block px-1" }, "Title"),
-                                React.createElement("input", { value: editingEvent.title, onChange: e => setEditingEvent({...editingEvent, title: e.target.value}), placeholder: "What's happening?", className: "w-full p-4 bg-[#18181b] border border-transparent rounded-xl text-sm font-semibold text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-500 shadow-inner" })
+                                React.createElement("input", { value: editingEvent.title, onChange: e => setEditingEvent({...editingEvent, title: e.target.value}), onKeyDown: e => e.key === 'Enter' && saveEvent(), placeholder: "What's happening?", className: "w-full p-4 bg-[#18181b] border border-transparent rounded-xl text-sm font-semibold text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-500 shadow-inner" })
                             ),
                             
                             React.createElement("div", { className: "grid grid-cols-2 gap-3" },
                                 React.createElement("div", null, 
                                     React.createElement("label", { className: "text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 block px-1" }, "Start"), 
-                                    React.createElement("input", { type: "datetime-local", value: editingEvent.start, onChange: e => setEditingEvent({...editingEvent, start: e.target.value}), className: "w-full p-3.5 bg-[#18181b] border border-transparent rounded-xl text-white focus:outline-none focus:border-indigo-500 font-mono text-xs md:text-[13px] transition-colors shadow-inner [color-scheme:dark]" })
+                                    React.createElement("input", { type: "datetime-local", value: editingEvent.start, onChange: e => setEditingEvent({...editingEvent, start: e.target.value}), onKeyDown: e => e.key === 'Enter' && saveEvent(), className: "w-full p-3.5 bg-[#18181b] border border-transparent rounded-xl text-white focus:outline-none focus:border-indigo-500 font-mono text-xs md:text-[13px] transition-colors shadow-inner [color-scheme:dark]" })
                                 ),
                                 React.createElement("div", null, 
                                     React.createElement("label", { className: "text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 block px-1" }, "End"), 
-                                    React.createElement("input", { type: "datetime-local", value: editingEvent.end, onChange: e => setEditingEvent({...editingEvent, end: e.target.value}), className: "w-full p-3.5 bg-[#18181b] border border-transparent rounded-xl text-white focus:outline-none focus:border-indigo-500 font-mono text-xs md:text-[13px] transition-colors shadow-inner [color-scheme:dark]" })
+                                    React.createElement("input", { type: "datetime-local", value: editingEvent.end, onChange: e => setEditingEvent({...editingEvent, end: e.target.value}), onKeyDown: e => e.key === 'Enter' && saveEvent(), className: "w-full p-3.5 bg-[#18181b] border border-transparent rounded-xl text-white focus:outline-none focus:border-indigo-500 font-mono text-xs md:text-[13px] transition-colors shadow-inner [color-scheme:dark]" })
                                 )
                             ),
 
@@ -1040,6 +1114,19 @@
                  "To Read": "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400" 
              };
 
+             useEffect(() => {
+                 const handleEsc = (e) => {
+                     if (e.key === 'Escape') {
+                         setShowAdd(false);
+                         setShowManageModal(false);
+                         setEditingBook(null);
+                         setEditingCategory(null);
+                     }
+                 };
+                 window.addEventListener('keydown', handleEsc);
+                 return () => window.removeEventListener('keydown', handleEsc);
+             }, []);
+
              const handleAdd = () => { 
                  if(newBook.title) { 
                      const finalCategory = isCustomCategory ? customCategoryName : newBook.category;
@@ -1078,13 +1165,13 @@
                 showAdd && React.createElement("div", { className: "mb-8 p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl animate-in fade-in slide-in-from-top-4 shadow-xl" }, 
                     React.createElement("h3", { className: "text-lg font-bold text-zinc-900 dark:text-white mb-4" }, "Add New Book"),
                     React.createElement("div", { className: "space-y-4" },
-                        React.createElement("input", { value: newBook.title, onChange: e=>setNewBook({...newBook, title:e.target.value}), placeholder: "Book Title", className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors" }), 
+                        React.createElement("input", { value: newBook.title, onChange: e=>setNewBook({...newBook, title:e.target.value}), onKeyDown: e => e.key === 'Enter' && handleAdd(), placeholder: "Book Title", className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors" }), 
                         React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-4" },
-                            React.createElement("input", { value: newBook.author, onChange: e=>setNewBook({...newBook, author:e.target.value}), placeholder: "Author", className: "p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors" }), 
+                            React.createElement("input", { value: newBook.author, onChange: e=>setNewBook({...newBook, author:e.target.value}), onKeyDown: e => e.key === 'Enter' && handleAdd(), placeholder: "Author", className: "p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors" }), 
                             
                             isCustomCategory ? 
                                 React.createElement("div", { className: "flex gap-2" },
-                                    React.createElement("input", { value: customCategoryName, onChange: e => setCustomCategoryName(e.target.value), placeholder: "New Category Name", className: "flex-1 p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors" }),
+                                    React.createElement("input", { value: customCategoryName, onChange: e => setCustomCategoryName(e.target.value), onKeyDown: e => e.key === 'Enter' && handleAdd(), placeholder: "New Category Name", className: "flex-1 p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors" }),
                                     React.createElement("button", { onClick: () => setIsCustomCategory(false), className: "p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-xl hover:text-zinc-900 dark:hover:text-white" }, React.createElement(X, { size: 18 }))
                                 ) :
                                 React.createElement("select", { value: newBook.category, onChange: e=> { if(e.target.value === 'NEW') setIsCustomCategory(true); else setNewBook({...newBook, category:e.target.value}); }, className: "p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors" },
@@ -1138,7 +1225,7 @@
                             categories.map(cat => React.createElement("div", { key: cat, className: "flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800" },
                                 editingCategory?.original === cat ?
                                 React.createElement("div", { className: "flex gap-2 flex-1" },
-                                    React.createElement("input", { value: editingCategory.current, onChange: e => setEditingCategory({...editingCategory, current: e.target.value}), className: "flex-1 bg-white dark:bg-zinc-900 px-2 py-1 rounded border border-indigo-500 outline-none text-sm text-zinc-900 dark:text-white", autoFocus: true }),
+                                    React.createElement("input", { value: editingCategory.current, onChange: e => setEditingCategory({...editingCategory, current: e.target.value}), onKeyDown: e => { if (e.key === 'Enter') saveCategory(); if (e.key === 'Escape') setEditingCategory(null); }, className: "flex-1 bg-white dark:bg-zinc-900 px-2 py-1 rounded border border-indigo-500 outline-none text-sm text-zinc-900 dark:text-white", autoFocus: true }),
                                     React.createElement("button", { onClick: saveCategory, className: "p-1.5 bg-indigo-100 text-indigo-600 rounded hover:bg-indigo-200" }, React.createElement(Check, { size: 16 })),
                                     React.createElement("button", { onClick: () => setEditingCategory(null), className: "p-1.5 bg-zinc-200 text-zinc-600 rounded hover:bg-zinc-300" }, React.createElement(X, { size: 16 }))
                                 ) :
@@ -1162,11 +1249,11 @@
                         React.createElement("div", { className: "space-y-4" },
                             React.createElement("div", null,
                                 React.createElement("label", { className: "text-xs text-zinc-500 mb-1 block" }, "Title"),
-                                React.createElement("input", { value: editingBook.title, onChange: e => setEditingBook({...editingBook, title: e.target.value}), className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500" })
+                                React.createElement("input", { value: editingBook.title, onChange: e => setEditingBook({...editingBook, title: e.target.value}), onKeyDown: e => e.key === 'Enter' && handleSaveEdit(), className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500" })
                             ),
                             React.createElement("div", null,
                                 React.createElement("label", { className: "text-xs text-zinc-500 mb-1 block" }, "Author"),
-                                React.createElement("input", { value: editingBook.author, onChange: e => setEditingBook({...editingBook, author: e.target.value}), className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500" })
+                                React.createElement("input", { value: editingBook.author, onChange: e => setEditingBook({...editingBook, author: e.target.value}), onKeyDown: e => e.key === 'Enter' && handleSaveEdit(), className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500" })
                             ),
                             React.createElement("div", null,
                                 React.createElement("label", { className: "text-xs text-zinc-500 mb-1 block" }, "Category"),
@@ -1274,7 +1361,7 @@
                                 React.createElement("button", { onClick: () => toggleItem('milestones', item.id), className: `relative z-10 w-8 h-8 shrink-0 rounded-full flex items-center justify-center border-2 transition-all duration-300 cursor-pointer ${isCompleted ? 'bg-emerald-500 border-emerald-500 text-white shadow-md' : isNext ? 'bg-indigo-600 border-indigo-400 text-white animate-pulse shadow-md scale-110' : 'bg-zinc-100 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-400 dark:text-zinc-600'}` }, isCompleted ? React.createElement(Check, { size: 14, strokeWidth: 3 }) : React.createElement("span", { className: "text-xs font-bold" }, idx + 1)), 
                                 editingMilestoneId === item.id ? 
                                     React.createElement("div", { className: "flex-1 pt-1.5 flex gap-2 items-center" }, 
-                                        React.createElement("input", { value: milestoneEditValue, onChange: (e) => setMilestoneEditValue(e.target.value), onKeyDown: (e) => { if(e.key === 'Enter') saveMilestoneEdit(); }, className: "flex-1 bg-white dark:bg-zinc-900 px-2 py-1 rounded border border-indigo-500 outline-none text-sm text-zinc-900 dark:white", autoFocus: true }), 
+                                        React.createElement("input", { value: milestoneEditValue, onChange: (e) => setMilestoneEditValue(e.target.value), onKeyDown: (e) => { if(e.key === 'Enter') saveMilestoneEdit(); if(e.key === 'Escape') setEditingMilestoneId(null); }, className: "flex-1 bg-white dark:bg-zinc-900 px-2 py-1 rounded border border-indigo-500 outline-none text-sm text-zinc-900 dark:white", autoFocus: true }), 
                                         React.createElement("button", { onClick: saveMilestoneEdit, className: "text-indigo-500 hover:text-indigo-600" }, React.createElement(Check, { size: 16 }))
                                     ) 
                                 : 
@@ -1314,8 +1401,8 @@
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 max-w-4xl mx-auto" },
                 React.createElement("h2", { className: "text-3xl font-bold mb-8" }, "Deadlines"),
                 React.createElement("div", { className: "flex gap-4 mb-8 bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800" },
-                    React.createElement("input", { value: newTitle, onChange: e => setNewTitle(e.target.value), placeholder: "Task Name", className: "flex-1 bg-transparent outline-none" }),
-                    React.createElement("input", { type: "date", value: newDate, onChange: e => setNewDate(e.target.value), className: "bg-transparent outline-none text-zinc-500" }),
+                    React.createElement("input", { value: newTitle, onChange: e => setNewTitle(e.target.value), onKeyDown: e => e.key === 'Enter' && handleAdd(), placeholder: "Task Name", className: "flex-1 bg-transparent outline-none" }),
+                    React.createElement("input", { type: "date", value: newDate, onChange: e => setNewDate(e.target.value), onKeyDown: e => e.key === 'Enter' && handleAdd(), className: "bg-transparent outline-none text-zinc-500" }),
                     React.createElement("button", { onClick: handleAdd, className: "bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold" }, "Add")
                 ),
                 React.createElement("div", { className: "space-y-4" },
@@ -1388,6 +1475,14 @@
             const [editValue, setEditValue] = useState("");
             const getPosition = (index, total) => { if (total === 0) return { x: 50, y: 50 }; const angle = (index / total) * 2 * Math.PI - (Math.PI / 2); const radius = 35; return { x: 50 + radius * Math.cos(angle), y: 50 + radius * Math.sin(angle) }; };
             
+            useEffect(() => {
+                const handleEsc = (e) => {
+                    if (e.key === 'Escape') setEditingId(null);
+                };
+                window.addEventListener('keydown', handleEsc);
+                return () => window.removeEventListener('keydown', handleEsc);
+            }, []);
+
             const startEdit = (dump) => { setEditingId(dump.id); setEditValue(dump.text); };
             const saveEdit = () => { if(editingId && editValue.trim()) { onUpdateDump({...dumps.find(d => d.id === editingId), text: editValue.trim()}); setEditingId(null); setEditValue(""); }};
 
@@ -1515,8 +1610,8 @@
                             
                             editingId === c.id ?
                                 React.createElement("div", { className: "mt-4 flex flex-col gap-2 w-full px-2" },
-                                    React.createElement("input", { value: editTitle, onChange: e => setEditTitle(e.target.value), className: "text-center text-sm font-bold bg-zinc-100 dark:bg-zinc-800 rounded p-1 w-full text-zinc-900 dark:text-white outline-none border border-indigo-500" }),
-                                    React.createElement("input", { type: "date", value: editDate, onChange: e => setEditDate(e.target.value), className: "text-xs bg-zinc-100 dark:bg-zinc-800 rounded p-1 w-full text-zinc-900 dark:text-white outline-none border border-indigo-500" }),
+                                    React.createElement("input", { value: editTitle, onChange: e => setEditTitle(e.target.value), onKeyDown: e => { if(e.key === 'Enter') saveEdit(); if(e.key === 'Escape') setEditingId(null); }, className: "text-center text-sm font-bold bg-zinc-100 dark:bg-zinc-800 rounded p-1 w-full text-zinc-900 dark:text-white outline-none border border-indigo-500" }),
+                                    React.createElement("input", { type: "date", value: editDate, onChange: e => setEditDate(e.target.value), onKeyDown: e => { if(e.key === 'Enter') saveEdit(); if(e.key === 'Escape') setEditingId(null); }, className: "text-xs bg-zinc-100 dark:bg-zinc-800 rounded p-1 w-full text-zinc-900 dark:text-white outline-none border border-indigo-500" }),
                                     React.createElement("div", { className: "flex justify-center gap-2" },
                                         React.createElement("button", { onClick: saveEdit, className: "p-1 bg-indigo-500 text-white rounded-full hover:bg-indigo-600" }, React.createElement(Check, { size: 12 })),
                                         React.createElement("button", { onClick: () => setEditingId(null), className: "p-1 bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400 rounded-full hover:bg-zinc-300 dark:hover:bg-zinc-600" }, React.createElement(X, { size: 12 }))
@@ -1711,6 +1806,19 @@
             const [newCatInput, setNewCatInput] = useState("");
             const [selectedCat, setSelectedCat] = useState('All');
 
+            useEffect(() => {
+                const handleEsc = (e) => {
+                    if (e.key === 'Escape') {
+                        setShowAddModal(false);
+                        setShowManageModal(false);
+                        setEditingTool(null);
+                        setEditingCategory(null);
+                    }
+                };
+                window.addEventListener('keydown', handleEsc);
+                return () => window.removeEventListener('keydown', handleEsc);
+            }, []);
+
             const handleAdd = () => {
                 if (newTool.name && newTool.url) {
                     const finalCategory = isCustomCategory ? customCategoryName : newTool.category;
@@ -1784,13 +1892,13 @@
                         React.createElement("button", { onClick: () => setShowAddModal(false), className: "absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-white" }, React.createElement(X, { size: 20 })),
                         React.createElement("h3", { className: "text-xl font-bold text-zinc-900 dark:text-white mb-6" }, "Add New Tool"),
                         React.createElement("div", { className: "space-y-4" },
-                            React.createElement("input", { value: newTool.name, onChange: e => setNewTool({...newTool, name: e.target.value}), placeholder: "Tool Name", className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:border-indigo-500 outline-none" }),
-                            React.createElement("input", { value: newTool.url, onChange: e => setNewTool({...newTool, url: e.target.value}), placeholder: "URL (https://...)", className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:border-indigo-500 outline-none" }),
+                            React.createElement("input", { value: newTool.name, onChange: e => setNewTool({...newTool, name: e.target.value}), onKeyDown: e => e.key === 'Enter' && handleAdd(), placeholder: "Tool Name", className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:border-indigo-500 outline-none" }),
+                            React.createElement("input", { value: newTool.url, onChange: e => setNewTool({...newTool, url: e.target.value}), onKeyDown: e => e.key === 'Enter' && handleAdd(), placeholder: "URL (https://...)", className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:border-indigo-500 outline-none" }),
                             React.createElement("div", null,
                                 React.createElement("label", { className: "text-xs text-zinc-500 mb-1 block" }, "Category"),
                                 isCustomCategory ?
                                 React.createElement("div", { className: "flex gap-2" },
-                                    React.createElement("input", { value: customCategoryName, onChange: e => setCustomCategoryName(e.target.value), placeholder: "New Category Name", className: "flex-1 p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:border-indigo-500 outline-none" }),
+                                    React.createElement("input", { value: customCategoryName, onChange: e => setCustomCategoryName(e.target.value), onKeyDown: e => e.key === 'Enter' && handleAdd(), placeholder: "New Category Name", className: "flex-1 p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:border-indigo-500 outline-none" }),
                                     React.createElement("button", { onClick: () => setIsCustomCategory(false), className: "p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-xl hover:text-zinc-900 dark:hover:text-white" }, React.createElement(X, { size: 18 }))
                                 ) :
                                 React.createElement("select", { value: newTool.category, onChange: e => { if (e.target.value === 'NEW') setIsCustomCategory(true); else setNewTool({...newTool, category: e.target.value}); }, className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:border-indigo-500 outline-none" },
@@ -1816,8 +1924,8 @@
                         React.createElement("button", { onClick: () => setEditingTool(null), className: "absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-white" }, React.createElement(X, { size: 20 })),
                         React.createElement("h3", { className: "text-xl font-bold text-zinc-900 dark:text-white mb-6" }, "Edit Tool"),
                         React.createElement("div", { className: "space-y-4" },
-                            React.createElement("input", { value: editingTool.name, onChange: e => setEditingTool({...editingTool, name: e.target.value}), placeholder: "Tool Name", className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:border-indigo-500 outline-none" }),
-                            React.createElement("input", { value: editingTool.url, onChange: e => setEditingTool({...editingTool, url: e.target.value}), placeholder: "URL (https://...)", className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:border-indigo-500 outline-none" }),
+                            React.createElement("input", { value: editingTool.name, onChange: e => setEditingTool({...editingTool, name: e.target.value}), onKeyDown: e => e.key === 'Enter' && handleUpdate(), placeholder: "Tool Name", className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:border-indigo-500 outline-none" }),
+                            React.createElement("input", { value: editingTool.url, onChange: e => setEditingTool({...editingTool, url: e.target.value}), onKeyDown: e => e.key === 'Enter' && handleUpdate(), placeholder: "URL (https://...)", className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:border-indigo-500 outline-none" }),
                             React.createElement("div", null,
                                 React.createElement("label", { className: "text-xs text-zinc-500 mb-1 block" }, "Category"),
                                 React.createElement("select", { value: editingTool.category, onChange: e => setEditingTool({...editingTool, category: e.target.value}), className: "w-full p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white focus:border-indigo-500 outline-none" },
@@ -1849,7 +1957,7 @@
                             categories.map(cat => React.createElement("div", { key: cat, className: "flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800" },
                                 editingCategory?.original === cat ?
                                 React.createElement("div", { className: "flex gap-2 flex-1" },
-                                    React.createElement("input", { value: editingCategory.current, onChange: e => setEditingCategory({...editingCategory, current: e.target.value}), className: "flex-1 bg-white dark:bg-zinc-900 px-2 py-1 rounded border border-indigo-500 outline-none text-sm text-zinc-900 dark:text-white", autoFocus: true }),
+                                    React.createElement("input", { value: editingCategory.current, onChange: e => setEditingCategory({...editingCategory, current: e.target.value}), onKeyDown: e => { if (e.key === 'Enter') saveCategory(); if (e.key === 'Escape') setEditingCategory(null); }, className: "flex-1 bg-white dark:bg-zinc-900 px-2 py-1 rounded border border-indigo-500 outline-none text-sm text-zinc-900 dark:text-white", autoFocus: true }),
                                     React.createElement("button", { onClick: saveCategory, className: "p-1.5 bg-indigo-100 text-indigo-600 rounded hover:bg-indigo-200" }, React.createElement(Check, { size: 16 })),
                                     React.createElement("button", { onClick: () => setEditingCategory(null), className: "p-1.5 bg-zinc-200 text-zinc-600 rounded hover:bg-zinc-300" }, React.createElement(X, { size: 16 }))
                                 ) :
