@@ -727,10 +727,10 @@
             const handleMouseMove = (e) => { if (draggingId) onUpdate({ ...notes.find(n => n.id === draggingId), x: e.clientX - offset.x, y: e.clientY - offset.y }, false); };
             const handleMouseUp = () => { if (draggingId) { onUpdate(notes.find(n => n.id === draggingId), true); setDraggingId(null); } };
             useEffect(() => { if(draggingId) { window.addEventListener('mousemove', handleMouseMove); window.addEventListener('mouseup', handleMouseUp); } else { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); } return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); }; }, [draggingId, offset, notes]);
-            return React.createElement("div", { ref: boardRef, className: "relative w-full h-[85vh] bg-zinc-100 dark:bg-zinc-900/50 rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-inner group" },
-                React.createElement("div", { className: "absolute top-4 left-4 z-20 flex flex-col gap-2 p-3 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-lg" }, React.createElement("h3", { className: "text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1" }, "Add Note"), React.createElement("div", { className: "flex gap-2" }, colors.map((c, idx) => React.createElement("button", { key: idx, onClick: () => onAdd({ text: "", x: Math.random() * 200 + 50, y: Math.random() * 200 + 50, color: c, width: 200, height: 200 }), className: `w-6 h-6 rounded-full shadow-sm hover:scale-110 transition-transform ${c.split(' ')[0]}` })))),
-                notes.map(note => React.createElement("div", { key: note.id, onMouseDown: (e) => handleMouseDown(e, note), style: { left: note.x, top: note.y, width: '200px', height: '200px' }, className: `absolute p-4 shadow-xl rounded-xl flex flex-col transition-shadow cursor-move hover:shadow-2xl ${note.color} ${draggingId === note.id ? 'z-50 scale-105' : 'z-10'}` }, React.createElement("textarea", { value: note.text, onChange: (e) => onUpdate({ ...note, text: e.target.value }, true), placeholder: "Write idea...", className: `w-full h-full bg-transparent resize-none outline-none font-hand text-lg placeholder-black/30 dark:placeholder-black/30 leading-snug` }), React.createElement("button", { onClick: () => onDelete(note.id), className: "absolute -top-2 -right-2 bg-white/50 hover:bg-red-500 hover:text-white text-black/50 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm" }, React.createElement(Trash2, { size: 14 })))),
-                notes.length === 0 && React.createElement("div", { className: "absolute inset-0 flex items-center justify-center text-zinc-300 dark:text-zinc-700 pointer-events-none" }, React.createElement("div", { className: "text-center" }, React.createElement(Lightbulb, { size: 48, className: "mx-auto mb-2 opacity-50" }), React.createElement("p", { className: "text-sm font-bold uppercase tracking-wider" }, "Idea Board Empty")))
+            return React.createElement("div", { ref: boardRef, className: "relative w-full h-[calc(100vh-6rem)] min-h-[85vh] bg-zinc-100 dark:bg-zinc-900/50 rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-inner group" },
+                React.createElement("div", { className: "absolute top-4 left-4 z-20 flex flex-col gap-2 p-3 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-lg" }, React.createElement("h3", { className: "text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1" }, "Add Note"), React.createElement("div", { className: "flex gap-2" }, colors.map((c, idx) => React.createElement("button", { key: idx, onClick: () => onAdd({ text: "", x: Math.random() * 200 + 50, y: Math.random() * 200 + 50, color: c, width: 280, height: 280 }), className: `w-6 h-6 rounded-full shadow-sm hover:scale-110 transition-transform ${c.split(' ')[0]}` })))),
+                notes.map(note => React.createElement("div", { key: note.id, onMouseDown: (e) => handleMouseDown(e, note), style: { left: note.x, top: note.y, width: `${note.width || 280}px`, height: `${note.height || 280}px` }, className: `absolute p-5 shadow-xl rounded-2xl flex flex-col transition-shadow cursor-move hover:shadow-2xl ${note.color} ${draggingId === note.id ? 'z-50 scale-[1.02]' : 'z-10'}` }, React.createElement("textarea", { value: note.text, onChange: (e) => onUpdate({ ...note, text: e.target.value }, true), placeholder: "Write idea...", className: `w-full h-full bg-transparent resize-none outline-none font-hand text-xl placeholder-black/30 dark:placeholder-black/30 leading-relaxed` }), React.createElement("button", { onClick: () => onDelete(note.id), className: "absolute -top-3 -right-3 bg-white hover:bg-red-500 hover:text-white text-zinc-400 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-md border border-zinc-100" }, React.createElement(Trash2, { size: 16 })))),
+                notes.length === 0 && React.createElement("div", { className: "absolute inset-0 flex items-center justify-center text-zinc-300 dark:text-zinc-700 pointer-events-none" }, React.createElement("div", { className: "text-center" }, React.createElement(Lightbulb, { size: 64, className: "mx-auto mb-4 opacity-50" }), React.createElement("p", { className: "text-lg font-bold uppercase tracking-wider" }, "Idea Board Empty")))
             );
         };
 
@@ -980,30 +980,83 @@
             const handleTimerReset = (newTime, newMode) => { const time = newTime || focusState.initialTime; setFocusState({ timeLeft: time, isActive: false, initialTime: time, mode: newMode || 'FOCUS' }); };
             const toggleSound = async (sound) => { try { if (activeSound === sound.id && isPlayingSound) { audioRef.current.pause(); setIsPlayingSound(false); } else { if (isPlayingSound) { audioRef.current.pause(); } audioRef.current.src = sound.url; audioRef.current.loop = true; await audioRef.current.play(); setIsPlayingSound(true); setActiveSound(sound.id); } } catch (err) { console.error("Audio playback error:", err); setIsPlayingSound(false); } };
 
-            useEffect(() => { const sessionUser = JSON.parse(localStorage.getItem('lifeos_user_session')); if (sessionUser) setUser(sessionUser); if (isSupabaseConfigured) { supabase.auth.getSession().then(({ data: { session } }) => { if (session) setUser({ ...session.user, isLocal: false }); }); const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { if (session) setUser({ ...session.user, isLocal: false }); }); return () => subscription.unsubscribe(); } }, []);
+            useEffect(() => {
+                let mounted = true;
+                const initAuth = async () => {
+                    if (isSupabaseConfigured) {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (mounted) {
+                            if (session) {
+                                setUser({ ...session.user, isLocal: false });
+                            } else {
+                                const localU = JSON.parse(localStorage.getItem('lifeos_user_session'));
+                                if (localU && localU.isLocal) setUser(localU);
+                            }
+                        }
+                    } else {
+                        const sessionUser = JSON.parse(localStorage.getItem('lifeos_user_session'));
+                        if (sessionUser && mounted) setUser(sessionUser);
+                    }
+                };
+                initAuth();
+
+                if (isSupabaseConfigured) {
+                    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+                        if (session) setUser({ ...session.user, isLocal: false });
+                        else {
+                            const localU = JSON.parse(localStorage.getItem('lifeos_user_session'));
+                            if (!localU || !localU.isLocal) setUser(null);
+                        }
+                    });
+                    return () => {
+                        mounted = false;
+                        subscription.unsubscribe();
+                    };
+                }
+                return () => { mounted = false; };
+            }, []);
 
             useEffect(() => {
-                if (!user) return;
+                if (!user) {
+                    setIsDataLoaded(false);
+                    return;
+                }
+                let mounted = true;
+
                 if (!user.isLocal && isSupabaseConfigured) {
                     const fetchData = async () => {
-                        const { data: dData } = await supabase.from('deadlines').select('*').eq('user_id', user.id); if(dData) setDeadlines(dData);
-                        const { data: bData } = await supabase.from('brain_dumps').select('*').eq('user_id', user.id); if(bData) setDumps(bData);
-                        const { data: mData } = await supabase.from('meals').select('*').eq('user_id', user.id); if(mData && mData.length > 0) setMeals(mData);
-                        const { data: aData } = await supabase.from('app_data').select('*').eq('user_id', user.id).single();
-                        if(aData) { 
-                            if(aData.goals_2026) setGoalsData(aData.goals_2026); 
-                            if(aData.dashboard_config) setDashboardData(aData.dashboard_config); 
-                            if(aData.fitness_data) setFitnessData(aData.fitness_data); 
-                            if(aData.book_categories) setBookCategories(aData.book_categories);
-                            if(aData.daily_plan) setDailyPlan(aData.daily_plan);
-                            if(aData.weekly_plan) setWeeklyPlan(aData.weekly_plan);
-                            if(aData.monthly_plan) setMonthlyPlan(aData.monthly_plan);
-                            if(aData.countdowns) setCountdowns(aData.countdowns);
-                            if(aData.idea_notes) setIdeaNotes(aData.idea_notes);
-                            if(aData.events) setEvents(aData.events);
+                        try {
+                            const [dRes, bRes, mRes, aRes, lRes] = await Promise.all([
+                                supabase.from('deadlines').select('*').eq('user_id', user.id),
+                                supabase.from('brain_dumps').select('*').eq('user_id', user.id),
+                                supabase.from('meals').select('*').eq('user_id', user.id),
+                                supabase.from('app_data').select('*').eq('user_id', user.id).maybeSingle(),
+                                supabase.from('library').select('*').eq('user_id', user.id)
+                            ]);
+                            
+                            if (!mounted) return;
+
+                            if(dRes.data) setDeadlines(dRes.data);
+                            if(bRes.data) setDumps(bRes.data);
+                            if(mRes.data && mRes.data.length > 0) setMeals(mRes.data);
+                            if(lRes.data && lRes.data.length > 0) setBooks(lRes.data);
+
+                            if(aRes.data) { 
+                                if(aRes.data.goals_2026) setGoalsData(aRes.data.goals_2026); 
+                                if(aRes.data.dashboard_config) setDashboardData(aRes.data.dashboard_config); 
+                                if(aRes.data.fitness_data) setFitnessData(aRes.data.fitness_data); 
+                                if(aRes.data.book_categories) setBookCategories(aRes.data.book_categories);
+                                if(aRes.data.daily_plan) setDailyPlan(aRes.data.daily_plan);
+                                if(aRes.data.weekly_plan) setWeeklyPlan(aRes.data.weekly_plan);
+                                if(aRes.data.monthly_plan) setMonthlyPlan(aRes.data.monthly_plan);
+                                if(aRes.data.countdowns) setCountdowns(aRes.data.countdowns);
+                                if(aRes.data.idea_notes) setIdeaNotes(aRes.data.idea_notes);
+                                if(aRes.data.events) setEvents(aRes.data.events);
+                            }
+                            setIsDataLoaded(true);
+                        } catch (err) {
+                            console.error("Fetch interrupted. Safeguarding database sync.", err);
                         }
-                        const { data: lData } = await supabase.from('library').select('*').eq('user_id', user.id); if(lData && lData.length > 0) setBooks(lData);
-                        setIsDataLoaded(true);
                     };
                     fetchData();
                 } else {
@@ -1024,10 +1077,13 @@
                     setEvents(JSON.parse(localStorage.getItem(`${prefix}events`) || '[]'));
                     setIsDataLoaded(true);
                 }
+                return () => { mounted = false; };
             }, [user]);
 
             useEffect(() => {
-                if(user && user.isLocal && isDataLoaded) {
+                if (!user || !isDataLoaded) return;
+
+                if (user.isLocal) {
                     const prefix = `lifeos_data_${user.id}_`;
                     localStorage.setItem(`${prefix}deadlines`, JSON.stringify(deadlines));
                     localStorage.setItem(`${prefix}dumps`, JSON.stringify(dumps));
@@ -1043,6 +1099,27 @@
                     localStorage.setItem(`${prefix}countdowns`, JSON.stringify(countdowns));
                     localStorage.setItem(`${prefix}idea_notes`, JSON.stringify(ideaNotes));
                     localStorage.setItem(`${prefix}events`, JSON.stringify(events));
+                } else if (isSupabaseConfigured) {
+                    const syncAppData = async () => {
+                        try {
+                            await supabase.from('app_data').upsert({
+                                user_id: user.id,
+                                goals_2026: goalsData,
+                                dashboard_config: dashboardData,
+                                fitness_data: fitnessData,
+                                book_categories: bookCategories,
+                                daily_plan: dailyPlan,
+                                weekly_plan: weeklyPlan,
+                                monthly_plan: monthlyPlan,
+                                countdowns: countdowns,
+                                idea_notes: ideaNotes,
+                                events: events,
+                                updated_at: new Date().toISOString()
+                            }, { onConflict: 'user_id' });
+                        } catch(e) { console.error("Cloud sync failed:", e); }
+                    };
+                    const timeoutId = setTimeout(syncAppData, 1500);
+                    return () => clearTimeout(timeoutId);
                 }
             }, [deadlines, dumps, meals, goalsData, dashboardData, books, bookCategories, fitnessData, dailyPlan, weeklyPlan, monthlyPlan, countdowns, ideaNotes, events, user, isDataLoaded]);
 
