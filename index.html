@@ -358,29 +358,48 @@
                         hours.map(h => React.createElement("div", { key: h, className: "h-[60px] text-[10px] text-zinc-400 dark:text-zinc-500 text-right pr-2 pt-1 font-mono border-b border-transparent" }, `${h}:00`))
                     ),
                     React.createElement("div", { ref: gridRef, className: `flex-1 grid grid-cols-${daysArray.length} relative` },
-                        daysArray.map((d, i) => React.createElement("div", { key: i, className: `border-r border-zinc-200 dark:border-zinc-800/80 relative`, onMouseDown: (e) => handleTimeSelectStart(e, d) },
-                            isSameDay(d, new Date()) && React.createElement(CurrentTimeLine, { className: "absolute left-0 right-0" }),
-                            hours.map(h => React.createElement("div", { key: h, className: "h-[60px] border-b border-zinc-200 dark:border-zinc-800/80 cursor-crosshair hover:bg-zinc-50 dark:hover:bg-zinc-800/20" })),
-                            events.filter(e => isSameDay(new Date(e.start), d)).map(ev => {
-                                const dateObj = new Date(ev.start);
-                                const top = dateObj.getHours() * 60 + dateObj.getMinutes();
-                                const duration = Math.max((new Date(ev.end) - dateObj) / 60000, 25);
-                                const isDragging = draggedEventId === ev.id;
-                                return React.createElement("div", { 
-                                    key: ev.id, onMouseDown: (e) => handleMouseDown(e, ev),
-                                    onClick: (e) => { e.stopPropagation(); const dx = Math.abs(e.clientX - dragStartPos.current.x); const dy = Math.abs(e.clientY - dragStartPos.current.y); if (dx < 5 && dy < 5) setEditingEvent(ev); }, 
-                                    className: `absolute left-0.5 right-0.5 rounded px-1.5 py-1 text-[10px] leading-tight text-white shadow-sm overflow-hidden cursor-pointer hover:z-30 hover:shadow-md ${isDragging ? 'opacity-80 z-50 scale-105 ring-1 ring-white/50 transition-none' : 'transition-transform'} ${ev.color}`, 
-                                    style: { top: `${top}px`, height: `${duration}px` }
-                                },
-                                    React.createElement("div", { className: "font-semibold truncate" }, ev.title),
-                                    duration > 35 && React.createElement("div", { className: "opacity-80 text-[8px] font-mono mt-0.5 pointer-events-none truncate" }, `${formatTime(ev.start)} - ${formatTime(ev.end)}`)
-                                )
-                            }),
-                            timeSelection && isSameDay(timeSelection.date, d) && React.createElement("div", {
-                                className: "absolute left-0.5 right-0.5 rounded bg-indigo-500/30 border border-indigo-500/50 z-40 pointer-events-none",
-                                style: { top: `${Math.min(timeSelection.startY, timeSelection.currentY)}px`, height: `${Math.max(15, Math.abs(timeSelection.currentY - timeSelection.startY))}px` }
-                            })
-                        ))
+                        daysArray.map((d, i) => {
+                            const dayStart = new Date(d); dayStart.setHours(0, 0, 0, 0);
+                            const dayEnd = new Date(d); dayEnd.setHours(23, 59, 59, 999);
+                            
+                            return React.createElement("div", { key: i, className: `border-r border-zinc-200 dark:border-zinc-800/80 relative`, onMouseDown: (e) => handleTimeSelectStart(e, d) },
+                                isSameDay(d, new Date()) && React.createElement(CurrentTimeLine, { className: "absolute left-0 right-0" }),
+                                hours.map(h => React.createElement("div", { key: h, className: "h-[60px] border-b border-zinc-200 dark:border-zinc-800/80 cursor-crosshair hover:bg-zinc-50 dark:hover:bg-zinc-800/20" })),
+                                events.filter(e => {
+                                    const eStart = new Date(e.start);
+                                    const eEnd = new Date(e.end);
+                                    return eStart < dayEnd && eEnd > dayStart;
+                                }).map(ev => {
+                                    const eStart = new Date(ev.start);
+                                    const eEnd = new Date(ev.end);
+                                    
+                                    const effectiveStart = eStart < dayStart ? dayStart : eStart;
+                                    const effectiveEnd = eEnd > dayEnd ? dayEnd : eEnd;
+
+                                    const top = effectiveStart.getHours() * 60 + effectiveStart.getMinutes();
+                                    const duration = Math.max((effectiveEnd - effectiveStart) / 60000, 15);
+                                    const isDragging = draggedEventId === ev.id;
+                                    
+                                    const continuesFromPrev = eStart < dayStart;
+                                    const continuesToNext = eEnd > dayEnd;
+
+                                    return React.createElement("div", { 
+                                        key: `${ev.id}-${d.getTime()}`, 
+                                        onMouseDown: (e) => handleMouseDown(e, ev),
+                                        onClick: (e) => { e.stopPropagation(); const dx = Math.abs(e.clientX - dragStartPos.current.x); const dy = Math.abs(e.clientY - dragStartPos.current.y); if (dx < 5 && dy < 5) setEditingEvent(ev); }, 
+                                        className: `absolute left-0.5 right-0.5 px-1.5 py-1 text-[10px] leading-tight text-white shadow-sm overflow-hidden cursor-pointer hover:z-30 hover:shadow-md ${isDragging ? 'opacity-80 z-50 scale-105 ring-1 ring-white/50 transition-none' : 'transition-transform'} ${ev.color} ${continuesFromPrev ? 'rounded-t-none border-t-0 opacity-90' : 'rounded-t'} ${continuesToNext ? 'rounded-b-none border-b-0 opacity-90' : 'rounded-b'}`, 
+                                        style: { top: `${top}px`, height: `${duration}px` }
+                                    },
+                                        React.createElement("div", { className: "font-semibold truncate" }, ev.title),
+                                        duration > 35 && React.createElement("div", { className: "opacity-80 text-[8px] font-mono mt-0.5 pointer-events-none truncate" }, `${formatTime(ev.start)} - ${formatTime(ev.end)}`)
+                                    )
+                                }),
+                                timeSelection && isSameDay(timeSelection.date, d) && React.createElement("div", {
+                                    className: "absolute left-0.5 right-0.5 rounded bg-indigo-500/30 border border-indigo-500/50 z-40 pointer-events-none",
+                                    style: { top: `${Math.min(timeSelection.startY, timeSelection.currentY)}px`, height: `${Math.max(15, Math.abs(timeSelection.currentY - timeSelection.startY))}px` }
+                                })
+                            )
+                        })
                     )
                 );
             };
