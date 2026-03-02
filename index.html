@@ -31,6 +31,11 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(161, 161, 170, 0.4); border-radius: 4px; }
         .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(82, 82, 91, 0.4); }
+        .idea-board-bg { background-image: radial-gradient(#e5e7eb 1px, transparent 1px); background-size: 20px 20px; background-color: #f3f4f6; }
+        .dark .idea-board-bg { background-image: radial-gradient(#374151 1px, transparent 1px); background-color: #1f2937; }
+        .sticky-note { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); transition: transform .15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s; cursor: grab; resize: both; overflow: hidden; border-radius: 0.5rem; }
+        .sticky-note:hover { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        .sticky-note.dragging { transform: scale(1.05) rotate(2deg); z-index: 50; cursor: grabbing !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
         @keyframes pulse-brain { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } }
         .animate-brain { animation: pulse-brain 4s infinite ease-in-out; }
         .animate-shimmer { background: linear-gradient(90deg, transparent 25%, rgba(99, 102, 241, 0.1) 50%, transparent 75%); background-size: 1000px 100%; animation: shimmer 2s infinite linear; }
@@ -844,32 +849,77 @@
 
         const IdeaBoardView = ({ notes, onAdd, onUpdate, onDelete }) => {
             const boardRef = useRef(null); const [draggingId, setDraggingId] = useState(null); const [offset, setOffset] = useState({ x: 0, y: 0 });
-            const colors = ["bg-yellow-200 text-yellow-900 dark:bg-yellow-400 dark:text-yellow-950", "bg-blue-200 text-blue-900 dark:bg-blue-400 dark:text-blue-950", "bg-rose-200 text-rose-900 dark:bg-rose-400 dark:text-rose-950", "bg-emerald-200 text-emerald-900 dark:bg-emerald-400 dark:text-emerald-950"];
+            const colors = ["bg-yellow-200 text-yellow-900 dark:bg-yellow-400 dark:text-yellow-950", "bg-green-200 text-green-900 dark:bg-green-400 dark:text-green-950", "bg-pink-200 text-pink-900 dark:bg-pink-400 dark:text-pink-950", "bg-blue-200 text-blue-900 dark:bg-blue-400 dark:text-blue-950", "bg-purple-200 text-purple-900 dark:bg-purple-400 dark:text-purple-950"];
             const fonts = ["font-hand", "font-sans", "font-mono"];
 
             const handleMouseDown = (e, note) => { if(e.target.tagName === "TEXTAREA" || e.target.tagName === "BUTTON" || e.target.closest('button')) return; setDraggingId(note.id); setOffset({ x: e.clientX - note.x, y: e.clientY - note.y }); };
             const handleMouseMove = (e) => { if (draggingId) onUpdate({ ...notes.find(n => n.id === draggingId), x: e.clientX - offset.x, y: e.clientY - offset.y }, false); };
-            const handleMouseUp = () => { if (draggingId) { onUpdate(notes.find(n => n.id === draggingId), true); setDraggingId(null); } };
+            
+            const handleMouseUpGlobal = (e) => { 
+                if (draggingId) { 
+                    const domNode = document.getElementById(draggingId);
+                    let w = domNode ? domNode.offsetWidth : null;
+                    let h = domNode ? domNode.offsetHeight : null;
+                    const note = notes.find(n => n.id === draggingId);
+                    onUpdate({ ...note, width: w || note.width || 240, height: h || note.height || 240 }, true); 
+                    setDraggingId(null); 
+                } 
+            };
             
             const handleCycleFont = (e, note) => {
                 e.stopPropagation();
-                const currentIndex = fonts.indexOf(note.font || 'font-hand');
+                const currentIndex = fonts.indexOf(note.font || 'font-sans');
                 const nextIndex = (currentIndex + 1) % fonts.length;
                 onUpdate({ ...note, font: fonts[nextIndex] }, true);
             };
 
-            useEffect(() => { if(draggingId) { window.addEventListener('mousemove', handleMouseMove); window.addEventListener('mouseup', handleMouseUp); } else { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); } return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); }; }, [draggingId, offset, notes]);
+            const handleCopy = (e, text) => {
+                e.stopPropagation();
+                const button = e.currentTarget;
+                const originalHTML = button.innerHTML;
+                const successHTML = `<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+                
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(() => { button.innerHTML = successHTML; setTimeout(() => button.innerHTML = originalHTML, 1500); });
+                } else {
+                    const tempInput = document.createElement('textarea'); tempInput.value = text; document.body.appendChild(tempInput); tempInput.select(); document.execCommand('copy'); document.body.removeChild(tempInput);
+                    button.innerHTML = successHTML; setTimeout(() => button.innerHTML = originalHTML, 1500);
+                }
+            };
+
+            const handleAddNote = () => {
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                const boardWidth = boardRef.current ? boardRef.current.offsetWidth : 800;
+                const boardHeight = boardRef.current ? boardRef.current.offsetHeight : 600;
+                onAdd({ text: "", x: Math.random() * (boardWidth - 260) + 10, y: Math.random() * (boardHeight - 260) + 10, color: randomColor, width: 240, height: 240, font: 'font-sans' });
+            };
+
+            useEffect(() => { if(draggingId) { window.addEventListener('mousemove', handleMouseMove); window.addEventListener('mouseup', handleMouseUpGlobal); } else { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUpGlobal); } return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUpGlobal); }; }, [draggingId, offset, notes]);
             
-            return React.createElement("div", { ref: boardRef, className: "relative w-full h-[calc(100vh-6rem)] min-h-[85vh] bg-zinc-100 dark:bg-zinc-900/50 rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-inner group" },
-                React.createElement("div", { className: "absolute top-4 left-4 z-20 flex flex-col gap-2 p-3 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-lg" }, React.createElement("h3", { className: "text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1" }, "Add Note"), React.createElement("div", { className: "flex gap-2" }, colors.map((c, idx) => React.createElement("button", { key: idx, onClick: () => onAdd({ text: "", x: Math.random() * 200 + 50, y: Math.random() * 200 + 50, color: c, width: 280, height: 280, font: 'font-hand' }), className: `w-6 h-6 rounded-full shadow-sm hover:scale-110 transition-transform ${c.split(' ')[0]}` })))),
-                notes.map(note => React.createElement("div", { key: note.id, onMouseDown: (e) => handleMouseDown(e, note), style: { left: note.x, top: note.y, width: `${note.width || 280}px`, height: `${note.height || 280}px` }, className: `absolute p-5 shadow-xl rounded-2xl flex flex-col transition-shadow cursor-move hover:shadow-2xl ${note.color} ${draggingId === note.id ? 'z-50 scale-[1.02]' : 'z-10'}` }, 
-                    React.createElement("textarea", { value: note.text, onChange: (e) => onUpdate({ ...note, text: e.target.value }, true), placeholder: "Write idea...", className: `w-full h-full bg-transparent resize-none outline-none ${note.font || 'font-hand'} text-xl placeholder-black/30 dark:placeholder-black/30 leading-relaxed` }), 
-                    React.createElement("div", { className: "absolute -top-3 -right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity" },
-                        React.createElement("button", { onClick: (e) => handleCycleFont(e, note), className: "bg-white hover:bg-indigo-500 hover:text-white text-zinc-600 rounded-full w-8 h-8 flex items-center justify-center shadow-md border border-zinc-100 font-serif font-bold text-xs transition-colors" }, "Aa"),
-                        React.createElement("button", { onClick: (e) => { e.stopPropagation(); onDelete(note.id); }, className: "bg-white hover:bg-red-500 hover:text-white text-zinc-400 rounded-full w-8 h-8 flex items-center justify-center shadow-md border border-zinc-100 transition-colors" }, React.createElement(Trash2, { size: 14 }))
+            return React.createElement("div", { ref: boardRef, className: "relative w-full h-[calc(100vh-6rem)] min-h-[85vh] rounded-3xl overflow-hidden shadow-inner group idea-board-bg" },
+                notes.map(note => React.createElement("div", { id: note.id, key: note.id, onMouseDown: (e) => handleMouseDown(e, note), style: { left: note.x, top: note.y, width: `${note.width || 240}px`, height: `${note.height || 240}px` }, className: `sticky-note absolute p-4 flex flex-col ${note.color} ${draggingId === note.id ? 'dragging' : ''}` }, 
+                    React.createElement("div", { className: "flex-grow overflow-auto no-scrollbar" },
+                        React.createElement("textarea", { value: note.text, onChange: (e) => onUpdate({ ...note, text: e.target.value }, true), placeholder: "Write idea...", className: `w-full h-full bg-transparent resize-none outline-none ${note.font || 'font-sans'} text-lg placeholder-black/30 dark:placeholder-black/30 leading-relaxed text-gray-800 dark:text-gray-900` })
+                    ),
+                    React.createElement("div", { className: "flex justify-end items-center mt-2 space-x-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" },
+                        React.createElement("button", { onClick: (e) => handleCycleFont(e, note), className: "text-gray-600 hover:text-black dark:text-gray-700 dark:hover:text-black font-serif font-bold text-xs px-2 py-1 bg-white/40 hover:bg-white/60 rounded transition-colors" }, "Aa"),
+                        React.createElement("button", { onClick: (e) => handleCopy(e, note.text), className: "copy-note-btn text-gray-600 hover:text-black dark:text-gray-700 dark:hover:text-black p-1 bg-white/40 hover:bg-white/60 rounded transition-colors" }, 
+                            React.createElement("svg", { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" }))
+                        ),
+                        React.createElement("button", { onClick: (e) => { e.stopPropagation(); onDelete(note.id); }, className: "delete-note-btn text-gray-600 hover:text-red-600 dark:text-gray-700 dark:hover:text-red-600 p-1 bg-white/40 hover:bg-white/60 rounded transition-colors" }, 
+                            React.createElement("svg", { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" }))
+                        )
                     )
                 )),
-                notes.length === 0 && React.createElement("div", { className: "absolute inset-0 flex items-center justify-center text-zinc-300 dark:text-zinc-700 pointer-events-none" }, React.createElement("div", { className: "text-center" }, React.createElement(Lightbulb, { size: 64, className: "mx-auto mb-4 opacity-50" }), React.createElement("p", { className: "text-lg font-bold uppercase tracking-wider" }, "Idea Board Empty")))
+                notes.length === 0 && React.createElement("div", { className: "absolute inset-0 flex items-center justify-center text-zinc-400 dark:text-zinc-600 pointer-events-none" }, 
+                    React.createElement("div", { className: "text-center bg-white/80 dark:bg-zinc-900/80 p-6 rounded-3xl backdrop-blur-md border border-zinc-200 dark:border-zinc-800" }, 
+                        React.createElement(Lightbulb, { size: 48, className: "mx-auto mb-3 opacity-50" }), 
+                        React.createElement("p", { className: "text-lg font-bold uppercase tracking-wider" }, "Idea Board Empty")
+                    )
+                ),
+                React.createElement("button", { onClick: handleAddNote, className: "absolute bottom-8 right-8 px-8 py-4 bg-yellow-400 text-yellow-900 font-bold rounded-full shadow-[0_10px_25px_rgba(250,204,21,0.5)] hover:bg-yellow-300 hover:scale-110 transition-all z-20 flex items-center gap-2 border-2 border-yellow-500/20" }, 
+                    React.createElement("svg", { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M12 4v16m8-8H4" })), "Add Note"
+                )
             );
         };
 
