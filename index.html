@@ -223,7 +223,7 @@
             return React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" }, React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-2xl p-6" }, React.createElement("h2", { className: "text-xl font-bold mb-4 text-zinc-900 dark:text-white" }, "Cloud Sync Setup"), React.createElement("input", { value: url, onChange: e => setUrl(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), placeholder: "Supabase URL", className: "w-full mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white" }), React.createElement("input", { value: key, onChange: e => setKey(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), type: "password", placeholder: "Anon Key", className: "w-full mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white" }), React.createElement("div", { className: "flex justify-end gap-3" }, React.createElement("button", { onClick: onClose, className: "px-4 py-2 text-zinc-500" }, "Cancel"), React.createElement("button", { onClick: handleSave, className: "px-6 py-2 bg-indigo-600 text-white rounded-lg" }, "Save"))));
         };
         
-        const ScheduleView = ({ events, onAddEvent, onUpdateEvent, onDeleteEvent, dailyPlan = {}, onUpdateDailyPlan }) => {
+        const ScheduleView = ({ events, onAddEvent, onUpdateEvent, onDeleteEvent, dailyPlan = {}, onUpdateDailyPlan, weeklyPlan = {} }) => {
             const [view, setView] = useState('week');
             const [selectedDate, setSelectedDate] = useState(new Date());
             const [calendarMonth, setCalendarMonth] = useState(new Date());
@@ -237,11 +237,11 @@
             const isDraggingRef = useRef(false);
 
             // Daily Architect Logic
-            const priorities = Array.isArray(dailyPlan.priorities) ? dailyPlan.priorities : ['', '', ''];
             const minorTasks = dailyPlan.minorTasks || [];
             const note = dailyPlan.notes || '';
+            const dayName = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
+            const dayTasks = weeklyPlan?.dailyTasks?.[dayName] || [];
 
-            const handlePriorityChange = (idx, val) => { const newP = [...priorities]; newP[idx] = val; onUpdateDailyPlan({ ...dailyPlan, priorities: newP }); };
             const addMinorTask = (text) => { onUpdateDailyPlan({ ...dailyPlan, minorTasks: [...minorTasks, { id: generateUUID(), text, completed: false }] }); };
             const toggleMinorTask = (id) => { onUpdateDailyPlan({ ...dailyPlan, minorTasks: minorTasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t) }); };
             const deleteMinorTask = (id) => { onUpdateDailyPlan({ ...dailyPlan, minorTasks: minorTasks.filter(t => t.id !== id) }); };
@@ -449,9 +449,9 @@
                     )
                 ),
                 React.createElement("div", { className: "w-full xl:w-80 flex flex-col gap-6 shrink-0" },
-                    React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] p-5 shadow-sm flex flex-col gap-4" },
-                        React.createElement("div", { className: "flex items-center justify-between" }, React.createElement("h3", { className: "font-bold text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(Target, { size: 18, className: "text-indigo-500" }), "Top Priorities"), React.createElement("button", { onClick: () => { if(confirm("Clear priorities?")) onUpdateDailyPlan({ priorities: ['', '', ''], minorTasks, notes: note }); }, className: "text-xs text-zinc-400 hover:text-red-500 transition-colors" }, React.createElement(Trash2, { size: 14 }))),
-                        priorities.map((p, i) => React.createElement("div", { key: i, className: "relative" }, React.createElement("span", { className: "absolute left-3 top-3 text-xs font-bold text-zinc-400" }, i + 1), React.createElement("textarea", { value: p, onChange: (e) => handlePriorityChange(i, e.target.value), className: "w-full bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 pl-8 text-sm resize-none focus:outline-none focus:border-indigo-500 text-zinc-800 dark:text-zinc-200 min-h-[44px]", placeholder: "Priority..." })))
+                    React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] p-5 shadow-sm flex flex-col gap-4 max-h-[300px] overflow-y-auto no-scrollbar" },
+                        React.createElement("div", { className: "flex items-center justify-between mb-1" }, React.createElement("h3", { className: "font-bold text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(Target, { size: 18, className: "text-indigo-500" }), `${dayName}'s Plan`)),
+                        dayTasks.length > 0 ? React.createElement("div", { className: "space-y-3" }, dayTasks.map(task => React.createElement("div", { key: task.id, className: "flex items-start gap-3" }, React.createElement(CheckCircle2, { size: 16, className: `mt-0.5 shrink-0 ${task.completed ? 'text-indigo-500' : 'text-zinc-300 dark:text-zinc-600'}` }), React.createElement("span", { className: `text-sm leading-snug font-medium ${task.completed ? 'text-zinc-400 dark:text-zinc-500 line-through' : 'text-zinc-700 dark:text-zinc-200'}` }, task.text)))) : React.createElement("p", { className: "text-sm text-zinc-400 italic" }, `No tasks planned for ${dayName}. Add them in the Weekly Plan.`)
                     ),
                     React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] p-5 shadow-sm flex-1 flex flex-col" },
                         React.createElement("h3", { className: "font-bold text-zinc-900 dark:text-white flex items-center gap-2 mb-4" }, React.createElement(ListTodo, { size: 18, className: "text-emerald-500" }), "Side Quests"),
@@ -521,8 +521,8 @@
             );
         };
 
-        const WeeklyPlanView = ({ plan, onUpdate }) => {
-            const focus = plan.focus || ""; const objectives = plan.objectives || []; const dailyTasks = plan.dailyTasks || {}; 
+        const WeeklyPlanView = ({ plan, onUpdate, monthlyPlan = {} }) => {
+            const objectives = plan.objectives || []; const dailyTasks = plan.dailyTasks || {}; 
             const updateField = (field, value) => onUpdate({ ...plan, [field]: value });
             
             const addObjective = (text) => updateField('objectives', [...objectives, { id: generateUUID(), text, completed: false }]);
@@ -537,13 +537,32 @@
             const editDailyTask = (day, id, text) => onUpdate({ ...plan, dailyTasks: { ...dailyTasks, [day]: (dailyTasks[day] || []).map(t => t.id === id ? { ...t, text } : t) } });
             const reorderDailyTask = (day, newItems) => onUpdate({ ...plan, dailyTasks: { ...dailyTasks, [day]: newItems } });
 
+            const now = new Date();
+            const currentDay = now.getDate();
+            let activeWeekIndex = 0; let activeWeekKey = 'week1';
+            if (currentDay > 21) { activeWeekIndex = 3; activeWeekKey = 'week4'; }
+            else if (currentDay > 14) { activeWeekIndex = 2; activeWeekKey = 'week3'; }
+            else if (currentDay > 7) { activeWeekIndex = 1; activeWeekKey = 'week2'; }
+            const activeSprintTasks = monthlyPlan?.weeks?.[activeWeekKey] || [];
+
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-full flex flex-col overflow-y-auto max-w-7xl mx-auto" },
                  React.createElement("div", { className: "flex justify-between items-center mb-8" },
                     React.createElement("div", null, React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "Weekly Roadmap"), React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 text-sm" }, "Zoom out. execute strategy.")),
-                    React.createElement("button", { onClick: () => { if(confirm("Clear this week's roadmap?")) onUpdate({ focus: "", objectives: [], dailyTasks: {} }); }, className: "text-xs font-bold text-zinc-400 hover:text-red-500 flex items-center gap-1 transition-colors" }, React.createElement(Trash2, { size: 14 }), "Reset")
+                    React.createElement("button", { onClick: () => { if(confirm("Clear this week's roadmap?")) onUpdate({ objectives: [], dailyTasks: {} }); }, className: "text-xs font-bold text-zinc-400 hover:text-red-500 flex items-center gap-1 transition-colors" }, React.createElement(Trash2, { size: 14 }), "Reset")
                 ),
                 React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8" },
-                    React.createElement("div", { className: "lg:col-span-1" }, React.createElement(Card, { title: "Weekly Compass", className: "h-full bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-200 dark:border-indigo-500/30" }, React.createElement("textarea", { value: focus, onChange: (e) => updateField('focus', e.target.value), placeholder: "What is the ONE thing that makes this week a success?", className: "w-full h-full min-h-[120px] bg-transparent text-lg font-bold text-indigo-900 dark:text-indigo-100 placeholder:text-indigo-300 dark:placeholder:text-indigo-700/50 resize-none focus:outline-none" }))),
+                    React.createElement("div", { className: "lg:col-span-1" }, 
+                        React.createElement(Card, { title: `Active Sprint 0${activeWeekIndex + 1}`, className: "h-full bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-200 dark:border-indigo-500/30" }, 
+                            activeSprintTasks.length > 0 ? 
+                                React.createElement("div", { className: "space-y-3 mt-1" }, 
+                                    activeSprintTasks.map(task => React.createElement("div", { key: task.id, className: "flex items-start gap-3" }, 
+                                        React.createElement(CheckCircle2, { size: 16, className: `mt-0.5 shrink-0 ${task.completed ? 'text-indigo-500' : 'text-indigo-300 dark:text-indigo-500/50'}` }),
+                                        React.createElement("span", { className: `text-sm leading-snug font-medium ${task.completed ? 'text-indigo-400 dark:text-indigo-500/70 line-through' : 'text-indigo-900 dark:text-indigo-100'}` }, task.text)
+                                    ))
+                                )
+                            : React.createElement("p", { className: "text-sm text-indigo-400 italic" }, "No sprint tasks defined in Monthly Plan.")
+                        )
+                    ),
                     React.createElement("div", { className: "lg:col-span-2" }, React.createElement(Card, { title: "Key Objectives", className: "h-full" }, React.createElement(EditableList, { items: objectives, onAdd: addObjective, onToggle: toggleObjective, onDelete: deleteObjective, onEdit: editObjective, onReorder: reorderObjectives, placeholder: "Add a goal for this week..." })))
                 ),
                 React.createElement("div", null,
@@ -1207,9 +1226,9 @@
                 React.createElement(MobileNavBar, { activeTab, setActiveTab, tabConfig }),
                 React.createElement("main", { className: "md:ml-64 p-4 md:p-8 pb-24 pt-20 md:pt-8 min-h-screen box-border" },
                     activeTab === 'dashboard' && React.createElement(DashboardView, { onNavigate: setActiveTab, deadlines, dashboardData, onUpdateDashboard: handleUpdateDashboard, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset, meals, fitnessData, goalsData, dumps, books }),
-                    activeTab === 'schedule' && React.createElement(ScheduleView, { events, onAddEvent: handleAddEvent, onUpdateEvent: handleUpdateEvent, onDeleteEvent: handleDeleteEvent, dailyPlan, onUpdateDailyPlan: handleUpdateDailyPlan }),
+                    activeTab === 'schedule' && React.createElement(ScheduleView, { events, onAddEvent: handleAddEvent, onUpdateEvent: handleUpdateEvent, onDeleteEvent: handleDeleteEvent, dailyPlan, onUpdateDailyPlan: handleUpdateDailyPlan, weeklyPlan }),
                     activeTab === 'monthlyPlan' && React.createElement(MonthlyPlanView, { plan: monthlyPlan, onUpdate: handleUpdateMonthlyPlan }),
-                    activeTab === 'weeklyPlan' && React.createElement(WeeklyPlanView, { plan: weeklyPlan, onUpdate: handleUpdateWeeklyPlan }),
+                    activeTab === 'weeklyPlan' && React.createElement(WeeklyPlanView, { plan: weeklyPlan, onUpdate: handleUpdateWeeklyPlan, monthlyPlan }),
                     activeTab === 'goals2026' && React.createElement(Goals2026View, { goalsData, onUpdateGoals: handleUpdateGoals2026 }),
                     activeTab === 'deadlines' && React.createElement(DeadlinesView, { deadlines, onAddDeadline: handleAddDeadline, onDeleteDeadline: handleDeleteDeadline, onUpdateDeadline: handleUpdateDeadline }),
                     activeTab === 'focus' && React.createElement(FocusView, { activeSound, isPlayingSound, toggleSound, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset }),
