@@ -371,6 +371,12 @@
                     if (recur === 'daily') matches = true;
                     else if (recur === 'weekdays') matches = d.getDay() >= 1 && d.getDay() <= 5;
                     else if (recur === 'weekly') matches = baseStart.getDay() === d.getDay();
+                    else if (recur === 'biweekly') {
+                        if (baseStart.getDay() === d.getDay()) {
+                            const diffDays = Math.round((new Date(d).setHours(0,0,0,0) - new Date(baseStart).setHours(0,0,0,0)) / 86400000);
+                            matches = diffDays >= 0 && diffDays % 14 === 0;
+                        }
+                    }
                     if(matches) {
                         const iStart = new Date(d); iStart.setHours(baseStart.getHours(), baseStart.getMinutes(), 0, 0);
                         const iEnd = new Date(iStart.getTime() + durationMs);
@@ -412,6 +418,13 @@
                                     if (recur === 'daily') return true;
                                     if (recur === 'weekdays') return d.getDay() >= 1 && d.getDay() <= 5;
                                     if (recur === 'weekly') return eStart.getDay() === d.getDay();
+                                    if (recur === 'biweekly') {
+                                        if (eStart.getDay() === d.getDay()) {
+                                            const diffDays = Math.round((new Date(d).setHours(0,0,0,0) - new Date(eStart).setHours(0,0,0,0)) / 86400000);
+                                            return diffDays >= 0 && diffDays % 14 === 0;
+                                        }
+                                        return false;
+                                    }
                                     return false;
                                 }).map(ev => {
                                     const recur = ev.recurrence || (ev.isHabit ? 'daily' : 'none');
@@ -477,7 +490,8 @@
                                     React.createElement("option", { value: "none" }, "Does not repeat"),
                                     React.createElement("option", { value: "daily" }, "Daily"),
                                     React.createElement("option", { value: "weekdays" }, "Weekdays (Mon-Fri)"),
-                                    React.createElement("option", { value: "weekly" }, "Weekly")
+                                    React.createElement("option", { value: "weekly" }, "Weekly"),
+                                    React.createElement("option", { value: "biweekly" }, "Bi-Weekly")
                                 )
                             ),
                             React.createElement("div", null, 
