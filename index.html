@@ -290,7 +290,7 @@
                 const end = defaultEnd ? new Date(defaultEnd) : new Date(start);
                 if(!defaultEnd) end.setHours(start.getHours() + 1, 0, 0, 0);
                 
-                setEditingEvent({ title: "", start: toLocalISO(start), end: toLocalISO(end), color: "bg-indigo-500", recurrence: 'none', description: "" });
+                setEditingEvent({ title: "", start: toLocalISO(start), end: toLocalISO(end), color: "bg-indigo-500", recurrence: 'none', recurrenceDays: [start.getDay()], description: "" });
             };
 
             const saveEvent = () => { if (editingEvent.title.trim()) { if (editingEvent.id) onUpdateEvent(editingEvent); else onAddEvent(editingEvent); setEditingEvent(null); } };
@@ -368,24 +368,30 @@
                 const recur = ev.recurrence || (ev.isHabit ? 'daily' : 'none');
                 const baseStart = new Date(ev.start);
                 const durationMs = new Date(ev.end) - baseStart;
+                const targetDays = ev.recurrenceDays || [baseStart.getDay()];
+
                 if (recur === 'none') { syntheticEvents.push({...ev, instanceStart: baseStart, instanceEnd: new Date(ev.end)}); return; }
                 [nowTime, tmrw].forEach(d => {
                     const dStart = new Date(d); dStart.setHours(0,0,0,0);
-                    if (baseStart > d) return;
+                    const initialStartDay = new Date(baseStart); initialStartDay.setHours(0,0,0,0);
+                    if (dStart < initialStartDay) return;
+                    
                     let matches = false;
                     if (recur === 'daily') matches = true;
                     else if (recur === 'weekdays') matches = d.getDay() >= 1 && d.getDay() <= 5;
-                    else if (recur === 'weekly') matches = baseStart.getDay() === d.getDay();
+                    else if (recur === 'weekly') matches = targetDays.includes(d.getDay());
                     else if (recur === 'biweekly') {
-                        if (baseStart.getDay() === d.getDay()) {
-                            const diffDays = Math.round((new Date(d).setHours(0,0,0,0) - new Date(baseStart).setHours(0,0,0,0)) / 86400000);
-                            matches = diffDays >= 0 && diffDays % 14 === 0;
-                        }
+                        const bws = getWeekStart(baseStart); bws.setHours(0,0,0,0);
+                        const tws = getWeekStart(d); tws.setHours(0,0,0,0);
+                        const diffWeeks = Math.round((tws - bws) / (7 * 86400000));
+                        matches = diffWeeks >= 0 && diffWeeks % 2 === 0 && targetDays.includes(d.getDay());
                     }
                     if(matches) {
                         const iStart = new Date(d); iStart.setHours(baseStart.getHours(), baseStart.getMinutes(), 0, 0);
-                        const iEnd = new Date(iStart.getTime() + durationMs);
-                        syntheticEvents.push({...ev, instanceStart: iStart, instanceEnd: iEnd});
+                        if (iStart >= baseStart) {
+                            const iEnd = new Date(iStart.getTime() + durationMs);
+                            syntheticEvents.push({...ev, instanceStart: iStart, instanceEnd: iEnd});
+                        }
                     }
                 });
             });
@@ -415,22 +421,31 @@
                                     const recur = e.recurrence || (e.isHabit ? 'daily' : 'none');
                                     const eStart = new Date(e.start);
                                     const eEnd = new Date(e.end);
+                                    const targetDays = e.recurrenceDays || [eStart.getDay()];
+
                                     if (recur === 'none') return eStart < dayEnd && eEnd > dayStart;
                                     
                                     const initialStartDay = new Date(eStart); initialStartDay.setHours(0,0,0,0);
                                     if (dayEnd < initialStartDay) return false;
                                     
-                                    if (recur === 'daily') return true;
-                                    if (recur === 'weekdays') return d.getDay() >= 1 && d.getDay() <= 5;
-                                    if (recur === 'weekly') return eStart.getDay() === d.getDay();
-                                    if (recur === 'biweekly') {
-                                        if (eStart.getDay() === d.getDay()) {
-                                            const diffDays = Math.round((new Date(d).setHours(0,0,0,0) - new Date(eStart).setHours(0,0,0,0)) / 86400000);
-                                            return diffDays >= 0 && diffDays % 14 === 0;
-                                        }
-                                        return false;
+                                    let matches = false;
+                                    if (recur === 'daily') matches = true;
+                                    else if (recur === 'weekdays') matches = d.getDay() >= 1 && d.getDay() <= 5;
+                                    else if (recur === 'weekly') matches = targetDays.includes(d.getDay());
+                                    else if (recur === 'biweekly') {
+                                        const bws = getWeekStart(eStart); bws.setHours(0,0,0,0);
+                                        const tws = getWeekStart(d); tws.setHours(0,0,0,0);
+                                        const diffWeeks = Math.round((tws - bws) / (7 * 86400000));
+                                        matches = diffWeeks >= 0 && diffWeeks % 2 === 0 && targetDays.includes(d.getDay());
                                     }
-                                    return false;
+                                    
+                                    if (matches) {
+                                        const instanceStart = new Date(d);
+                                        instanceStart.setHours(eStart.getHours(), eStart.getMinutes(), 0, 0);
+                                        if (instanceStart < eStart) matches = false;
+                                    }
+                                    
+                                    return matches;
                                 }).map(ev => {
                                     const recur = ev.recurrence || (ev.isHabit ? 'daily' : 'none');
                                     const baseStart = new Date(ev.start);
@@ -497,6 +512,26 @@
                                     React.createElement("option", { value: "weekdays" }, "Weekdays (Mon-Fri)"),
                                     React.createElement("option", { value: "weekly" }, "Weekly"),
                                     React.createElement("option", { value: "biweekly" }, "Bi-Weekly")
+                                ),
+                                ['weekly', 'biweekly'].includes(editingEvent.recurrence) && React.createElement("div", { className: "mt-3 flex gap-1 justify-between px-1" },
+                                    ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayChar, idx) => {
+                                        const isSelected = (editingEvent.recurrenceDays || [new Date(editingEvent.start).getDay()]).includes(idx);
+                                        return React.createElement("button", {
+                                            key: idx,
+                                            onClick: () => {
+                                                const currentDays = editingEvent.recurrenceDays || [new Date(editingEvent.start).getDay()];
+                                                let newDays;
+                                                if (currentDays.includes(idx)) {
+                                                    newDays = currentDays.filter(d => d !== idx);
+                                                    if (newDays.length === 0) newDays = [idx]; 
+                                                } else {
+                                                    newDays = [...currentDays, idx];
+                                                }
+                                                setEditingEvent({ ...editingEvent, recurrenceDays: newDays });
+                                            },
+                                            className: `w-8 h-8 rounded-full text-xs font-bold transition-all ${isSelected ? 'bg-indigo-500 text-white shadow-md' : 'bg-[#27272a] text-zinc-400 hover:bg-[#3f3f46]'}`
+                                        }, dayChar);
+                                    })
                                 )
                             ),
                             React.createElement("div", null, 
