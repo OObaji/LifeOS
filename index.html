@@ -102,6 +102,7 @@
             const [newItem, setNewItem] = useState("");
             const [editingId, setEditingId] = useState(null);
             const [editValue, setEditValue] = useState("");
+            const [showCompleted, setShowCompleted] = useState(false);
             const dragItem = useRef(null);
             const dragOverItem = useRef(null);
 
@@ -113,33 +114,49 @@
             const handleDragEnter = (e, position) => { if (onReorder && dragItem.current !== null && dragItem.current !== position) { const newItems = [...items]; const draggedItemContent = newItems[dragItem.current]; newItems.splice(dragItem.current, 1); newItems.splice(position, 0, draggedItemContent); dragItem.current = position; onReorder(newItems); } };
             const handleDragEnd = (e) => { dragItem.current = null; dragOverItem.current = null; };
 
-            return React.createElement("div", { className: "flex flex-col w-full h-full" }, 
-                React.createElement("div", { className: "space-y-1 w-full overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar" },
-                    items.map((item, index) => React.createElement("div", { 
-                        key: item.id, draggable: !!onReorder && !editingId, onDragStart: (e) => handleDragStart(e, index), onDragEnter: (e) => handleDragEnter(e, index), onDragEnd: handleDragEnd, onDragOver: (e) => e.preventDefault(),
-                        className: `flex items-start gap-3 w-full group transition-all p-2.5 rounded-xl border border-transparent ${onReorder && !editingId ? 'cursor-move hover:bg-zinc-50 dark:hover:bg-zinc-800/40 hover:border-zinc-200 dark:hover:border-zinc-700/50' : ''}` 
-                    }, 
-                        onReorder && !editingId && React.createElement("div", { className: "mt-1 text-zinc-300 dark:text-zinc-600 transition-opacity cursor-grab active:cursor-grabbing" }, React.createElement(GripVertical, { size: 16 })),
-                        React.createElement("button", { onClick: () => onToggle(item.id), className: `mt-0.5 w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-all ${item.completed ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900'}` }, React.createElement(CheckCircle2, { size: 14, className: item.completed ? "opacity-100" : "opacity-0" })), 
-                        
-                        editingId === item.id ? 
-                            React.createElement("div", { className: "flex-1 flex gap-2 items-center" },
-                                React.createElement("input", { 
-                                    value: editValue, onChange: (e) => setEditValue(e.target.value),
-                                    onKeyDown: (e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') cancelEdit(); },
-                                    autoFocus: true, className: "flex-1 bg-white dark:bg-zinc-800 border border-indigo-500 rounded px-2 py-1 text-sm text-zinc-900 dark:text-white outline-none"
-                                }),
-                                React.createElement("button", { onClick: saveEdit, className: "text-indigo-500 hover:text-indigo-600" }, React.createElement(Check, { size: 16 })),
-                                React.createElement("button", { onClick: cancelEdit, className: "text-zinc-400 hover:text-zinc-500" }, React.createElement(X, { size: 16 }))
-                            )
-                        :
-                            React.createElement("span", { className: `text-[15px] leading-relaxed flex-1 break-words font-medium ${item.completed ? 'text-zinc-400 dark:text-zinc-500 line-through' : 'text-zinc-800 dark:text-zinc-100'}` }, item.text),
+            const completedCount = items.filter(i => i.completed).length;
 
-                        !editingId && React.createElement("div", { className: "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" },
-                            onEdit && React.createElement("button", { onClick: () => startEdit(item), className: "text-zinc-400 hover:text-indigo-500" }, React.createElement(Edit3, { size: 14 })),
-                            React.createElement("button", { onClick: () => onDelete(item.id), className: "text-zinc-400 hover:text-red-500" }, React.createElement(Trash, { size: 14 }))
+            const renderItem = (item, index, isCompletedSection) => {
+                return React.createElement("div", { 
+                    key: item.id, draggable: !!onReorder && !editingId && !isCompletedSection, onDragStart: (e) => handleDragStart(e, index), onDragEnter: (e) => handleDragEnter(e, index), onDragEnd: handleDragEnd, onDragOver: (e) => e.preventDefault(),
+                    className: `flex items-start gap-3 w-full group transition-all p-2.5 rounded-xl border border-transparent ${onReorder && !editingId && !isCompletedSection ? 'cursor-move hover:bg-zinc-50 dark:hover:bg-zinc-800/40 hover:border-zinc-200 dark:hover:border-zinc-700/50' : ''} ${isCompletedSection ? 'opacity-60' : ''}` 
+                }, 
+                    onReorder && !editingId && !isCompletedSection && React.createElement("div", { className: "mt-1 text-zinc-300 dark:text-zinc-600 transition-opacity cursor-grab active:cursor-grabbing" }, React.createElement(GripVertical, { size: 16 })),
+                    React.createElement("button", { onClick: () => onToggle(item.id), className: `mt-0.5 w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-all ${item.completed ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900'}` }, React.createElement(CheckCircle2, { size: 14, className: item.completed ? "opacity-100" : "opacity-0" })), 
+                    
+                    editingId === item.id ? 
+                        React.createElement("div", { className: "flex-1 flex gap-2 items-center" },
+                            React.createElement("input", { 
+                                value: editValue, onChange: (e) => setEditValue(e.target.value),
+                                onKeyDown: (e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') cancelEdit(); },
+                                autoFocus: true, className: "flex-1 bg-white dark:bg-zinc-800 border border-indigo-500 rounded px-2 py-1 text-sm text-zinc-900 dark:text-white outline-none"
+                            }),
+                            React.createElement("button", { onClick: saveEdit, className: "text-indigo-500 hover:text-indigo-600" }, React.createElement(Check, { size: 16 })),
+                            React.createElement("button", { onClick: cancelEdit, className: "text-zinc-400 hover:text-zinc-500" }, React.createElement(X, { size: 16 }))
                         )
-                    ))
+                    :
+                        React.createElement("span", { className: `text-[15px] leading-relaxed flex-1 break-words font-medium ${item.completed ? 'text-zinc-400 dark:text-zinc-500 line-through' : 'text-zinc-800 dark:text-zinc-100'}` }, item.text),
+
+                    !editingId && React.createElement("div", { className: "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" },
+                        onEdit && React.createElement("button", { onClick: () => startEdit(item), className: "text-zinc-400 hover:text-indigo-500" }, React.createElement(Edit3, { size: 14 })),
+                        React.createElement("button", { onClick: () => onDelete(item.id), className: "text-zinc-400 hover:text-red-500" }, React.createElement(Trash, { size: 14 }))
+                    )
+                );
+            };
+
+            return React.createElement("div", { className: "flex flex-col w-full h-full" }, 
+                React.createElement("div", { className: "space-y-1 w-full overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar flex-1" },
+                    items.map((item, index) => !item.completed ? renderItem(item, index, false) : null),
+                    
+                    completedCount > 0 && React.createElement("div", { className: "mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800/50" },
+                        React.createElement("button", { onClick: () => setShowCompleted(!showCompleted), className: "flex items-center gap-2 text-[10px] font-bold text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 uppercase tracking-widest transition-colors mb-2 w-full text-left focus:outline-none" },
+                            React.createElement(ChevronRight, { size: 14, className: `transition-transform ${showCompleted ? 'rotate-90' : ''}` }),
+                            `Completed (${completedCount})`
+                        ),
+                        showCompleted && React.createElement("div", { className: "space-y-1 mt-2" },
+                            items.map((item, index) => item.completed ? renderItem(item, index, true) : null)
+                        )
+                    )
                 ), 
                 React.createElement("div", { className: "flex gap-2 mt-2 pt-3 border-t border-zinc-100 dark:border-zinc-800 shrink-0" }, 
                     React.createElement("input", { type: "text", value: newItem, onChange: (e) => setNewItem(e.target.value), onKeyDown: (e) => { if (e.key === 'Enter' && newItem.trim()) { onAdd(newItem); setNewItem(""); } }, placeholder: placeholder || "Add new...", className: "flex-1 bg-transparent text-[15px] focus:outline-none text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 pl-1" }), 
