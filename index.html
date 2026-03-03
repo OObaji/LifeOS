@@ -297,7 +297,14 @@
             }, [editingEvent, timeSelection]);
 
             const isSameDay = (d1, d2) => d1.toDateString() === d2.toDateString();
-            const getWeekStart = (date) => { const d = new Date(date); const day = d.getDay(); const diff = d.getDate() - day + (day === 0 ? -6 : 1); return new Date(d.setDate(diff)); };
+            
+            const getWeekStart = (date) => { 
+                const d = new Date(date); 
+                const day = d.getDay(); 
+                const diff = d.getDate() - day; 
+                return new Date(d.setDate(diff)); 
+            };
+            
             const toLocalISO = (d) => { const offset = d.getTimezoneOffset() * 60000; return new Date(d.getTime() - offset).toISOString().slice(0, 16); };
             const formatTime = (iso) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
 
@@ -306,7 +313,7 @@
                 const month = date.getMonth();
                 const firstDay = new Date(year, month, 1);
                 let dayOfWeek = firstDay.getDay();
-                const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                const diff = dayOfWeek; 
                 const start = new Date(firstDay);
                 start.setDate(firstDay.getDate() - diff);
                 return Array.from({length: 42}, (_, i) => {
@@ -333,7 +340,8 @@
                 const targetElement = e.currentTarget;
                 const rect = targetElement.getBoundingClientRect();
                 const y = e.clientY - rect.top;
-                setTimeSelection({ date, startY: y, currentY: y, targetElement });
+                const mins = (y / rect.height) * 1440;
+                setTimeSelection({ date, startMins: mins, currentMins: mins, targetElement });
             };
 
             const handleMouseDown = (e, ev) => {
@@ -347,7 +355,7 @@
                     isDraggingRef.current = true;
                     const gridRect = gridRef.current.getBoundingClientRect();
                     const relativeY = e.clientY - gridRect.top - dragOffset.y;
-                    let totalMinutes = Math.max(0, Math.min(1439, Math.floor(relativeY)));
+                    let totalMinutes = Math.max(0, Math.min(1439, Math.floor((relativeY / gridRect.height) * 1440)));
                     totalMinutes = Math.round(totalMinutes / 15) * 15;
                     const hours = Math.floor(totalMinutes / 60); const minutes = totalMinutes % 60;
 
@@ -371,17 +379,18 @@
                     onUpdateEvent({ ...ev, start: toLocalISO(newStart), end: toLocalISO(newEnd) });
                 } else if (timeSelection) {
                     const rect = timeSelection.targetElement.getBoundingClientRect();
-                    const y = Math.max(0, Math.min(1440, e.clientY - rect.top));
-                    setTimeSelection(prev => prev ? { ...prev, currentY: y } : null);
+                    const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+                    const mins = (y / rect.height) * 1440;
+                    setTimeSelection(prev => prev ? { ...prev, currentMins: mins } : null);
                 }
             };
 
             const handleMouseUp = () => {
                 if (draggedEventId) { setDraggedEventId(null); setTimeout(() => { isDraggingRef.current = false; }, 0); }
                 if (timeSelection) {
-                    const { date, startY, currentY } = timeSelection;
-                    const minVal = Math.min(startY, currentY); 
-                    const maxVal = Math.max(startY, currentY);
+                    const { date, startMins, currentMins } = timeSelection;
+                    const minVal = Math.min(startMins, currentMins); 
+                    const maxVal = Math.max(startMins, currentMins);
                     
                     const snappedStart = Math.floor(minVal / 15) * 15;
                     let snappedEnd;
@@ -490,7 +499,7 @@
                                     const effectiveEnd = eEnd > dayEnd ? dayEnd : eEnd;
 
                                     const top = effectiveStart.getHours() * 60 + effectiveStart.getMinutes();
-                                    const duration = Math.max((effectiveEnd - effectiveStart) / 60000, 15);
+                                    const durationMinutes = Math.max((effectiveEnd - effectiveStart) / 60000, 15);
                                     const isDragging = draggedEventId === ev.id;
                                     
                                     const continuesFromPrev = eStart < dayStart;
@@ -501,15 +510,15 @@
                                         onMouseDown: (e) => handleMouseDown(e, ev),
                                         onClick: (e) => { e.stopPropagation(); const dx = Math.abs(e.clientX - dragStartPos.current.x); const dy = Math.abs(e.clientY - dragStartPos.current.y); if (dx < 5 && dy < 5) setEditingEvent(events.find(x => x.id === ev.id)); }, 
                                         className: `absolute left-0.5 right-0.5 px-1.5 py-1 text-[10px] leading-tight text-white shadow-sm overflow-hidden cursor-pointer hover:z-30 hover:shadow-md ${isDragging ? 'opacity-80 z-50 scale-105 ring-1 ring-white/50 transition-none' : 'transition-transform'} ${ev.color} ${continuesFromPrev ? 'rounded-t-none border-t-0 opacity-90' : 'rounded-t'} ${continuesToNext ? 'rounded-b-none border-b-0 opacity-90' : 'rounded-b'}`, 
-                                        style: { top: `${top}px`, height: `${duration}px` }
+                                        style: { top: `${top}px`, height: `${durationMinutes}px` }
                                     },
                                         React.createElement("div", { className: "font-semibold truncate" }, ev.title),
-                                        duration > 35 && React.createElement("div", { className: "opacity-80 text-[8px] font-mono mt-0.5 pointer-events-none truncate" }, `${formatTime(ev.start)} - ${formatTime(ev.end)}`)
+                                        durationMinutes > 35 && React.createElement("div", { className: "opacity-80 text-[8px] font-mono mt-0.5 pointer-events-none truncate" }, `${formatTime(ev.start)} - ${formatTime(ev.end)}`)
                                     )
                                 }),
                                 timeSelection && isSameDay(timeSelection.date, d) && React.createElement("div", {
                                     className: "absolute left-0.5 right-0.5 rounded bg-indigo-500/30 border border-indigo-500/50 z-40 pointer-events-none",
-                                    style: { top: `${Math.min(timeSelection.startY, timeSelection.currentY)}px`, height: `${Math.max(15, Math.abs(timeSelection.currentY - timeSelection.startY))}px` }
+                                    style: { top: `${Math.min(timeSelection.startMins, timeSelection.currentMins)}px`, height: `${Math.max(15, Math.abs(timeSelection.currentMins - timeSelection.startMins))}px` }
                                 })
                             )
                         })
@@ -524,7 +533,7 @@
                 const endTimeStr = editingEvent.end.split('T')[1];
 
                 return React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" },
-                    React.createElement("div", { className: "bg-[#09090b] border border-zinc-800 rounded-[24px] w-full max-w-[380px] p-6 md:p-7 relative shadow-2xl flex flex-col gap-6" },
+                    React.createElement("div", { className: "bg-[#09090b] border border-zinc-800 rounded-[24px] w-full max-w-[380px] p-6 md:p-7 relative shadow-2xl flex flex-col gap-6 max-h-[90vh] overflow-y-auto no-scrollbar" },
                         React.createElement("div", { className: "flex justify-between items-center" },
                             React.createElement("h3", { className: "text-lg font-bold flex items-center gap-3 text-white" }, React.createElement("div", { className: `w-2 h-6 rounded-full shadow-sm ${editingEvent.color}` }), editingEvent.id ? "Edit Event" : "New Event"),
                             React.createElement("div", { className: "flex gap-1" }, editingEvent.id && React.createElement("button", { onClick: deleteEvent, className: "text-zinc-500 hover:text-red-500 p-2 rounded-full hover:bg-zinc-800/50 transition-colors" }, React.createElement(Trash2, { size: 18 })), React.createElement("button", { onClick: () => setEditingEvent(null), className: "text-zinc-500 hover:text-white p-2 rounded-full hover:bg-zinc-800/50 transition-colors" }, React.createElement(X, { size: 20 })))
@@ -598,79 +607,83 @@
                 );
             };
 
-            return React.createElement("div", { className: "flex flex-col xl:flex-row gap-6 h-full w-full max-w-[1600px] mx-auto pb-16" },
-                React.createElement("div", { className: "flex-1 flex flex-col h-full min-w-0" },
-                    React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4" },
-                        React.createElement("div", null,
-                            React.createElement("div", { className: "flex items-center gap-4 mb-1" },
-                                React.createElement("h2", { className: "text-3xl md:text-4xl font-bold text-zinc-900 dark:text-white tracking-tight" }, selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })),
-                                React.createElement("div", { className: "flex bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-1 shadow-sm" },
-                                    React.createElement("button", { onClick: () => { const newD = new Date(selectedDate); if (view === 'month') newD.setMonth(newD.getMonth() - 1); else newD.setDate(newD.getDate() - (view === 'week' ? 7 : 1)); setSelectedDate(newD); }, className: "p-1.5 hover:bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-500 transition-colors" }, React.createElement(ChevronLeft, { size: 16 })),
-                                    React.createElement("button", { onClick: () => { setSelectedDate(new Date()); }, className: "px-3 text-xs font-bold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors" }, "Today"),
-                                    React.createElement("button", { onClick: () => { const newD = new Date(selectedDate); if (view === 'month') newD.setMonth(newD.getMonth() + 1); else newD.setDate(newD.getDate() + (view === 'week' ? 7 : 1)); setSelectedDate(newD); }, className: "p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg text-zinc-500 transition-colors" }, React.createElement(ChevronRight, { size: 16 }))
-                                )
-                            ),
-                            React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 font-medium text-sm" }, "Stay organized, stay ahead.")
-                        ),
-                        React.createElement("div", { className: "flex items-center gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-2xl shadow-sm min-w-[250px]" },
-                            React.createElement("div", { className: `w-10 h-10 rounded-xl flex items-center justify-center text-white ${upcomingEvents[0] ? upcomingEvents[0].color : 'bg-zinc-200 dark:bg-zinc-800/80 text-zinc-400'}` }, isHappeningNow ? React.createElement(Play, { size: 18, className: "animate-pulse" }) : React.createElement(Calendar, { size: 18 })),
-                            React.createElement("div", null, React.createElement("div", { className: "text-[10px] font-bold uppercase tracking-widest text-zinc-400" }, "Up Next"), React.createElement("div", { className: "font-bold text-sm text-zinc-900 dark:text-white truncate max-w-[150px]" }, upcomingEvents[0] ? upcomingEvents[0].title : "Nothing scheduled"))
-                        )
-                    ),
-                    React.createElement("div", { className: "flex justify-between items-center mb-4" },
-                        React.createElement("div", { className: "flex bg-zinc-200/50 dark:bg-zinc-800/50 p-1 rounded-xl" },
-                            ['day', 'week', 'month'].map(v => React.createElement("button", { key: v, onClick: () => setView(v), className: `px-5 py-1.5 rounded-lg text-sm font-bold capitalize transition-all ${view === v ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}` }, v))
-                        ),
-                        React.createElement("button", { onClick: () => openNewEvent(), className: "flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 shadow-glow-sm transition-all font-bold text-sm" }, React.createElement(Plus, { size: 16 }), "New Event")
-                    ),
-                    React.createElement("div", { className: "flex-1 bg-white dark:bg-[#111113] border border-zinc-200 dark:border-zinc-800/80 rounded-[1.5rem] shadow-sm overflow-hidden flex flex-col relative min-h-[600px] h-[70vh]" },
-                        view === 'month' ? (
-                            React.createElement("div", { className: "flex-1 flex flex-col h-full bg-zinc-50 dark:bg-[#111113]" },
-                                React.createElement("div", { className: "grid grid-cols-7 border-b border-zinc-200 dark:border-zinc-800/80 shrink-0" },
-                                    ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => React.createElement("div", { key: day, className: "text-center py-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500 border-r border-zinc-200 dark:border-zinc-800/80 last:border-r-0" }, day))
+            return React.createElement("div", { className: "flex flex-col xl:flex-row gap-6 w-full max-w-[1600px] mx-auto" },
+                React.createElement("div", { className: "flex-1 flex flex-col min-w-0 relative" },
+                    React.createElement("div", { className: "sticky top-14 md:top-0 z-40 bg-zinc-50 dark:bg-zinc-950 pt-4 pb-2 md:pt-0 md:pb-4 -mx-4 px-4 md:mx-0 md:px-0" },
+                        React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 shrink-0" },
+                            React.createElement("div", null,
+                                React.createElement("div", { className: "flex items-center gap-4 mb-1" },
+                                    React.createElement("h2", { className: "text-3xl md:text-4xl font-bold text-zinc-900 dark:text-white tracking-tight" }, selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })),
+                                    React.createElement("div", { className: "flex bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-1 shadow-sm" },
+                                        React.createElement("button", { onClick: () => { const newD = new Date(selectedDate); if (view === 'month') newD.setMonth(newD.getMonth() - 1); else newD.setDate(newD.getDate() - (view === 'week' ? 7 : 1)); setSelectedDate(newD); }, className: "p-1.5 hover:bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-500 transition-colors" }, React.createElement(ChevronLeft, { size: 16 })),
+                                        React.createElement("button", { onClick: () => { setSelectedDate(new Date()); }, className: "px-3 text-xs font-bold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors" }, "Today"),
+                                        React.createElement("button", { onClick: () => { const newD = new Date(selectedDate); if (view === 'month') newD.setMonth(newD.getMonth() + 1); else newD.setDate(newD.getDate() + (view === 'week' ? 7 : 1)); setSelectedDate(newD); }, className: "p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg text-zinc-500 transition-colors" }, React.createElement(ChevronRight, { size: 16 }))
+                                    )
                                 ),
-                                React.createElement("div", { className: "flex-1 grid grid-cols-7 grid-rows-6" },
-                                    getMonthDays(selectedDate).map((d, i) => {
-                                        const isCurrentMonth = d.getMonth() === selectedDate.getMonth();
-                                        const isToday = isSameDay(d, new Date());
-                                        const dayEvents = syntheticEvents.filter(ev => isSameDay(ev.instanceStart, d));
-                                        return React.createElement("div", { key: i, onClick: () => { setSelectedDate(d); setView('day'); }, className: `border-r border-b border-zinc-200 dark:border-zinc-800/80 p-1 overflow-hidden cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/30 transition-colors flex flex-col ${isCurrentMonth ? '' : 'opacity-40 bg-zinc-100/50 dark:bg-zinc-900/20'}` },
-                                            React.createElement("div", { className: `text-[10px] font-bold w-5 h-5 mx-auto mb-1 flex items-center justify-center rounded-full ${isToday ? 'bg-indigo-600 text-white' : 'text-zinc-700 dark:text-zinc-400'}` }, d.getDate()),
-                                            React.createElement("div", { className: "flex-1 overflow-y-auto no-scrollbar space-y-[2px]" },
-                                                dayEvents.slice(0, 4).map((ev, idx) => React.createElement("div", { key: `${ev.id}-${idx}`, className: `text-[9px] px-1.5 py-0.5 rounded truncate text-white ${ev.color} leading-none`, title: ev.title }, ev.title)),
-                                                dayEvents.length > 4 && React.createElement("div", { className: "text-[8px] text-zinc-400 font-bold text-center mt-0.5" }, `+${dayEvents.length - 4} more`)
-                                            )
-                                        );
-                                    })
-                                )
+                                React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 font-medium text-sm hidden md:block" }, "Stay organized, stay ahead.")
+                            ),
+                            React.createElement("div", { className: "flex items-center gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-2xl shadow-sm min-w-[250px]" },
+                                React.createElement("div", { className: `w-10 h-10 rounded-xl flex items-center justify-center text-white ${upcomingEvents[0] ? upcomingEvents[0].color : 'bg-zinc-200 dark:bg-zinc-800/80 text-zinc-400'}` }, isHappeningNow ? React.createElement(Play, { size: 18, className: "animate-pulse" }) : React.createElement(Calendar, { size: 18 })),
+                                React.createElement("div", null, React.createElement("div", { className: "text-[10px] font-bold uppercase tracking-widest text-zinc-400" }, "Up Next"), React.createElement("div", { className: "font-bold text-sm text-zinc-900 dark:text-white truncate max-w-[150px]" }, upcomingEvents[0] ? upcomingEvents[0].title : "Nothing scheduled"))
+                            )
+                        ),
+                        React.createElement("div", { className: "flex justify-between items-center mb-4 shrink-0" },
+                            React.createElement("div", { className: "flex bg-zinc-200/50 dark:bg-zinc-800/50 p-1 rounded-xl" },
+                                ['day', 'week', 'month'].map(v => React.createElement("button", { key: v, onClick: () => setView(v), className: `px-5 py-1.5 rounded-lg text-sm font-bold capitalize transition-all ${view === v ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}` }, v))
+                            ),
+                            React.createElement("button", { onClick: () => openNewEvent(), className: "flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 shadow-glow-sm transition-all font-bold text-sm" }, React.createElement(Plus, { size: 16 }), "New Event")
+                        ),
+                        view === 'month' && React.createElement("div", { className: "grid grid-cols-7 border border-zinc-200 dark:border-zinc-800/80 bg-zinc-100 dark:bg-[#18181b] rounded-t-[1.5rem]" },
+                            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => React.createElement("div", { key: day, className: "text-center py-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500 border-r border-zinc-200 dark:border-zinc-800/80 last:border-r-0" }, day))
+                        ),
+                        view === 'week' && React.createElement("div", { className: "flex border border-zinc-200 dark:border-zinc-800/80 bg-zinc-100 dark:bg-[#18181b] rounded-t-[1.5rem]" },
+                            React.createElement("div", { className: "w-12 md:w-[60px] shrink-0 border-r border-zinc-200 dark:border-zinc-800/80" }),
+                            React.createElement("div", { className: "flex-1 grid grid-cols-7" },
+                                Array.from({length: 7}, (_, i) => { const d = new Date(getWeekStart(selectedDate)); d.setDate(d.getDate() + i); return d; }).map(d => React.createElement("div", { key: d.toISOString(), onClick: () => {setSelectedDate(d); setView('day');}, className: `text-center py-2 border-r border-zinc-200 dark:border-zinc-800/80 cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors` }, React.createElement("div", { className: `text-[10px] uppercase font-bold tracking-widest mb-1 ${isSameDay(d, new Date()) ? 'text-indigo-500 dark:text-indigo-400' : 'text-zinc-500'}` }, d.toLocaleDateString('en-US', { weekday: 'short' })), React.createElement("div", { className: `text-lg font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full ${isSameDay(d, new Date()) ? 'bg-indigo-600 text-white' : 'text-zinc-900 dark:text-white'}` }, d.getDate())))
+                            )
+                        ),
+                        view === 'day' && React.createElement("div", { className: "flex border border-zinc-200 dark:border-zinc-800/80 bg-zinc-100 dark:bg-[#18181b] rounded-t-[1.5rem]" },
+                            React.createElement("div", { className: "w-12 md:w-[60px] shrink-0 border-r border-zinc-200 dark:border-zinc-800/80" }),
+                            React.createElement("div", { className: "flex-1 text-center py-2" }, 
+                                React.createElement("div", { className: `text-[10px] uppercase font-bold tracking-widest mb-1 text-indigo-500 dark:text-indigo-400` }, selectedDate.toLocaleDateString('en-US', { weekday: 'long' })),
+                                React.createElement("div", { className: `text-lg font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full bg-indigo-600 text-white` }, selectedDate.getDate())
+                            )
+                        ),
+                        React.createElement("div", { className: "absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-b from-zinc-50 dark:from-zinc-950 to-transparent translate-y-full pointer-events-none z-50 -mx-4 md:mx-0" })
+                    ),
+                    
+                    React.createElement("div", { className: "flex-1 bg-white dark:bg-[#111113] border-x border-b border-zinc-200 dark:border-zinc-800/80 rounded-b-[1.5rem] shadow-sm relative overflow-hidden flex flex-col -mt-4" },
+                        view === 'month' ? (
+                            React.createElement("div", { className: "flex-1 grid grid-cols-7 grid-rows-6 min-h-[600px]" },
+                                getMonthDays(selectedDate).map((d, i) => {
+                                    const isCurrentMonth = d.getMonth() === selectedDate.getMonth();
+                                    const isToday = isSameDay(d, new Date());
+                                    const dayEvents = syntheticEvents.filter(ev => isSameDay(ev.instanceStart, d));
+                                    return React.createElement("div", { key: i, onClick: () => { setSelectedDate(d); setView('day'); }, className: `border-r border-b border-zinc-200 dark:border-zinc-800/80 p-1 overflow-hidden cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/30 transition-colors flex flex-col h-24 md:h-32 ${isCurrentMonth ? '' : 'opacity-40 bg-zinc-100/50 dark:bg-zinc-900/20'}` },
+                                        React.createElement("div", { className: `text-[10px] font-bold w-5 h-5 mx-auto mb-1 flex items-center justify-center rounded-full ${isToday ? 'bg-indigo-600 text-white' : 'text-zinc-700 dark:text-zinc-400'}` }, d.getDate()),
+                                        React.createElement("div", { className: "flex-1 overflow-y-auto no-scrollbar space-y-[2px]" },
+                                            dayEvents.slice(0, 4).map((ev, idx) => React.createElement("div", { key: `${ev.id}-${idx}`, className: `text-[9px] px-1.5 py-0.5 rounded truncate text-white ${ev.color} leading-none`, title: ev.title }, ev.title)),
+                                            dayEvents.length > 4 && React.createElement("div", { className: "text-[8px] text-zinc-400 font-bold text-center mt-0.5" }, `+${dayEvents.length - 4} more`)
+                                        )
+                                    );
+                                })
                             )
                         ) : (
-                            React.createElement(React.Fragment, null,
-                                view === 'day' && React.createElement("div", { className: "flex-1 overflow-y-auto no-scrollbar relative" }, renderGrid([selectedDate])),
-                                view === 'week' && React.createElement(React.Fragment, null, 
-                                    React.createElement("div", { className: "flex border-b border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#111113] sticky top-0 z-30 shrink-0" },
-                                        React.createElement("div", { className: "w-12 md:w-[60px] shrink-0 border-r border-zinc-200 dark:border-zinc-800/80" }),
-                                        React.createElement("div", { className: "flex-1 grid grid-cols-7" },
-                                            Array.from({length: 7}, (_, i) => { const d = new Date(getWeekStart(selectedDate)); d.setDate(d.getDate() + i); return d; }).map(d => React.createElement("div", { key: d.toISOString(), onClick: () => {setSelectedDate(d); setView('day');}, className: `text-center py-3 border-r border-zinc-200 dark:border-zinc-800/80 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/30 transition-colors` }, React.createElement("div", { className: `text-[10px] uppercase font-bold tracking-widest mb-1 ${isSameDay(d, new Date()) ? 'text-indigo-500 dark:text-indigo-400' : 'text-zinc-500'}` }, d.toLocaleDateString('en-US', { weekday: 'short' })), React.createElement("div", { className: `text-lg font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full ${isSameDay(d, new Date()) ? 'bg-indigo-600 text-white' : 'text-zinc-900 dark:text-white'}` }, d.getDate())))
-                                        )
-                                    ),
-                                    React.createElement("div", { className: "flex-1 overflow-y-auto no-scrollbar relative" }, renderGrid(Array.from({length: 7}, (_, i) => { const d = new Date(getWeekStart(selectedDate)); d.setDate(d.getDate() + i); return d; })))
-                                )
-                            )
+                            view === 'day' ? renderGrid([selectedDate]) : renderGrid(Array.from({length: 7}, (_, i) => { const d = new Date(getWeekStart(selectedDate)); d.setDate(d.getDate() + i); return d; }))
                         ),
                         editingEvent && renderEditor()
                     )
                 ),
-                React.createElement("div", { className: "w-full xl:w-80 flex flex-col gap-6 shrink-0" },
-                    React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] p-5 shadow-sm flex flex-col gap-4 max-h-[300px] overflow-y-auto no-scrollbar" },
+                React.createElement("div", { className: "w-full xl:w-80 flex flex-col gap-6 shrink-0 mt-6 xl:mt-0" },
+                    React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] p-5 shadow-sm flex flex-col gap-4 max-h-[300px] overflow-y-auto no-scrollbar shrink-0" },
                         React.createElement("div", { className: "flex items-center justify-between mb-1" }, React.createElement("h3", { className: "font-bold text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(Target, { size: 18, className: "text-indigo-500" }), `${dayName}'s Plan`)),
                         dayTasks.length > 0 ? React.createElement("div", { className: "space-y-3" }, dayTasks.map(task => React.createElement("div", { key: task.id, className: "flex items-start gap-3" }, React.createElement(CheckCircle2, { size: 16, className: `mt-0.5 shrink-0 ${task.completed ? 'text-indigo-500' : 'text-zinc-300 dark:text-zinc-600'}` }), React.createElement("span", { className: `text-sm leading-snug font-medium ${task.completed ? 'text-zinc-400 dark:text-zinc-500 line-through' : 'text-zinc-700 dark:text-zinc-200'}` }, task.text)))) : React.createElement("p", { className: "text-sm text-zinc-400 italic" }, `No tasks planned for ${dayName}. Add them in the Weekly Plan.`)
                     ),
-                    React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] p-5 shadow-sm flex-1 flex flex-col" },
+                    React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] p-5 shadow-sm flex-1 flex flex-col min-h-[300px] shrink-0" },
                         React.createElement("h3", { className: "font-bold text-zinc-900 dark:text-white flex items-center gap-2 mb-4" }, React.createElement(ListTodo, { size: 18, className: "text-emerald-500" }), "Side Quests"),
                         React.createElement(EditableList, { items: minorTasks, onAdd: addMinorTask, onToggle: toggleMinorTask, onDelete: deleteMinorTask, onEdit: editMinorTask, onReorder: reorderMinorTask, placeholder: "Add task..." })
                     ),
-                    React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] p-5 shadow-sm" },
+                    React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] p-5 shadow-sm shrink-0" },
                         React.createElement("h3", { className: "font-bold text-zinc-900 dark:text-white flex items-center gap-2 mb-4" }, React.createElement(Edit3, { size: 18, className: "text-purple-500" }), "Reflection"),
                         React.createElement("textarea", { value: note, onChange: (e) => onUpdateDailyPlan({...dailyPlan, notes: e.target.value}), className: "w-full h-24 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 focus:border-indigo-500 outline-none resize-none text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:placeholder:text-zinc-600", placeholder: "Notes & thoughts..." })
                     )
