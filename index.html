@@ -284,6 +284,21 @@
             const toLocalISO = (d) => { const offset = d.getTimezoneOffset() * 60000; return new Date(d.getTime() - offset).toISOString().slice(0, 16); };
             const formatTime = (iso) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
 
+            const getMonthDays = (date) => {
+                const year = date.getFullYear();
+                const month = date.getMonth();
+                const firstDay = new Date(year, month, 1);
+                let dayOfWeek = firstDay.getDay();
+                const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                const start = new Date(firstDay);
+                start.setDate(firstDay.getDate() - diff);
+                return Array.from({length: 42}, (_, i) => {
+                    const d = new Date(start);
+                    d.setDate(start.getDate() + i);
+                    return d;
+                });
+            };
+
             const openNewEvent = (defaultStart = null, defaultEnd = null) => {
                 const start = defaultStart ? new Date(defaultStart) : new Date(selectedDate);
                 if(!defaultStart) { const now = new Date(); start.setHours(now.getHours() + 1, 0, 0, 0); }
@@ -354,7 +369,6 @@
                     const snappedStart = Math.floor(minVal / 15) * 15;
                     let snappedEnd;
 
-                    // If click without dragging significantly, default to 1 hour
                     if (maxVal - minVal < 15) {
                         snappedEnd = snappedStart + 60;
                     } else {
@@ -372,7 +386,24 @@
             let syntheticEvents = [];
             const nowTime = new Date();
             
-            // Generate synthetic occurrences for the next 14 days to keep "Up Next" accurate
+            let evaluationDaysMap = new Map();
+            for(let i=0; i<=14; i++) {
+                const d = new Date(nowTime); d.setDate(d.getDate() + i); d.setHours(0,0,0,0);
+                evaluationDaysMap.set(d.getTime(), d);
+            }
+            
+            let visibleDays = [];
+            if (view === 'month') visibleDays = getMonthDays(selectedDate);
+            else if (view === 'week') visibleDays = Array.from({length: 7}, (_, i) => { const d = new Date(getWeekStart(selectedDate)); d.setDate(d.getDate() + i); return d; });
+            else visibleDays = [selectedDate];
+
+            visibleDays.forEach(d => {
+                const dStart = new Date(d); dStart.setHours(0,0,0,0);
+                evaluationDaysMap.set(dStart.getTime(), dStart);
+            });
+
+            const evaluationDays = Array.from(evaluationDaysMap.values());
+            
             events.forEach(ev => {
                 const recur = ev.recurrence || (ev.isHabit ? 'daily' : 'none');
                 const baseStart = new Date(ev.start);
@@ -386,14 +417,12 @@
                     recurEnd.setHours(23, 59, 59, 999);
                 }
 
-                for (let i = 0; i <= 14; i++) {
-                    const d = new Date(nowTime);
-                    d.setDate(d.getDate() + i);
+                evaluationDays.forEach(d => {
                     const dStart = new Date(d); dStart.setHours(0,0,0,0);
                     const initialStartDay = new Date(baseStart); initialStartDay.setHours(0,0,0,0);
                     
-                    if (dStart < initialStartDay) continue;
-                    if (recurEnd && dStart > recurEnd) continue;
+                    if (dStart < initialStartDay) return;
+                    if (recurEnd && dStart > recurEnd) return;
                     
                     let matches = false;
                     if (recur === 'daily') matches = true;
@@ -412,7 +441,7 @@
                             syntheticEvents.push({...ev, instanceStart: iStart, instanceEnd: iEnd});
                         }
                     }
-                }
+                });
             });
             const upcomingEvents = syntheticEvents.filter(e => e.instanceEnd > nowTime).sort((a, b) => a.instanceStart - b.instanceStart);
             const isHappeningNow = upcomingEvents[0] && upcomingEvents[0].instanceStart <= nowTime && upcomingEvents[0].instanceEnd >= nowTime;
@@ -436,69 +465,24 @@
                             return React.createElement("div", { key: i, className: `border-r border-zinc-200 dark:border-zinc-800/80 relative`, onMouseDown: (e) => handleTimeSelectStart(e, d) },
                                 isSameDay(d, new Date()) && React.createElement(CurrentTimeLine, { className: "absolute left-0 right-0" }),
                                 hours.map(h => React.createElement("div", { key: h, className: "h-[60px] border-b border-zinc-200 dark:border-zinc-800/80 cursor-crosshair hover:bg-zinc-50 dark:hover:bg-zinc-800/20" })),
-                                events.filter(e => {
-                                    const recur = e.recurrence || (e.isHabit ? 'daily' : 'none');
-                                    const eStart = new Date(e.start);
-                                    const eEnd = new Date(e.end);
-                                    const targetDays = e.recurrenceDays || [eStart.getDay()];
-                                    const recurEnd = e.recurrenceEndDate ? new Date(e.recurrenceEndDate) : null;
+                                syntheticEvents.filter(ev => isSameDay(ev.instanceStart, d)).map(ev => {
+                                    const eStart = new Date(ev.instanceStart);
+                                    const eEnd = new Date(ev.instanceEnd);
+                                    
+                                    const effectiveStart = eStart < dayStart ? dayStart : eStart;
+                                    const effectiveEnd = eEnd > dayEnd ? dayEnd : eEnd;
 
-                                    if (recur === 'none') return eStart < dayEnd && eEnd > dayStart;
-                                    
-                                    const initialStartDay = new Date(eStart); initialStartDay.setHours(0,0,0,0);
-                                    if (dayEnd < initialStartDay) return false;
-                                    
-                                    if (recurEnd) {
-                                        recurEnd.setHours(23, 59, 59, 999);
-                                        if (dayStart > recurEnd) return false;
-                                    }
-                                    
-                                    let matches = false;
-                                    if (recur === 'daily') matches = true;
-                                    else if (recur === 'weekdays') matches = d.getDay() >= 1 && d.getDay() <= 5;
-                                    else if (recur === 'weekly') matches = targetDays.includes(d.getDay());
-                                    else if (recur === 'biweekly') {
-                                        const bws = getWeekStart(eStart); bws.setHours(0,0,0,0);
-                                        const tws = getWeekStart(d); tws.setHours(0,0,0,0);
-                                        const diffWeeks = Math.round((tws - bws) / (7 * 86400000));
-                                        matches = diffWeeks >= 0 && diffWeeks % 2 === 0 && targetDays.includes(d.getDay());
-                                    }
-                                    
-                                    if (matches) {
-                                        const instanceStart = new Date(d);
-                                        instanceStart.setHours(eStart.getHours(), eStart.getMinutes(), 0, 0);
-                                        if (instanceStart < eStart) matches = false;
-                                    }
-                                    
-                                    return matches;
-                                }).map(ev => {
-                                    const recur = ev.recurrence || (ev.isHabit ? 'daily' : 'none');
-                                    const baseStart = new Date(ev.start);
-                                    const durationMs = new Date(ev.end) - baseStart;
-                                    
-                                    let effectiveStart = baseStart;
-                                    let effectiveEnd = new Date(ev.end);
-
-                                    if (recur !== 'none') {
-                                        effectiveStart = new Date(d);
-                                        effectiveStart.setHours(baseStart.getHours(), baseStart.getMinutes(), 0, 0);
-                                        effectiveEnd = new Date(effectiveStart.getTime() + durationMs);
-                                    }
-
-                                    const clampStart = effectiveStart < dayStart ? dayStart : effectiveStart;
-                                    const clampEnd = effectiveEnd > dayEnd ? dayEnd : effectiveEnd;
-
-                                    const top = clampStart.getHours() * 60 + clampStart.getMinutes();
-                                    const duration = Math.max((clampEnd - clampStart) / 60000, 15);
+                                    const top = effectiveStart.getHours() * 60 + effectiveStart.getMinutes();
+                                    const duration = Math.max((effectiveEnd - effectiveStart) / 60000, 15);
                                     const isDragging = draggedEventId === ev.id;
                                     
-                                    const continuesFromPrev = effectiveStart < dayStart;
-                                    const continuesToNext = effectiveEnd > dayEnd;
+                                    const continuesFromPrev = eStart < dayStart;
+                                    const continuesToNext = eEnd > dayEnd;
 
                                     return React.createElement("div", { 
                                         key: `${ev.id}-${d.getTime()}`, 
                                         onMouseDown: (e) => handleMouseDown(e, ev),
-                                        onClick: (e) => { e.stopPropagation(); const dx = Math.abs(e.clientX - dragStartPos.current.x); const dy = Math.abs(e.clientY - dragStartPos.current.y); if (dx < 5 && dy < 5) setEditingEvent(ev); }, 
+                                        onClick: (e) => { e.stopPropagation(); const dx = Math.abs(e.clientX - dragStartPos.current.x); const dy = Math.abs(e.clientY - dragStartPos.current.y); if (dx < 5 && dy < 5) setEditingEvent(events.find(x => x.id === ev.id)); }, 
                                         className: `absolute left-0.5 right-0.5 px-1.5 py-1 text-[10px] leading-tight text-white shadow-sm overflow-hidden cursor-pointer hover:z-30 hover:shadow-md ${isDragging ? 'opacity-80 z-50 scale-105 ring-1 ring-white/50 transition-none' : 'transition-transform'} ${ev.color} ${continuesFromPrev ? 'rounded-t-none border-t-0 opacity-90' : 'rounded-t'} ${continuesToNext ? 'rounded-b-none border-b-0 opacity-90' : 'rounded-b'}`, 
                                         style: { top: `${top}px`, height: `${duration}px` }
                                     },
@@ -604,9 +588,9 @@
                             React.createElement("div", { className: "flex items-center gap-4 mb-1" },
                                 React.createElement("h2", { className: "text-3xl md:text-4xl font-bold text-zinc-900 dark:text-white tracking-tight" }, selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })),
                                 React.createElement("div", { className: "flex bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-1 shadow-sm" },
-                                    React.createElement("button", { onClick: () => { const newD = new Date(selectedDate); newD.setDate(newD.getDate() - (view === 'week' ? 7 : 1)); setSelectedDate(newD); }, className: "p-1.5 hover:bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-500 transition-colors" }, React.createElement(ChevronLeft, { size: 16 })),
+                                    React.createElement("button", { onClick: () => { const newD = new Date(selectedDate); if (view === 'month') newD.setMonth(newD.getMonth() - 1); else newD.setDate(newD.getDate() - (view === 'week' ? 7 : 1)); setSelectedDate(newD); }, className: "p-1.5 hover:bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-500 transition-colors" }, React.createElement(ChevronLeft, { size: 16 })),
                                     React.createElement("button", { onClick: () => { setSelectedDate(new Date()); }, className: "px-3 text-xs font-bold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors" }, "Today"),
-                                    React.createElement("button", { onClick: () => { const newD = new Date(selectedDate); newD.setDate(newD.getDate() + (view === 'week' ? 7 : 1)); setSelectedDate(newD); }, className: "p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg text-zinc-500 transition-colors" }, React.createElement(ChevronRight, { size: 16 }))
+                                    React.createElement("button", { onClick: () => { const newD = new Date(selectedDate); if (view === 'month') newD.setMonth(newD.getMonth() + 1); else newD.setDate(newD.getDate() + (view === 'week' ? 7 : 1)); setSelectedDate(newD); }, className: "p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg text-zinc-500 transition-colors" }, React.createElement(ChevronRight, { size: 16 }))
                                 )
                             ),
                             React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 font-medium text-sm" }, "Stay organized, stay ahead.")
@@ -618,20 +602,44 @@
                     ),
                     React.createElement("div", { className: "flex justify-between items-center mb-4" },
                         React.createElement("div", { className: "flex bg-zinc-200/50 dark:bg-zinc-800/50 p-1 rounded-xl" },
-                            ['day', 'week'].map(v => React.createElement("button", { key: v, onClick: () => setView(v), className: `px-5 py-1.5 rounded-lg text-sm font-bold capitalize transition-all ${view === v ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}` }, v))
+                            ['day', 'week', 'month'].map(v => React.createElement("button", { key: v, onClick: () => setView(v), className: `px-5 py-1.5 rounded-lg text-sm font-bold capitalize transition-all ${view === v ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}` }, v))
                         ),
                         React.createElement("button", { onClick: () => openNewEvent(), className: "flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 shadow-glow-sm transition-all font-bold text-sm" }, React.createElement(Plus, { size: 16 }), "New Event")
                     ),
                     React.createElement("div", { className: "flex-1 bg-white dark:bg-[#111113] border border-zinc-200 dark:border-zinc-800/80 rounded-[1.5rem] shadow-sm overflow-hidden flex flex-col relative min-h-[600px] h-[70vh]" },
-                        view === 'day' && React.createElement("div", { className: "flex-1 overflow-y-auto no-scrollbar relative" }, renderGrid([selectedDate])),
-                        view === 'week' && React.createElement(React.Fragment, null, 
-                            React.createElement("div", { className: "flex border-b border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#111113] sticky top-0 z-30 shrink-0" },
-                                React.createElement("div", { className: "w-12 md:w-[60px] shrink-0 border-r border-zinc-200 dark:border-zinc-800/80" }),
-                                React.createElement("div", { className: "flex-1 grid grid-cols-7" },
-                                    Array.from({length: 7}, (_, i) => { const d = new Date(getWeekStart(selectedDate)); d.setDate(d.getDate() + i); return d; }).map(d => React.createElement("div", { key: d.toISOString(), onClick: () => {setSelectedDate(d); setView('day');}, className: `text-center py-3 border-r border-zinc-200 dark:border-zinc-800/80 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/30 transition-colors` }, React.createElement("div", { className: `text-[10px] uppercase font-bold tracking-widest mb-1 ${isSameDay(d, new Date()) ? 'text-indigo-500 dark:text-indigo-400' : 'text-zinc-500'}` }, d.toLocaleDateString('en-US', { weekday: 'short' })), React.createElement("div", { className: `text-lg font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full ${isSameDay(d, new Date()) ? 'bg-indigo-600 text-white' : 'text-zinc-900 dark:text-white'}` }, d.getDate())))
+                        view === 'month' ? (
+                            React.createElement("div", { className: "flex-1 flex flex-col h-full bg-zinc-50 dark:bg-[#111113]" },
+                                React.createElement("div", { className: "grid grid-cols-7 border-b border-zinc-200 dark:border-zinc-800/80 shrink-0" },
+                                    ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => React.createElement("div", { key: day, className: "text-center py-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500 border-r border-zinc-200 dark:border-zinc-800/80 last:border-r-0" }, day))
+                                ),
+                                React.createElement("div", { className: "flex-1 grid grid-cols-7 grid-rows-6" },
+                                    getMonthDays(selectedDate).map((d, i) => {
+                                        const isCurrentMonth = d.getMonth() === selectedDate.getMonth();
+                                        const isToday = isSameDay(d, new Date());
+                                        const dayEvents = syntheticEvents.filter(ev => isSameDay(ev.instanceStart, d));
+                                        return React.createElement("div", { key: i, onClick: () => { setSelectedDate(d); setView('day'); }, className: `border-r border-b border-zinc-200 dark:border-zinc-800/80 p-1 overflow-hidden cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/30 transition-colors flex flex-col ${isCurrentMonth ? '' : 'opacity-40 bg-zinc-100/50 dark:bg-zinc-900/20'}` },
+                                            React.createElement("div", { className: `text-[10px] font-bold w-5 h-5 mx-auto mb-1 flex items-center justify-center rounded-full ${isToday ? 'bg-indigo-600 text-white' : 'text-zinc-700 dark:text-zinc-400'}` }, d.getDate()),
+                                            React.createElement("div", { className: "flex-1 overflow-y-auto no-scrollbar space-y-[2px]" },
+                                                dayEvents.slice(0, 4).map((ev, idx) => React.createElement("div", { key: `${ev.id}-${idx}`, className: `text-[9px] px-1.5 py-0.5 rounded truncate text-white ${ev.color} leading-none`, title: ev.title }, ev.title)),
+                                                dayEvents.length > 4 && React.createElement("div", { className: "text-[8px] text-zinc-400 font-bold text-center mt-0.5" }, `+${dayEvents.length - 4} more`)
+                                            )
+                                        );
+                                    })
                                 )
-                            ),
-                            React.createElement("div", { className: "flex-1 overflow-y-auto no-scrollbar relative" }, renderGrid(Array.from({length: 7}, (_, i) => { const d = new Date(getWeekStart(selectedDate)); d.setDate(d.getDate() + i); return d; })))
+                            )
+                        ) : (
+                            React.createElement(React.Fragment, null,
+                                view === 'day' && React.createElement("div", { className: "flex-1 overflow-y-auto no-scrollbar relative" }, renderGrid([selectedDate])),
+                                view === 'week' && React.createElement(React.Fragment, null, 
+                                    React.createElement("div", { className: "flex border-b border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#111113] sticky top-0 z-30 shrink-0" },
+                                        React.createElement("div", { className: "w-12 md:w-[60px] shrink-0 border-r border-zinc-200 dark:border-zinc-800/80" }),
+                                        React.createElement("div", { className: "flex-1 grid grid-cols-7" },
+                                            Array.from({length: 7}, (_, i) => { const d = new Date(getWeekStart(selectedDate)); d.setDate(d.getDate() + i); return d; }).map(d => React.createElement("div", { key: d.toISOString(), onClick: () => {setSelectedDate(d); setView('day');}, className: `text-center py-3 border-r border-zinc-200 dark:border-zinc-800/80 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/30 transition-colors` }, React.createElement("div", { className: `text-[10px] uppercase font-bold tracking-widest mb-1 ${isSameDay(d, new Date()) ? 'text-indigo-500 dark:text-indigo-400' : 'text-zinc-500'}` }, d.toLocaleDateString('en-US', { weekday: 'short' })), React.createElement("div", { className: `text-lg font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full ${isSameDay(d, new Date()) ? 'bg-indigo-600 text-white' : 'text-zinc-900 dark:text-white'}` }, d.getDate())))
+                                        )
+                                    ),
+                                    React.createElement("div", { className: "flex-1 overflow-y-auto no-scrollbar relative" }, renderGrid(Array.from({length: 7}, (_, i) => { const d = new Date(getWeekStart(selectedDate)); d.setDate(d.getDate() + i); return d; })))
+                                )
+                            )
                         ),
                         editingEvent && renderEditor()
                     )
