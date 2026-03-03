@@ -248,11 +248,11 @@
 
             const EVENT_COLORS = [
                 { bg: "bg-indigo-500", label: "Personal" },
+                { bg: "bg-emerald-500", label: "Habits" },
                 { bg: "bg-orange-500", label: "Work" },
-                { bg: "bg-purple-500", label: "Focus" },
-                { bg: "bg-emerald-500", label: "Health" },
-                { bg: "bg-blue-500", label: "Social" },
-                { bg: "bg-rose-500", label: "Urgent" }
+                { bg: "bg-blue-500", label: "University" },
+                { bg: "bg-purple-500", label: "Events" },
+                { bg: "bg-rose-500", label: "Others" }
             ];
 
             const minorTasks = dailyPlan.minorTasks || [];
@@ -290,7 +290,7 @@
                 const end = defaultEnd ? new Date(defaultEnd) : new Date(start);
                 if(!defaultEnd) end.setHours(start.getHours() + 1, 0, 0, 0);
                 
-                setEditingEvent({ title: "", start: toLocalISO(start), end: toLocalISO(end), color: "bg-indigo-500", recurrence: 'none', recurrenceDays: [start.getDay()], description: "" });
+                setEditingEvent({ title: "", start: toLocalISO(start), end: toLocalISO(end), color: "bg-indigo-500", recurrence: 'none', recurrenceDays: [start.getDay()], recurrenceEndDate: "", description: "" });
             };
 
             const saveEvent = () => { if (editingEvent.title.trim()) { if (editingEvent.id) onUpdateEvent(editingEvent); else onAddEvent(editingEvent); setEditingEvent(null); } };
@@ -441,11 +441,17 @@
                                     const eStart = new Date(e.start);
                                     const eEnd = new Date(e.end);
                                     const targetDays = e.recurrenceDays || [eStart.getDay()];
+                                    const recurEnd = e.recurrenceEndDate ? new Date(e.recurrenceEndDate) : null;
 
                                     if (recur === 'none') return eStart < dayEnd && eEnd > dayStart;
                                     
                                     const initialStartDay = new Date(eStart); initialStartDay.setHours(0,0,0,0);
                                     if (dayEnd < initialStartDay) return false;
+                                    
+                                    if (recurEnd) {
+                                        recurEnd.setHours(23, 59, 59, 999);
+                                        if (dayStart > recurEnd) return false;
+                                    }
                                     
                                     let matches = false;
                                     if (recur === 'daily') matches = true;
