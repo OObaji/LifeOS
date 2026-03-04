@@ -332,7 +332,43 @@
                 setEditingEvent({ title: "", start: toLocalISO(start), end: toLocalISO(end), color: "bg-teal-500", recurrence: 'none', recurrenceDays: [start.getDay()], recurrenceEndDate: "", description: "" });
             };
 
-            const saveEvent = () => { if (editingEvent.title.trim()) { if (editingEvent.id) onUpdateEvent(editingEvent); else onAddEvent(editingEvent); setEditingEvent(null); } };
+            const handleSaveEventAction = (saveType) => {
+                if (!editingEvent.title.trim()) return;
+
+                if (!editingEvent.id) {
+                    onAddEvent(editingEvent);
+                } else {
+                    if (saveType === 'single' && editingEvent.originalRecurrence && editingEvent.originalRecurrence !== 'none') {
+                        // Create a new event for this specific instance
+                        const newSingleEvent = {
+                            ...editingEvent,
+                            id: generateUUID(),
+                            recurrence: 'none',
+                            recurrenceEndDate: null,
+                            recurrenceDays: []
+                        };
+                        onAddEvent(newSingleEvent);
+
+                        // We need to add an exception to the original recurring event so it doesn't show up on this day anymore.
+                        const originalEvent = events.find(e => e.id === editingEvent.id);
+                        if (originalEvent) {
+                            const exceptionDateStr = new Date(editingEvent.start).toDateString();
+                            const exceptions = originalEvent.exceptions || [];
+                            if (!exceptions.includes(exceptionDateStr)) {
+                                onUpdateEvent({
+                                    ...originalEvent,
+                                    exceptions: [...exceptions, exceptionDateStr]
+                                });
+                            }
+                        }
+                    } else {
+                        // Regular update (updates the entire series or a normal non-recurring event)
+                        onUpdateEvent(editingEvent);
+                    }
+                }
+                setEditingEvent(null);
+            };
+
             const deleteEvent = () => { if (editingEvent.id && confirm("Delete this event?")) { onDeleteEvent(editingEvent.id); setEditingEvent(null); } };
 
             const handleTimeSelectStart = (e, date) => {
@@ -376,6 +412,8 @@
                     newStart.setHours(hours, minutes, 0, 0);
                     const newEnd = new Date(newStart.getTime() + durationMs);
 
+                    // Note: Dragging updates the entire series for now to prevent massive complexity. 
+                    // To do single-instance dragging requires generating a new event on drop.
                     onUpdateEvent({ ...ev, start: toLocalISO(newStart), end: toLocalISO(newEnd) });
                 } else if (timeSelection) {
                     const rect = timeSelection.targetElement.getBoundingClientRect();
@@ -436,6 +474,7 @@
                 const durationMs = new Date(ev.end) - baseStart;
                 const targetDays = ev.recurrenceDays || [baseStart.getDay()];
                 const recurEnd = ev.recurrenceEndDate ? new Date(ev.recurrenceEndDate) : null;
+                const exceptions = ev.exceptions || [];
 
                 if (recur === 'none') { syntheticEvents.push({...ev, instanceStart: baseStart, instanceEnd: new Date(ev.end)}); return; }
                 
@@ -449,6 +488,7 @@
                     
                     if (dStart < initialStartDay) return;
                     if (recurEnd && dStart > recurEnd) return;
+                    if (exceptions.includes(dStart.toDateString())) return; // Skip if this instance was edited/deleted individually
                     
                     let matches = false;
                     if (recur === 'daily') matches = true;
@@ -513,12 +553,26 @@
                                     return React.createElement("div", { 
                                         key: `${ev.id}-${d.getTime()}`, 
                                         onMouseDown: (e) => handleMouseDown(e, ev),
-                                        onClick: (e) => { e.stopPropagation(); const dx = Math.abs(e.clientX - dragStartPos.current.x); const dy = Math.abs(e.clientY - dragStartPos.current.y); if (dx < 5 && dy < 5) setEditingEvent(events.find(x => x.id === ev.id)); }, 
+                                        onClick: (e) => { 
+                                            e.stopPropagation(); 
+                                            const dx = Math.abs(e.clientX - dragStartPos.current.x); 
+                                            const dy = Math.abs(e.clientY - dragStartPos.current.y); 
+                                            if (dx < 5 && dy < 5) {
+                                                const originalEvent = events.find(x => x.id === ev.id);
+                                                // When opening a synthetic recurring event for editing, prepopulate the editor with the instance's specific time
+                                                setEditingEvent({
+                                                    ...originalEvent,
+                                                    start: toLocalISO(eStart),
+                                                    end: toLocalISO(eEnd),
+                                                    originalRecurrence: originalEvent.recurrence
+                                                });
+                                            }
+                                        }, 
                                         className: `absolute left-0.5 right-0.5 px-1.5 py-1 text-[10px] leading-tight text-white shadow-sm overflow-hidden cursor-pointer hover:z-[35] hover:shadow-md ${isDragging ? 'opacity-80 z-50 scale-105 ring-1 ring-white/50 transition-none' : 'transition-transform z-10'} ${ev.color} ${continuesFromPrev ? 'rounded-t-none border-t-0 opacity-90' : 'rounded-t'} ${continuesToNext ? 'rounded-b-none border-b-0 opacity-90' : 'rounded-b'}`, 
                                         style: { top: `${topPercent}%`, height: `${heightPercent}%` }
                                     },
                                         React.createElement("div", { className: "font-semibold truncate" }, ev.title),
-                                        durationMinutes > 35 && React.createElement("div", { className: "opacity-80 text-[8px] font-mono mt-0.5 pointer-events-none truncate" }, `${formatTime(ev.start)} - ${formatTime(ev.end)}`)
+                                        durationMinutes > 35 && React.createElement("div", { className: "opacity-80 text-[8px] font-mono mt-0.5 pointer-events-none truncate" }, `${formatTime(ev.instanceStart)} - ${formatTime(ev.instanceEnd)}`)
                                     )
                                 }),
                                 timeSelection && isSameDay(timeSelection.date, d) && React.createElement("div", {
@@ -537,6 +591,8 @@
                 const endDateStr = editingEvent.end.split('T')[0];
                 const endTimeStr = editingEvent.end.split('T')[1];
 
+                const isRecurringInstance = editingEvent.id && editingEvent.originalRecurrence && editingEvent.originalRecurrence !== 'none';
+
                 return React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" },
                     React.createElement("div", { className: "bg-[#09090b] border border-zinc-800 rounded-[24px] w-full max-w-[380px] p-6 md:p-7 relative shadow-2xl flex flex-col gap-6 max-h-[90vh] overflow-y-auto no-scrollbar" },
                         React.createElement("div", { className: "flex justify-between items-center" },
@@ -544,7 +600,7 @@
                             React.createElement("div", { className: "flex gap-1" }, editingEvent.id && React.createElement("button", { onClick: deleteEvent, className: "text-zinc-500 hover:text-red-500 p-2 rounded-full hover:bg-zinc-800/50 transition-colors" }, React.createElement(Trash2, { size: 18 })), React.createElement("button", { onClick: () => setEditingEvent(null), className: "text-zinc-500 hover:text-white p-2 rounded-full hover:bg-zinc-800/50 transition-colors" }, React.createElement(X, { size: 20 })))
                         ),
                         React.createElement("div", { className: "space-y-4" },
-                            React.createElement("div", null, React.createElement("label", { className: "text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block px-1" }, "Title"), React.createElement("input", { value: editingEvent.title, onChange: e => setEditingEvent({...editingEvent, title: e.target.value}), onKeyDown: e => e.key === 'Enter' && saveEvent(), placeholder: "What's happening?", autoFocus: true, className: "w-full p-4 bg-[#18181b] border border-transparent rounded-xl text-sm font-semibold text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-500 shadow-inner" })),
+                            React.createElement("div", null, React.createElement("label", { className: "text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block px-1" }, "Title"), React.createElement("input", { value: editingEvent.title, onChange: e => setEditingEvent({...editingEvent, title: e.target.value}), onKeyDown: e => e.key === 'Enter' && handleSaveEventAction('series'), placeholder: "What's happening?", autoFocus: true, className: "w-full p-4 bg-[#18181b] border border-transparent rounded-xl text-sm font-semibold text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-500 shadow-inner" })),
                             
                             React.createElement("div", { className: "space-y-3" },
                                 React.createElement("div", null, 
@@ -606,15 +662,24 @@
                                     ))
                                 )
                             ),
-                            React.createElement("div", { className: "pt-2" }, React.createElement("button", { onClick: saveEvent, className: "w-full p-3.5 bg-white text-black hover:bg-zinc-200 rounded-xl font-bold transition-all shadow-md active:scale-[0.98] text-sm" }, "Save Event"))
+                            React.createElement("div", { className: "pt-2 flex gap-3" }, 
+                                isRecurringInstance ? (
+                                    React.createElement(React.Fragment, null,
+                                        React.createElement("button", { onClick: () => handleSaveEventAction('single'), className: "flex-1 p-3.5 bg-zinc-800 text-white hover:bg-zinc-700 rounded-xl font-bold transition-all shadow-md active:scale-[0.98] text-xs" }, "Only this event"),
+                                        React.createElement("button", { onClick: () => handleSaveEventAction('series'), className: "flex-1 p-3.5 bg-white text-black hover:bg-zinc-200 rounded-xl font-bold transition-all shadow-md active:scale-[0.98] text-xs" }, "Entire series")
+                                    )
+                                ) : (
+                                    React.createElement("button", { onClick: () => handleSaveEventAction('series'), className: "w-full p-3.5 bg-white text-black hover:bg-zinc-200 rounded-xl font-bold transition-all shadow-md active:scale-[0.98] text-sm" }, "Save Event")
+                                )
+                            )
                         )
                     )
                 );
             };
 
             return React.createElement("div", { className: "flex flex-col xl:flex-row gap-6 w-full max-w-[1600px] mx-auto h-[calc(100vh-12rem)] md:h-[calc(100vh-6rem)]" },
-                React.createElement("div", { className: "flex-1 flex flex-col min-w-0 relative" },
-                    React.createElement("div", { className: "sticky top-14 md:top-0 z-40 bg-zinc-50 dark:bg-zinc-950 pt-4 pb-2 md:pt-0 md:pb-4 -mx-4 px-4 md:mx-0 md:px-0" },
+                React.createElement("div", { className: "flex-1 flex flex-col min-w-0 relative h-full" },
+                    React.createElement("div", { className: "sticky top-14 md:top-0 z-[45] bg-zinc-50 dark:bg-zinc-950 pt-4 pb-2 md:pt-0 md:pb-4 -mx-4 px-4 md:mx-0 md:px-0" },
                         React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 shrink-0" },
                             React.createElement("div", null,
                                 React.createElement("div", { className: "flex items-center gap-4 mb-1" },
@@ -657,7 +722,7 @@
                         React.createElement("div", { className: "absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-b from-zinc-50 dark:from-zinc-950 to-transparent translate-y-full pointer-events-none z-50 -mx-4 md:mx-0" })
                     ),
                     
-                    React.createElement("div", { className: "flex-1 bg-white dark:bg-[#111113] border-x border-b border-zinc-200 dark:border-zinc-800/80 rounded-b-[1.5rem] shadow-sm relative overflow-hidden flex flex-col -mt-4" },
+                    React.createElement("div", { className: "flex-1 bg-white dark:bg-[#111113] border-x border-b border-zinc-200 dark:border-zinc-800/80 rounded-b-[1.5rem] shadow-sm relative overflow-hidden flex flex-col -mt-4 z-0" },
                         view === 'month' ? (
                             React.createElement("div", { className: "flex-1 grid grid-cols-7 grid-rows-6 min-h-[600px] overflow-y-auto no-scrollbar" },
                                 getMonthDays(selectedDate).map((d, i) => {
@@ -687,7 +752,7 @@
                         editingEvent && renderEditor()
                     )
                 ),
-                React.createElement("div", { className: "w-full xl:w-80 flex flex-col gap-6 shrink-0 mt-6 xl:mt-0" },
+                React.createElement("div", { className: "w-full xl:w-80 flex flex-col gap-6 shrink-0 h-full overflow-y-auto no-scrollbar pb-24 xl:pb-0" },
                     React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] p-5 shadow-sm flex flex-col gap-4 max-h-[300px] overflow-y-auto no-scrollbar shrink-0" },
                         React.createElement("div", { className: "flex items-center justify-between mb-1" }, React.createElement("h3", { className: "font-bold text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(Target, { size: 18, className: "text-indigo-500" }), `${dayName}'s Plan`)),
                         dayTasks.length > 0 ? React.createElement("div", { className: "space-y-3" }, dayTasks.map(task => React.createElement("div", { key: task.id, className: "flex items-start gap-3" }, React.createElement(CheckCircle2, { size: 16, className: `mt-0.5 shrink-0 ${task.completed ? 'text-indigo-500' : 'text-zinc-300 dark:text-zinc-600'}` }), React.createElement("span", { className: `text-sm leading-snug font-medium ${task.completed ? 'text-zinc-400 dark:text-zinc-500 line-through' : 'text-zinc-700 dark:text-zinc-200'}` }, task.text)))) : React.createElement("p", { className: "text-sm text-zinc-400 italic" }, `No tasks planned for ${dayName}. Add them in the Weekly Plan.`)
