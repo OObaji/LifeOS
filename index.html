@@ -298,7 +298,6 @@
 
             const isSameDay = (d1, d2) => d1.toDateString() === d2.toDateString();
             
-            // Set Sunday as the absolute first day of the week
             const getWeekStart = (date) => { 
                 const d = new Date(date); 
                 const day = d.getDay(); 
@@ -314,8 +313,7 @@
                 const month = date.getMonth();
                 const firstDay = new Date(year, month, 1);
                 let dayOfWeek = firstDay.getDay();
-                // 0 is Sunday, no offset calculation required to shift to Monday
-                const diff = dayOfWeek;
+                const diff = dayOfWeek; 
                 const start = new Date(firstDay);
                 start.setDate(firstDay.getDate() - diff);
                 return Array.from({length: 42}, (_, i) => {
@@ -615,8 +613,8 @@
             };
 
             return React.createElement("div", { className: "flex flex-col xl:flex-row gap-6 w-full max-w-[1600px] mx-auto h-[calc(100vh-12rem)] md:h-[calc(100vh-6rem)]" },
-                React.createElement("div", { className: "flex-1 flex flex-col min-w-0 relative h-full" },
-                    React.createElement("div", { className: "sticky top-14 md:top-0 z-[45] bg-zinc-50 dark:bg-zinc-950 pt-4 pb-2 md:pt-0 md:pb-4 -mx-4 px-4 md:mx-0 md:px-0" },
+                React.createElement("div", { className: "flex-1 flex flex-col min-w-0 relative" },
+                    React.createElement("div", { className: "sticky top-14 md:top-0 z-40 bg-zinc-50 dark:bg-zinc-950 pt-4 pb-2 md:pt-0 md:pb-4 -mx-4 px-4 md:mx-0 md:px-0" },
                         React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 shrink-0" },
                             React.createElement("div", null,
                                 React.createElement("div", { className: "flex items-center gap-4 mb-1" },
@@ -659,7 +657,7 @@
                         React.createElement("div", { className: "absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-b from-zinc-50 dark:from-zinc-950 to-transparent translate-y-full pointer-events-none z-50 -mx-4 md:mx-0" })
                     ),
                     
-                    React.createElement("div", { className: "flex-1 bg-white dark:bg-[#111113] border-x border-b border-zinc-200 dark:border-zinc-800/80 rounded-b-[1.5rem] shadow-sm relative overflow-hidden flex flex-col -mt-4 z-0" },
+                    React.createElement("div", { className: "flex-1 bg-white dark:bg-[#111113] border-x border-b border-zinc-200 dark:border-zinc-800/80 rounded-b-[1.5rem] shadow-sm relative overflow-hidden flex flex-col -mt-4" },
                         view === 'month' ? (
                             React.createElement("div", { className: "flex-1 grid grid-cols-7 grid-rows-6 min-h-[600px] overflow-y-auto no-scrollbar" },
                                 getMonthDays(selectedDate).map((d, i) => {
@@ -689,7 +687,7 @@
                         editingEvent && renderEditor()
                     )
                 ),
-                React.createElement("div", { className: "w-full xl:w-80 flex flex-col gap-6 shrink-0 h-full overflow-y-auto no-scrollbar pb-24 xl:pb-0" },
+                React.createElement("div", { className: "w-full xl:w-80 flex flex-col gap-6 shrink-0 mt-6 xl:mt-0" },
                     React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] p-5 shadow-sm flex flex-col gap-4 max-h-[300px] overflow-y-auto no-scrollbar shrink-0" },
                         React.createElement("div", { className: "flex items-center justify-between mb-1" }, React.createElement("h3", { className: "font-bold text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(Target, { size: 18, className: "text-indigo-500" }), `${dayName}'s Plan`)),
                         dayTasks.length > 0 ? React.createElement("div", { className: "space-y-3" }, dayTasks.map(task => React.createElement("div", { key: task.id, className: "flex items-start gap-3" }, React.createElement(CheckCircle2, { size: 16, className: `mt-0.5 shrink-0 ${task.completed ? 'text-indigo-500' : 'text-zinc-300 dark:text-zinc-600'}` }), React.createElement("span", { className: `text-sm leading-snug font-medium ${task.completed ? 'text-zinc-400 dark:text-zinc-500 line-through' : 'text-zinc-700 dark:text-zinc-200'}` }, task.text)))) : React.createElement("p", { className: "text-sm text-zinc-400 italic" }, `No tasks planned for ${dayName}. Add them in the Weekly Plan.`)
@@ -891,10 +889,10 @@
             const [newDate, setNewDate] = useState("");
             const handleAdd = () => { if(newTitle && newDate) { onAddDeadline({ title: newTitle, date: newDate }); setNewTitle(""); setNewDate(""); } };
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 max-w-4xl mx-auto" },
-                React.createElement("h2", { className: "text-3xl font-bold mb-8" }, "Deadlines"),
+                React.createElement("h2", { className: "text-3xl font-bold mb-8 text-zinc-900 dark:text-white" }, "Deadlines"),
                 React.createElement("div", { className: "flex gap-4 mb-8 bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800" },
-                    React.createElement("input", { value: newTitle, onChange: e => setNewTitle(e.target.value), onKeyDown: e => e.key === 'Enter' && handleAdd(), placeholder: "Task Name", className: "flex-1 bg-transparent outline-none" }),
-                    React.createElement("input", { type: "date", value: newDate, onChange: e => setNewDate(e.target.value), onKeyDown: e => e.key === 'Enter' && handleAdd(), className: "bg-transparent outline-none text-zinc-500" }),
+                    React.createElement("input", { value: newTitle, onChange: e => setNewTitle(e.target.value), onKeyDown: e => e.key === 'Enter' && handleAdd(), placeholder: "Task Name", className: "flex-1 bg-transparent outline-none text-zinc-900 dark:text-white" }),
+                    React.createElement("input", { type: "date", value: newDate, onChange: e => setNewDate(e.target.value), onKeyDown: e => e.key === 'Enter' && handleAdd(), className: "bg-transparent outline-none text-zinc-500 dark:text-zinc-400 [color-scheme:light] dark:[color-scheme:dark]" }),
                     React.createElement("button", { onClick: handleAdd, className: "bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold" }, "Add")
                 ),
                 React.createElement("div", { className: "space-y-4" },
@@ -902,7 +900,7 @@
                         const days = Math.ceil((new Date(d.date) - new Date()) / (1000 * 60 * 60 * 24));
                         const urgent = days <= 3 && days >= 0;
                         return React.createElement("div", { key: d.id, className: `flex items-center justify-between p-6 rounded-2xl border ${urgent ? 'bg-red-50/50 dark:bg-red-900/10 border-red-200 dark:border-red-900/30' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800'}` },
-                            React.createElement("div", null, React.createElement("h3", { className: "font-bold text-lg" }, d.title), React.createElement("p", { className: "text-sm text-zinc-500" }, new Date(d.date).toLocaleDateString())),
+                            React.createElement("div", null, React.createElement("h3", { className: "font-bold text-lg text-zinc-900 dark:text-white" }, d.title), React.createElement("p", { className: "text-sm text-zinc-500" }, new Date(d.date).toLocaleDateString())),
                             React.createElement("div", { className: "flex items-center gap-6" },
                                 React.createElement("div", { className: "text-right" }, React.createElement("div", { className: `text-2xl font-bold ${urgent ? 'text-red-600' : 'text-zinc-900 dark:text-white'}` }, days < 0 ? "Overdue" : days), React.createElement("div", { className: "text-xs font-bold uppercase tracking-wider text-zinc-400" }, "Days Left")),
                                 React.createElement("button", { onClick: () => onDeleteDeadline(d.id), className: "text-zinc-400 hover:text-red-500" }, React.createElement(Trash2, { size: 18 }))
@@ -926,10 +924,10 @@
                     React.createElement("button", { onClick: () => resetTimer(), className: "w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors" }, React.createElement(RotateCcw, { size: 24 }))
                 ),
                 React.createElement("div", { className: "grid grid-cols-2 gap-4 w-full max-w-md mb-12" },
-                    React.createElement("button", { onClick: () => resetTimer(1500, 'FOCUS'), className: `p-4 rounded-xl font-bold border transition-all ${timerState.mode === 'FOCUS' ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-indigo-600' : 'border-zinc-200 dark:border-zinc-800'}` }, "Focus (25m)"),
-                    React.createElement("button", { onClick: () => resetTimer(300, 'BREAK'), className: `p-4 rounded-xl font-bold border transition-all ${timerState.mode === 'BREAK' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 text-emerald-600' : 'border-zinc-200 dark:border-zinc-800'}` }, "Break (5m)")
+                    React.createElement("button", { onClick: () => resetTimer(1500, 'FOCUS'), className: `p-4 rounded-xl font-bold border transition-all ${timerState.mode === 'FOCUS' ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-indigo-600' : 'border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white'}` }, "Focus (25m)"),
+                    React.createElement("button", { onClick: () => resetTimer(300, 'BREAK'), className: `p-4 rounded-xl font-bold border transition-all ${timerState.mode === 'BREAK' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 text-emerald-600' : 'border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white'}` }, "Break (5m)")
                 ),
-                React.createElement("div", { className: "w-full max-w-md" }, React.createElement("h3", { className: "text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4" }, "Soundscapes"), React.createElement("div", { className: "grid grid-cols-2 gap-4" }, FOCUS_SOUNDS.map(sound => React.createElement("button", { key: sound.id, onClick: () => toggleSound(sound), className: `flex items-center gap-3 p-4 rounded-xl border transition-all ${activeSound === sound.id && isPlayingSound ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-indigo-300'}` }, React.createElement(sound.icon, { size: 20 }), React.createElement("span", { className: "font-bold" }, sound.label)))))
+                React.createElement("div", { className: "w-full max-w-md" }, React.createElement("h3", { className: "text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4" }, "Soundscapes"), React.createElement("div", { className: "grid grid-cols-2 gap-4" }, FOCUS_SOUNDS.map(sound => React.createElement("button", { key: sound.id, onClick: () => toggleSound(sound), className: `flex items-center gap-3 p-4 rounded-xl border transition-all ${activeSound === sound.id && isPlayingSound ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white hover:border-indigo-300'}` }, React.createElement(sound.icon, { size: 20 }), React.createElement("span", { className: "font-bold" }, sound.label)))))
             );
         };
 
@@ -1603,7 +1601,7 @@
                 React.createElement("aside", { className: "fixed left-0 top-0 h-full w-64 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 hidden md:flex flex-col z-20" }, React.createElement("h1", { className: "text-2xl font-bold mb-8" }, "LifeOS"), React.createElement("nav", { className: "space-y-2 flex-1 overflow-y-auto no-scrollbar" }, Object.keys(tabConfig).filter(t => t !== 'profile').map(t => React.createElement(NavItem, { key: t, icon: tabConfig[t].icon, label: tabConfig[t].label, active: activeTab === t, onClick: () => setActiveTab(t) }))), React.createElement("div", { className: "pt-6 border-t border-zinc-200 dark:border-zinc-800 space-y-2" }, React.createElement("button", { onClick: () => setShowSettings(true), className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 mb-2 transition-colors" }, React.createElement(Settings, { size: 20 }), "Cloud Sync"), React.createElement("button", { onClick: () => setDarkMode(!darkMode), className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 mb-2 transition-colors" }, darkMode ? React.createElement(Sun, { size: 20 }) : React.createElement(Moon, { size: 20 }), darkMode ? "Light Mode" : "Dark Mode"), React.createElement("button", { onClick: () => setActiveTab('profile'), className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors" }, React.createElement("div", { className: "w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white uppercase" }, (user.displayName || user.email)[0]), React.createElement("span", { className: "font-medium text-sm truncate" }, "My Profile")))),
                 React.createElement(MobileTopBar, { handleLogout, user, darkMode, toggleDarkMode: () => setDarkMode(!darkMode), onProfileClick: () => setActiveTab('profile') }),
                 React.createElement(MobileNavBar, { activeTab, setActiveTab, tabConfig }),
-                React.createElement("main", { className: "md:ml-64 p-4 md:p-8 pb-24 pt-20 md:pt-8 min-h-screen box-border" },
+                React.createElement("main", { className: "md:ml-64 p-4 md:p-8 pb-24 md:pb-8 pt-20 md:pt-8 min-h-screen box-border" },
                     activeTab === 'dashboard' && React.createElement(DashboardView, { onNavigate: setActiveTab, deadlines, dashboardData, onUpdateDashboard: handleUpdateDashboard, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset, meals, fitnessData, goalsData, dumps, books }),
                     activeTab === 'schedule' && React.createElement(ScheduleView, { events, onAddEvent: handleAddEvent, onUpdateEvent: handleUpdateEvent, onDeleteEvent: handleDeleteEvent, dailyPlan, onUpdateDailyPlan: handleUpdateDailyPlan, weeklyPlan }),
                     activeTab === 'monthlyPlan' && React.createElement(MonthlyPlanView, { plan: monthlyPlan, onUpdate: handleUpdateMonthlyPlan }),
