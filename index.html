@@ -531,50 +531,106 @@
                             return React.createElement("div", { key: i, className: `border-r border-zinc-200 dark:border-zinc-800/80 relative h-full flex flex-col`, onMouseDown: (e) => handleTimeSelectStart(e, d) },
                                 isSameDay(d, new Date()) && React.createElement(CurrentTimeLine, { className: "absolute left-0 right-0" }),
                                 hours.map(h => React.createElement("div", { key: h, className: "flex-1 border-b border-zinc-200 dark:border-zinc-800/80 cursor-crosshair hover:bg-zinc-50 dark:hover:bg-zinc-800/20 min-h-[80px]" })),
-                                syntheticEvents.filter(ev => {
-                                    const evStart = new Date(ev.instanceStart);
-                                    const evEnd = new Date(ev.instanceEnd);
-                                    return evStart < dayEnd && evEnd > dayStart;
-                                }).map(ev => {
-                                    const eStart = new Date(ev.instanceStart);
-                                    const eEnd = new Date(ev.instanceEnd);
-                                    
-                                    const effectiveStart = eStart < dayStart ? dayStart : eStart;
-                                    const effectiveEnd = eEnd > dayEnd ? dayEnd : eEnd;
+                                (() => {
+                                    const dayEventsRaw = syntheticEvents.filter(ev => {
+                                        const evStart = new Date(ev.instanceStart);
+                                        const evEnd = new Date(ev.instanceEnd);
+                                        return evStart < dayEnd && evEnd > dayStart;
+                                    });
 
-                                    const topPercent = (effectiveStart.getHours() * 60 + effectiveStart.getMinutes()) / 1440 * 100;
-                                    const durationMinutes = Math.max((effectiveEnd - effectiveStart) / 60000, 15);
-                                    const heightPercent = (durationMinutes / 1440) * 100;
-                                    const isDragging = draggedEventId === ev.id;
-                                    
-                                    const continuesFromPrev = eStart < dayStart;
-                                    const continuesToNext = eEnd > dayEnd;
+                                    const processedEvents = dayEventsRaw.map(ev => {
+                                        const eStart = new Date(ev.instanceStart);
+                                        const eEnd = new Date(ev.instanceEnd);
+                                        
+                                        const effectiveStart = eStart < dayStart ? dayStart : eStart;
+                                        const effectiveEnd = eEnd > dayEnd ? dayEnd : eEnd;
 
-                                    return React.createElement("div", { 
-                                        key: `${ev.id}-${d.getTime()}`, 
-                                        onMouseDown: (e) => handleMouseDown(e, ev),
-                                        onClick: (e) => { 
-                                            e.stopPropagation(); 
-                                            const dx = Math.abs(e.clientX - dragStartPos.current.x); 
-                                            const dy = Math.abs(e.clientY - dragStartPos.current.y); 
-                                            if (dx < 5 && dy < 5) {
-                                                const originalEvent = events.find(x => x.id === ev.id);
-                                                // When opening a synthetic recurring event for editing, prepopulate the editor with the instance's specific time
-                                                setEditingEvent({
-                                                    ...originalEvent,
-                                                    start: toLocalISO(eStart),
-                                                    end: toLocalISO(eEnd),
-                                                    originalRecurrence: originalEvent.recurrence
-                                                });
+                                        const topPercent = (effectiveStart.getHours() * 60 + effectiveStart.getMinutes()) / 1440 * 100;
+                                        const durationMinutes = Math.max((effectiveEnd - effectiveStart) / 60000, 15);
+                                        const heightPercent = (durationMinutes / 1440) * 100;
+                                        
+                                        return {
+                                            ...ev,
+                                            effectiveStart,
+                                            effectiveEnd,
+                                            topPercent,
+                                            heightPercent,
+                                            durationMinutes,
+                                            continuesFromPrev: eStart < dayStart,
+                                            continuesToNext: eEnd > dayEnd
+                                        };
+                                    }).sort((a, b) => a.effectiveStart - b.effectiveStart || b.durationMinutes - a.durationMinutes);
+
+                                    const overlappingGroups = [];
+                                    let currentGroup = [];
+                                    let groupEnd = new Date(0);
+
+                                    processedEvents.forEach(ev => {
+                                        if (ev.effectiveStart >= groupEnd) {
+                                            if (currentGroup.length > 0) overlappingGroups.push(currentGroup);
+                                            currentGroup = [ev];
+                                            groupEnd = ev.effectiveEnd;
+                                        } else {
+                                            currentGroup.push(ev);
+                                            if (ev.effectiveEnd > groupEnd) groupEnd = ev.effectiveEnd;
+                                        }
+                                    });
+                                    if (currentGroup.length > 0) overlappingGroups.push(currentGroup);
+
+                                    overlappingGroups.forEach(group => {
+                                        const columns = [];
+                                        group.forEach(ev => {
+                                            let placed = false;
+                                            for (let i = 0; i < columns.length; i++) {
+                                                if (!columns[i].some(e => e.effectiveStart < ev.effectiveEnd && e.effectiveEnd > ev.effectiveStart)) {
+                                                    columns[i].push(ev);
+                                                    ev.column = i;
+                                                    placed = true;
+                                                    break;
+                                                }
                                             }
-                                        }, 
-                                        className: `absolute left-0.5 right-0.5 px-1.5 py-1 text-[10px] leading-tight text-white shadow-sm overflow-hidden cursor-pointer hover:z-[35] hover:shadow-md ${isDragging ? 'opacity-80 z-50 scale-105 ring-1 ring-white/50 transition-none' : 'transition-transform z-10'} ${ev.color} ${continuesFromPrev ? 'rounded-t-none border-t-0 opacity-90' : 'rounded-t'} ${continuesToNext ? 'rounded-b-none border-b-0 opacity-90' : 'rounded-b'}`, 
-                                        style: { top: `${topPercent}%`, height: `${heightPercent}%` }
-                                    },
-                                        React.createElement("div", { className: "font-semibold truncate" }, ev.title),
-                                        durationMinutes > 35 && React.createElement("div", { className: "opacity-80 text-[8px] font-mono mt-0.5 pointer-events-none truncate" }, `${formatTime(ev.instanceStart)} - ${formatTime(ev.instanceEnd)}`)
-                                    )
-                                }),
+                                            if (!placed) {
+                                                columns.push([ev]);
+                                                ev.column = columns.length - 1;
+                                            }
+                                        });
+                                        group.forEach(ev => {
+                                            ev.colCount = columns.length;
+                                        });
+                                    });
+
+                                    return processedEvents.map(ev => {
+                                        const isDragging = draggedEventId === ev.id;
+                                        return React.createElement("div", { 
+                                            key: `${ev.id}-${d.getTime()}`, 
+                                            onMouseDown: (e) => handleMouseDown(e, ev),
+                                            onClick: (e) => { 
+                                                e.stopPropagation(); 
+                                                const dx = Math.abs(e.clientX - dragStartPos.current.x); 
+                                                const dy = Math.abs(e.clientY - dragStartPos.current.y); 
+                                                if (dx < 5 && dy < 5) {
+                                                    const originalEvent = events.find(x => x.id === ev.id);
+                                                    setEditingEvent({
+                                                        ...originalEvent,
+                                                        start: toLocalISO(new Date(ev.instanceStart)),
+                                                        end: toLocalISO(new Date(ev.instanceEnd)),
+                                                        originalRecurrence: originalEvent.recurrence
+                                                    });
+                                                }
+                                            }, 
+                                            className: `absolute px-1.5 py-1 text-[10px] leading-tight text-white shadow-sm overflow-hidden cursor-pointer hover:z-[35] hover:shadow-md ${isDragging ? 'opacity-80 z-50 scale-105 ring-1 ring-white/50 transition-none' : 'transition-transform z-10'} ${ev.color} ${ev.continuesFromPrev ? 'rounded-t-none border-t-0 opacity-90' : 'rounded-t'} ${ev.continuesToNext ? 'rounded-b-none border-b-0 opacity-90' : 'rounded-b'}`, 
+                                            style: { 
+                                                top: `${ev.topPercent}%`, 
+                                                height: `${ev.heightPercent}%`,
+                                                left: `calc(${ev.column * (100 / ev.colCount)}% + 2px)`,
+                                                width: `calc(${100 / ev.colCount}% - 4px)`
+                                            }
+                                        },
+                                            React.createElement("div", { className: "font-semibold truncate" }, ev.title),
+                                            ev.durationMinutes > 35 && React.createElement("div", { className: "opacity-80 text-[8px] font-mono mt-0.5 pointer-events-none truncate" }, `${formatTime(ev.instanceStart)} - ${formatTime(ev.instanceEnd)}`)
+                                        );
+                                    });
+                                })(),
                                 timeSelection && isSameDay(timeSelection.date, d) && React.createElement("div", {
                                     className: "absolute left-0.5 right-0.5 rounded bg-indigo-500/30 border border-indigo-500/50 z-20 pointer-events-none",
                                     style: { top: `${Math.min(timeSelection.startMins, timeSelection.currentMins) / 1440 * 100}%`, height: `${Math.max(15, Math.abs(timeSelection.currentMins - timeSelection.startMins)) / 1440 * 100}%` }
@@ -593,8 +649,8 @@
 
                 const isRecurringInstance = editingEvent.id && editingEvent.originalRecurrence && editingEvent.originalRecurrence !== 'none';
 
-                return React.createElement("div", { className: "fixed inset-0 z-[60] flex items-start justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-200" },
-                    React.createElement("div", { className: "bg-[#09090b] border border-zinc-800 rounded-[24px] w-full max-w-[380px] p-6 md:p-7 relative shadow-2xl flex flex-col gap-6 my-auto shrink-0" },
+                return React.createElement("div", { className: "fixed inset-0 z-[60] flex justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-8 overflow-y-auto animate-in fade-in duration-200" },
+                    React.createElement("div", { className: "bg-[#09090b] border border-zinc-800 rounded-[24px] w-full max-w-[380px] p-6 md:p-7 relative shadow-2xl flex flex-col gap-6 m-auto shrink-0" },
                         React.createElement("div", { className: "flex justify-between items-center" },
                             React.createElement("h3", { className: "text-lg font-bold flex items-center gap-3 text-white" }, React.createElement("div", { className: `w-2 h-6 rounded-full shadow-sm ${editingEvent.color}` }), editingEvent.id ? "Edit Event" : "New Event"),
                             React.createElement("div", { className: "flex gap-1" }, editingEvent.id && React.createElement("button", { onClick: deleteEvent, className: "text-zinc-500 hover:text-red-500 p-2 rounded-full hover:bg-zinc-800/50 transition-colors" }, React.createElement(Trash2, { size: 18 })), React.createElement("button", { onClick: () => setEditingEvent(null), className: "text-zinc-500 hover:text-white p-2 rounded-full hover:bg-zinc-800/50 transition-colors" }, React.createElement(X, { size: 20 })))
@@ -718,7 +774,8 @@
                                 React.createElement("div", { className: `text-[10px] uppercase font-bold tracking-widest mb-1 text-indigo-500 dark:text-indigo-400` }, selectedDate.toLocaleDateString('en-US', { weekday: 'long' })),
                                 React.createElement("div", { className: `text-lg font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full bg-indigo-600 text-white` }, selectedDate.getDate())
                             )
-                        )
+                        ),
+                        React.createElement("div", { className: "absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-b from-zinc-50 dark:from-zinc-950 to-transparent translate-y-full pointer-events-none z-50 -mx-4 md:mx-0" })
                     ),
                     
                     React.createElement("div", { className: "flex-1 bg-white dark:bg-[#111113] border-x border-b border-zinc-200 dark:border-zinc-800/80 rounded-b-[1.5rem] shadow-sm relative overflow-hidden flex flex-col z-0" },
