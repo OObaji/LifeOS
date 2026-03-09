@@ -89,6 +89,24 @@
         const DEFAULT_GOALS_DATA = { mission: "Reshape my life by achieving financial stability, building iron discipline, and gaining clear direction for my future.", mainFocus: [{id: '1', text: 'Financial Freedom'}, {id: '2', text: 'Improved Fitness'}, {id: '3', text: 'Skill Mastery'}], dos: [], donts: [], milestones: [], quarters: { q1: [], q2: [], q3: [], q4: [] }, phases: { phase1: [], phase2: [], phase3: [] } };
         const DEFAULT_MEALS = [{ day: 'Monday', type: 'Breakfast', text: 'Oats + milk\n1 banana\n1 scoop protein powder' }];
         const DEFAULT_BOOK_CATEGORIES = ['General', 'Fiction', 'Non-Fiction', 'Self-Help', 'Technical'];
+        const DEFAULT_EVENTS = [
+            { id: 'hol-ny', title: "New Year's Day", start: "2026-01-01T00:00", end: "2026-01-01T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
+            { id: 'hol-val', title: "Valentine's Day", start: "2026-02-14T00:00", end: "2026-02-14T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
+            { id: 'hol-stp', title: "St. Patrick's Day", start: "2026-03-17T00:00", end: "2026-03-17T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
+            { id: 'bday-dad', title: "Dad's Birthday", start: "2026-03-20T00:00", end: "2026-03-20T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
+            { id: 'bday-nathan', title: "Nathan's Birthday", start: "2026-03-26T00:00", end: "2026-03-26T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
+            { id: 'bday-mum-alimah', title: "Mum Alimah's Birthday", start: "2026-03-27T00:00", end: "2026-03-27T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
+            { id: 'bday-my', title: "My Birthday", start: "2026-04-09T00:00", end: "2026-04-09T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
+            { id: 'bday-mom', title: "Mom's Birthday", start: "2026-04-15T00:00", end: "2026-04-15T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
+            { id: 'bday-mike', title: "Mike's Birthday", start: "2026-06-30T00:00", end: "2026-06-30T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
+            { id: 'bday-eniola', title: "Eniola's Birthday", start: "2026-09-09T00:00", end: "2026-09-09T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
+            { id: 'bday-mariam', title: "Mariam's Birthday", start: "2026-09-27T00:00", end: "2026-09-27T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
+            { id: 'hol-hal', title: "Halloween", start: "2026-10-31T00:00", end: "2026-10-31T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
+            { id: 'bday-uncle-shams', title: "Uncle Shams' Birthday", start: "2026-12-12T00:00", end: "2026-12-12T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
+            { id: 'hol-xmas', title: "Christmas Day", start: "2026-12-25T00:00", end: "2026-12-25T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
+            { id: 'hol-box', title: "Boxing Day", start: "2026-12-26T00:00", end: "2026-12-26T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
+            { id: 'hol-nye', title: "New Year's Eve", start: "2026-12-31T00:00", end: "2026-12-31T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true }
+        ];
         const GYM_WORKOUT_PLAN = [ { id: 'gym1', title: "Day 1: Chest & Triceps", icon: "Flame", color: "text-rose-500", warmup: ["5min Treadmill", "Arm Circles"], exercises: [{ name: "Bench Press", sets: "4", reps: "8-10" }, { name: "Incline DB Press", sets: "3", reps: "10-12" }, { name: "Cable Flys", sets: "3", reps: "12-15" }, { name: "Tricep Pushdowns", sets: "4", reps: "12-15" }, { name: "Skullcrushers", sets: "3", reps: "10-12" }], finisher: "Pushup burnout" }, { id: 'gym2', title: "Day 2: Back & Biceps", icon: "Activity", color: "text-blue-500", warmup: ["5min Rower", "Band Pull-aparts"], exercises: [{ name: "Lat Pulldowns", sets: "4", reps: "10-12" }, { name: "Seated Cable Row", sets: "4", reps: "10-12" }, { name: "DB Row", sets: "3", reps: "10/side" }, { name: "Barbell Curls", sets: "3", reps: "10-12" }, { name: "Hammer Curls", sets: "3", reps: "12" }], finisher: "Face Pulls 3x15" } ];
         const HOME_WORKOUT_PLAN = [ { id: 'home1', title: "Day 1: Upper Push (DB)", icon: "Flame", color: "text-orange-500", warmup: ["Jumping Jacks"], exercises: [{ name: "DB Floor Press", sets: "4", reps: "12" }, { name: "Pushups", sets: "3", reps: "Failure" }, { name: "Shoulder Press", sets: "4", reps: "12" }, { name: "Lateral Raises", sets: "3", reps: "15" }], finisher: "Pushups to failure" }, { id: 'home2', title: "Day 2: Lower Body (DB)", icon: "Activity", color: "text-blue-500", warmup: ["Squats"], exercises: [{ name: "Goblet Squats", sets: "4", reps: "15" }, { name: "DB RDL", sets: "4", reps: "12" }, { name: "Lunges", sets: "3", reps: "12/leg" }], finisher: "Wall Sit" } ];
         const FOCUS_SOUNDS = [ { id: 'rain', label: 'Rain', icon: CloudRain, url: 'https://cdn.pixabay.com/audio/2021/09/06/audio_2e22c07659.mp3' }, { id: 'lofi', label: 'Lofi', icon: Music, url: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3' } ];
@@ -539,6 +557,9 @@
                         const diffWeeks = Math.round((tws - bws) / (7 * 86400000));
                         matches = diffWeeks >= 0 && diffWeeks % 2 === 0 && targetDays.includes(d.getDay());
                     }
+                    else if (recur === 'yearly') {
+                        matches = d.getMonth() === baseStart.getMonth() && d.getDate() === baseStart.getDate();
+                    }
                     if(matches) {
                         const iStart = new Date(d); iStart.setHours(baseStart.getHours(), baseStart.getMinutes(), 0, 0);
                         if (iStart >= baseStart || isSameDay(iStart, baseStart)) {
@@ -736,7 +757,8 @@
                                     React.createElement("option", { value: "daily" }, "Daily"),
                                     React.createElement("option", { value: "weekdays" }, "Weekdays (Mon-Fri)"),
                                     React.createElement("option", { value: "weekly" }, "Weekly"),
-                                    React.createElement("option", { value: "biweekly" }, "Bi-Weekly")
+                                    React.createElement("option", { value: "biweekly" }, "Bi-Weekly"),
+                                    React.createElement("option", { value: "yearly" }, "Yearly")
                                 ),
                                 ['weekly', 'biweekly'].includes(editingEvent.recurrence) && React.createElement("div", { className: "mt-3 flex gap-1 justify-between px-1" },
                                     ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayChar, idx) => {
@@ -1732,41 +1754,58 @@
                                 if(aRes.data.dashboard_config) setDashboardData(aRes.data.dashboard_config); 
                                 if(aRes.data.fitness_data) setFitnessData(aRes.data.fitness_data); 
                                 if(aRes.data.book_categories) setBookCategories(aRes.data.book_categories);
-                                if(aRes.data.daily_plan) setDailyPlan(aRes.data.daily_plan);
-                                if(aRes.data.weekly_plan) setWeeklyPlan(aRes.data.weekly_plan);
-                                if(aRes.data.monthly_plan) setMonthlyPlan(aRes.data.monthly_plan);
-                                if(aRes.data.countdowns) setCountdowns(aRes.data.countdowns);
-                                if(aRes.data.idea_notes) setIdeaNotes(aRes.data.idea_notes);
-                                if(aRes.data.events) setEvents(aRes.data.events);
+                            if(aRes.data.daily_plan) setDailyPlan(aRes.data.daily_plan);
+                            if(aRes.data.weekly_plan) setWeeklyPlan(aRes.data.weekly_plan);
+                            if(aRes.data.monthly_plan) setMonthlyPlan(aRes.data.monthly_plan);
+                            if(aRes.data.countdowns) setCountdowns(aRes.data.countdowns);
+                            if(aRes.data.idea_notes) setIdeaNotes(aRes.data.idea_notes);
+                            
+                            let appEvents = aRes.data.events || [];
+                            if (!localStorage.getItem(`lifeos_seeded_events_${user.id}`)) {
+                                const existingIds = appEvents.map(e => e.id);
+                                const toAdd = DEFAULT_EVENTS.filter(e => !existingIds.includes(e.id));
+                                appEvents = [...appEvents, ...toAdd];
+                                localStorage.setItem(`lifeos_seeded_events_${user.id}`, 'true');
                             }
-                            setIsDataLoaded(true);
-                        } catch (err) {
-                            console.error("Fetch interrupted. Safeguarding database sync.", err);
+                            setEvents(appEvents);
                         }
-                    };
-                    fetchData();
-                } else {
-                    const prefix = `lifeos_data_${user.id}_`;
-                    setDeadlines(JSON.parse(localStorage.getItem(`${prefix}deadlines`) || '[]'));
-                    setDumps(JSON.parse(localStorage.getItem(`${prefix}dumps`) || '[]'));
-                    setMeals(JSON.parse(localStorage.getItem(`${prefix}meals`) || JSON.stringify(DEFAULT_MEALS)));
-                    setGoalsData(JSON.parse(localStorage.getItem(`${prefix}goals_2026`) || JSON.stringify(DEFAULT_GOALS_DATA)));
-                    setBooks(JSON.parse(localStorage.getItem(`${prefix}books`) || '[]'));
-                    setBookCategories(JSON.parse(localStorage.getItem(`${prefix}book_categories`) || JSON.stringify(DEFAULT_BOOK_CATEGORIES)));
-                    setDashboardData(JSON.parse(localStorage.getItem(`${prefix}dashboard`) || '{}'));
-                    setFitnessData(JSON.parse(localStorage.getItem(`${prefix}fitness`) || JSON.stringify({ gym: GYM_WORKOUT_PLAN, home: HOME_WORKOUT_PLAN })));
-                    setDailyPlan(JSON.parse(localStorage.getItem(`${prefix}daily_plan`) || JSON.stringify({ priorities: ['', '', ''], schedule: {}, notes: '', minorTasks: [] })));
-                    setWeeklyPlan(JSON.parse(localStorage.getItem(`${prefix}weekly_plan`) || JSON.stringify({ focus: "", objectives: [], dailyTasks: {} })));
-                    setMonthlyPlan(JSON.parse(localStorage.getItem(`${prefix}monthly_plan`) || JSON.stringify({ theme: "", goals: [], weeks: { week1: [], week2: [], week3: [], week4: [] } })));
-                    setCountdowns(JSON.parse(localStorage.getItem(`${prefix}countdowns`) || '[]'));
-                    setIdeaNotes(JSON.parse(localStorage.getItem(`${prefix}idea_notes`) || '[]'));
-                    setEvents(JSON.parse(localStorage.getItem(`${prefix}events`) || '[]'));
-                    setIsDataLoaded(true);
+                        setIsDataLoaded(true);
+                    } catch (err) {
+                        console.error("Fetch interrupted. Safeguarding database sync.", err);
+                    }
+                };
+                fetchData();
+            } else {
+                const prefix = `lifeos_data_${user.id}_`;
+                setDeadlines(JSON.parse(localStorage.getItem(`${prefix}deadlines`) || '[]'));
+                setDumps(JSON.parse(localStorage.getItem(`${prefix}dumps`) || '[]'));
+                setMeals(JSON.parse(localStorage.getItem(`${prefix}meals`) || JSON.stringify(DEFAULT_MEALS)));
+                setGoalsData(JSON.parse(localStorage.getItem(`${prefix}goals_2026`) || JSON.stringify(DEFAULT_GOALS_DATA)));
+                setBooks(JSON.parse(localStorage.getItem(`${prefix}books`) || '[]'));
+                setBookCategories(JSON.parse(localStorage.getItem(`${prefix}book_categories`) || JSON.stringify(DEFAULT_BOOK_CATEGORIES)));
+                setDashboardData(JSON.parse(localStorage.getItem(`${prefix}dashboard`) || '{}'));
+                setFitnessData(JSON.parse(localStorage.getItem(`${prefix}fitness`) || JSON.stringify({ gym: GYM_WORKOUT_PLAN, home: HOME_WORKOUT_PLAN })));
+                setDailyPlan(JSON.parse(localStorage.getItem(`${prefix}daily_plan`) || JSON.stringify({ priorities: ['', '', ''], schedule: {}, notes: '', minorTasks: [] })));
+                setWeeklyPlan(JSON.parse(localStorage.getItem(`${prefix}weekly_plan`) || JSON.stringify({ focus: "", objectives: [], dailyTasks: {} })));
+                setMonthlyPlan(JSON.parse(localStorage.getItem(`${prefix}monthly_plan`) || JSON.stringify({ theme: "", goals: [], weeks: { week1: [], week2: [], week3: [], week4: [] } })));
+                setCountdowns(JSON.parse(localStorage.getItem(`${prefix}countdowns`) || '[]'));
+                setIdeaNotes(JSON.parse(localStorage.getItem(`${prefix}idea_notes`) || '[]'));
+                
+                let localEvents = JSON.parse(localStorage.getItem(`${prefix}events`) || '[]');
+                if (!localStorage.getItem(`lifeos_seeded_events_${user.id}`)) {
+                    const existingIds = localEvents.map(e => e.id);
+                    const toAdd = DEFAULT_EVENTS.filter(e => !existingIds.includes(e.id));
+                    localEvents = [...localEvents, ...toAdd];
+                    localStorage.setItem(`lifeos_seeded_events_${user.id}`, 'true');
                 }
-                return () => { mounted = false; };
-            }, [user]);
+                setEvents(localEvents);
+                
+                setIsDataLoaded(true);
+            }
+            return () => { mounted = false; };
+        }, [user]);
 
-            useEffect(() => {
+        useEffect(() => {
                 if (!user || !isDataLoaded) return;
 
                 if (user.isLocal) {
