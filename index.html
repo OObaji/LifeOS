@@ -272,6 +272,7 @@
                 { bg: "bg-blue-500", label: "Work" },
                 { bg: "bg-violet-500", label: "University" },
                 { bg: "bg-amber-500", label: "Events" },
+                { bg: "bg-pink-500", label: "Celebration" },
                 { bg: "bg-slate-500", label: "Others" }
             ];
 
@@ -327,24 +328,41 @@
                 });
             };
 
-            const openNewEvent = (defaultStart = null, defaultEnd = null) => {
+            const openNewEvent = (defaultStart = null, defaultEnd = null, isAllDay = false) => {
                 const start = defaultStart ? new Date(defaultStart) : new Date(selectedDate);
                 if(!defaultStart) { const now = new Date(); start.setHours(now.getHours() + 1, 0, 0, 0); }
                 const end = defaultEnd ? new Date(defaultEnd) : new Date(start);
-                if(!defaultEnd) end.setHours(start.getHours() + 1, 0, 0, 0);
                 
-                setEditingEvent({ title: "", start: toLocalISO(start), end: toLocalISO(end), color: "bg-teal-500", recurrence: 'none', recurrenceDays: [start.getDay()], recurrenceEndDate: "", description: "" });
+                if(!defaultEnd) {
+                    if (isAllDay) {
+                        end.setHours(23, 59, 59, 999);
+                    } else {
+                        end.setHours(start.getHours() + 1, 0, 0, 0);
+                    }
+                }
+                
+                setEditingEvent({ title: "", start: toLocalISO(start), end: toLocalISO(end), color: isAllDay ? "bg-pink-500" : "bg-teal-500", recurrence: 'none', recurrenceDays: [start.getDay()], recurrenceEndDate: "", description: "", isAllDay });
             };
 
             const handleSaveEventAction = (saveType) => {
                 if (!editingEvent.title.trim()) return;
 
-                if (!editingEvent.id) {
-                    onAddEvent(editingEvent);
+                let finalEvent = { ...editingEvent };
+                
+                if (finalEvent.isAllDay) {
+                    const sDate = finalEvent.start.split('T')[0];
+                    let eDate = finalEvent.end.split('T')[0];
+                    if (new Date(eDate) < new Date(sDate)) eDate = sDate;
+                    finalEvent.start = `${sDate}T00:00`;
+                    finalEvent.end = `${eDate}T23:59`;
+                }
+
+                if (!finalEvent.id) {
+                    onAddEvent(finalEvent);
                 } else {
-                    if (saveType === 'single' && editingEvent.originalRecurrence && editingEvent.originalRecurrence !== 'none') {
+                    if (saveType === 'single' && finalEvent.originalRecurrence && finalEvent.originalRecurrence !== 'none') {
                         const newSingleEvent = {
-                            ...editingEvent,
+                            ...finalEvent,
                             id: generateUUID(),
                             recurrence: 'none',
                             recurrenceEndDate: null,
@@ -352,9 +370,9 @@
                         };
                         onAddEvent(newSingleEvent);
 
-                        const originalEvent = events.find(e => e.id === editingEvent.id);
+                        const originalEvent = events.find(e => e.id === finalEvent.id);
                         if (originalEvent) {
-                            const exceptionDateStr = new Date(editingEvent.originalInstanceStart || editingEvent.start).toDateString();
+                            const exceptionDateStr = new Date(finalEvent.originalInstanceStart || finalEvent.start).toDateString();
                             const exceptions = originalEvent.exceptions || [];
                             if (!exceptions.includes(exceptionDateStr)) {
                                 onUpdateEvent({
@@ -364,7 +382,7 @@
                             }
                         }
                     } else {
-                        onUpdateEvent(editingEvent);
+                        onUpdateEvent(finalEvent);
                     }
                 }
                 setEditingEvent(null);
@@ -562,6 +580,7 @@
                                 hours.map(h => React.createElement("div", { key: h, className: "flex-1 border-b border-zinc-200 dark:border-zinc-800/80 cursor-crosshair hover:bg-zinc-50 dark:hover:bg-zinc-800/20 min-h-[80px]" })),
                                 (() => {
                                     const dayEventsRaw = displayEvents.filter(ev => {
+                                        if (ev.isAllDay) return false; 
                                         const evStart = new Date(ev.instanceStart);
                                         const evEnd = new Date(ev.instanceEnd);
                                         return evStart < dayEnd && evEnd > dayStart;
@@ -688,19 +707,24 @@
                         React.createElement("div", { className: "p-5 md:px-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 bg-[#09090b]" },
                             React.createElement("div", null, React.createElement("label", { className: "text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block px-1" }, "Title"), React.createElement("input", { value: editingEvent.title, onChange: e => setEditingEvent({...editingEvent, title: e.target.value}), onKeyDown: e => e.key === 'Enter' && handleSaveEventAction('series'), placeholder: "What's happening?", autoFocus: true, className: "w-full p-4 bg-[#18181b] border border-transparent rounded-xl text-sm font-semibold text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-500 shadow-inner" })),
                             
+                            React.createElement("div", { className: "flex items-center gap-2 mb-2 p-2 rounded-xl bg-zinc-900/50 border border-zinc-800/80 cursor-pointer w-fit" },
+                                React.createElement("input", { type: "checkbox", checked: editingEvent.isAllDay || false, onChange: e => setEditingEvent({...editingEvent, isAllDay: e.target.checked}), className: "w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-indigo-500 focus:ring-indigo-500 cursor-pointer" }),
+                                React.createElement("label", { onClick: () => setEditingEvent({...editingEvent, isAllDay: !editingEvent.isAllDay}), className: "text-xs font-bold text-zinc-300 uppercase tracking-wider cursor-pointer select-none" }, "All-Day Event")
+                            ),
+
                             React.createElement("div", { className: "space-y-3" },
                                 React.createElement("div", null, 
                                     React.createElement("label", { className: "text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block px-1" }, "Start"), 
                                     React.createElement("div", { className: "flex gap-2" },
-                                        React.createElement("input", { type: "date", value: startDateStr, onChange: e => setEditingEvent({...editingEvent, start: `${e.target.value}T${startTimeStr}`}), className: "w-1/2 p-3 bg-[#18181b] border border-transparent rounded-xl text-white focus:outline-none focus:border-indigo-500 font-mono text-xs md:text-[13px] transition-colors shadow-inner [color-scheme:dark]" }),
-                                        React.createElement("input", { type: "time", value: startTimeStr, onChange: e => setEditingEvent({...editingEvent, start: `${startDateStr}T${e.target.value}`}), className: "w-1/2 p-3 bg-[#18181b] border border-transparent rounded-xl text-white focus:outline-none focus:border-indigo-500 font-mono text-xs md:text-[13px] transition-colors shadow-inner [color-scheme:dark]" })
+                                        React.createElement("input", { type: "date", value: startDateStr, onChange: e => setEditingEvent({...editingEvent, start: `${e.target.value}T${startTimeStr}`}), className: "w-1/2 p-3 bg-[#18181b] border border-transparent rounded-xl text-white focus:outline-none focus:border-indigo-500 font-mono text-xs md:text-[13px] transition-colors shadow-inner [color-scheme:dark] flex-1" }),
+                                        !editingEvent.isAllDay && React.createElement("input", { type: "time", value: startTimeStr, onChange: e => setEditingEvent({...editingEvent, start: `${startDateStr}T${e.target.value}`}), className: "w-1/2 p-3 bg-[#18181b] border border-transparent rounded-xl text-white focus:outline-none focus:border-indigo-500 font-mono text-xs md:text-[13px] transition-colors shadow-inner [color-scheme:dark]" })
                                     )
                                 ),
                                 React.createElement("div", null, 
                                     React.createElement("label", { className: "text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block px-1" }, "End"), 
                                     React.createElement("div", { className: "flex gap-2" },
-                                        React.createElement("input", { type: "date", value: endDateStr, onChange: e => setEditingEvent({...editingEvent, end: `${e.target.value}T${endTimeStr}`}), className: "w-1/2 p-3 bg-[#18181b] border border-transparent rounded-xl text-white focus:outline-none focus:border-indigo-500 font-mono text-xs md:text-[13px] transition-colors shadow-inner [color-scheme:dark]" }),
-                                        React.createElement("input", { type: "time", value: endTimeStr, onChange: e => setEditingEvent({...editingEvent, end: `${endDateStr}T${e.target.value}`}), className: "w-1/2 p-3 bg-[#18181b] border border-transparent rounded-xl text-white focus:outline-none focus:border-indigo-500 font-mono text-xs md:text-[13px] transition-colors shadow-inner [color-scheme:dark]" })
+                                        React.createElement("input", { type: "date", value: endDateStr, onChange: e => setEditingEvent({...editingEvent, end: `${e.target.value}T${endTimeStr}`}), className: "w-1/2 p-3 bg-[#18181b] border border-transparent rounded-xl text-white focus:outline-none focus:border-indigo-500 font-mono text-xs md:text-[13px] transition-colors shadow-inner [color-scheme:dark] flex-1" }),
+                                        !editingEvent.isAllDay && React.createElement("input", { type: "time", value: endTimeStr, onChange: e => setEditingEvent({...editingEvent, end: `${endDateStr}T${e.target.value}`}), className: "w-1/2 p-3 bg-[#18181b] border border-transparent rounded-xl text-white focus:outline-none focus:border-indigo-500 font-mono text-xs md:text-[13px] transition-colors shadow-inner [color-scheme:dark]" })
                                     )
                                 )
                             ),
@@ -851,17 +875,55 @@
                         view === 'month' && React.createElement("div", { className: "grid grid-cols-7 border border-zinc-200 dark:border-zinc-800/80 bg-zinc-100 dark:bg-[#18181b] rounded-t-[1.5rem]" },
                             ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => React.createElement("div", { key: day, className: "text-center py-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500 border-r border-zinc-200 dark:border-zinc-800/80 last:border-r-0" }, day))
                         ),
-                        view === 'week' && React.createElement("div", { className: "flex border border-zinc-200 dark:border-zinc-800/80 bg-zinc-100 dark:bg-[#18181b] rounded-t-[1.5rem]" },
-                            React.createElement("div", { className: "w-12 md:w-[60px] shrink-0 border-r border-zinc-200 dark:border-zinc-800/80" }),
-                            React.createElement("div", { className: "flex-1 grid grid-cols-7" },
-                                Array.from({length: 7}, (_, i) => { const d = new Date(getWeekStart(selectedDate)); d.setDate(d.getDate() + i); return d; }).map(d => React.createElement("div", { key: d.toISOString(), onClick: () => {setSelectedDate(d); setView('day');}, className: `text-center py-2 border-r border-zinc-200 dark:border-zinc-800/80 cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors` }, React.createElement("div", { className: `text-[10px] uppercase font-bold tracking-widest mb-1 ${isSameDay(d, new Date()) ? 'text-indigo-500 dark:text-indigo-400' : 'text-zinc-500'}` }, d.toLocaleDateString('en-US', { weekday: 'short' })), React.createElement("div", { className: `text-lg font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full ${isSameDay(d, new Date()) ? 'bg-indigo-600 text-white' : 'text-zinc-900 dark:text-white'}` }, d.getDate())))
+                        view === 'week' && React.createElement(React.Fragment, null,
+                            React.createElement("div", { className: "flex border border-zinc-200 dark:border-zinc-800/80 bg-zinc-100 dark:bg-[#18181b] rounded-t-[1.5rem]" },
+                                React.createElement("div", { className: "w-12 md:w-[60px] shrink-0 border-r border-zinc-200 dark:border-zinc-800/80" }),
+                                React.createElement("div", { className: "flex-1 grid grid-cols-7" },
+                                    Array.from({length: 7}, (_, i) => { const d = new Date(getWeekStart(selectedDate)); d.setDate(d.getDate() + i); return d; }).map(d => React.createElement("div", { key: d.toISOString(), onClick: () => {setSelectedDate(d); setView('day');}, className: `text-center py-2 border-r border-zinc-200 dark:border-zinc-800/80 cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors` }, React.createElement("div", { className: `text-[10px] uppercase font-bold tracking-widest mb-1 ${isSameDay(d, new Date()) ? 'text-indigo-500 dark:text-indigo-400' : 'text-zinc-500'}` }, d.toLocaleDateString('en-US', { weekday: 'short' })), React.createElement("div", { className: `text-lg font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full ${isSameDay(d, new Date()) ? 'bg-indigo-600 text-white' : 'text-zinc-900 dark:text-white'}` }, d.getDate())))
+                                )
+                            ),
+                            React.createElement("div", { className: "flex border-x border-b border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#09090b]" },
+                                React.createElement("div", { className: "w-12 md:w-[60px] shrink-0 border-r border-zinc-200 dark:border-zinc-800/80 p-2 flex flex-col items-center justify-center" },
+                                    React.createElement("span", { className: "text-[8px] font-bold text-zinc-500 uppercase text-center" }, "All Day")
+                                ),
+                                React.createElement("div", { className: "flex-1 grid grid-cols-7" },
+                                    Array.from({length: 7}, (_, i) => { const d = new Date(getWeekStart(selectedDate)); d.setDate(d.getDate() + i); return d; }).map(d => {
+                                        const dayAllDayEvents = displayEvents.filter(ev => ev.isAllDay && isSameDay(ev.instanceStart, d));
+                                        return React.createElement("div", { key: d.toISOString(), onClick: () => openNewEvent(d, d, true), className: `border-r border-zinc-200 dark:border-zinc-800/80 p-1 space-y-1 min-h-[30px] cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-900/50 transition-colors` },
+                                            dayAllDayEvents.map(ev => React.createElement("div", {
+                                                key: ev.id,
+                                                onClick: (e) => { e.stopPropagation(); setEditingEvent(events.find(x => x.id === ev.id)); },
+                                                className: `px-1.5 py-0.5 text-[9px] font-bold rounded truncate text-white ${ev.color} cursor-pointer shadow-sm hover:opacity-80`
+                                            }, ev.title))
+                                        )
+                                    })
+                                )
                             )
                         ),
-                        view === 'day' && React.createElement("div", { className: "flex border border-zinc-200 dark:border-zinc-800/80 bg-zinc-100 dark:bg-[#18181b] rounded-t-[1.5rem]" },
-                            React.createElement("div", { className: "w-12 md:w-[60px] shrink-0 border-r border-zinc-200 dark:border-zinc-800/80" }),
-                            React.createElement("div", { className: "flex-1 text-center py-2" }, 
-                                React.createElement("div", { className: `text-[10px] uppercase font-bold tracking-widest mb-1 text-indigo-500 dark:text-indigo-400` }, selectedDate.toLocaleDateString('en-US', { weekday: 'long' })),
-                                React.createElement("div", { className: `text-lg font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full bg-indigo-600 text-white` }, selectedDate.getDate())
+                        view === 'day' && React.createElement(React.Fragment, null,
+                            React.createElement("div", { className: "flex border border-zinc-200 dark:border-zinc-800/80 bg-zinc-100 dark:bg-[#18181b] rounded-t-[1.5rem]" },
+                                React.createElement("div", { className: "w-12 md:w-[60px] shrink-0 border-r border-zinc-200 dark:border-zinc-800/80" }),
+                                React.createElement("div", { className: "flex-1 text-center py-2" }, 
+                                    React.createElement("div", { className: `text-[10px] uppercase font-bold tracking-widest mb-1 text-indigo-500 dark:text-indigo-400` }, selectedDate.toLocaleDateString('en-US', { weekday: 'long' })),
+                                    React.createElement("div", { className: `text-lg font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full bg-indigo-600 text-white` }, selectedDate.getDate())
+                                )
+                            ),
+                            React.createElement("div", { className: "flex border-x border-b border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#09090b]" },
+                                React.createElement("div", { className: "w-12 md:w-[60px] shrink-0 border-r border-zinc-200 dark:border-zinc-800/80 p-2 flex flex-col items-center justify-center" },
+                                    React.createElement("span", { className: "text-[8px] font-bold text-zinc-500 uppercase text-center" }, "All Day")
+                                ),
+                                React.createElement("div", { className: "flex-1", onClick: () => openNewEvent(selectedDate, selectedDate, true) },
+                                    (() => {
+                                        const dayAllDayEvents = displayEvents.filter(ev => ev.isAllDay && isSameDay(ev.instanceStart, selectedDate));
+                                        return React.createElement("div", { className: "p-1 space-y-1 min-h-[30px] cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-900/50 transition-colors h-full" },
+                                            dayAllDayEvents.map(ev => React.createElement("div", {
+                                                key: ev.id,
+                                                onClick: (e) => { e.stopPropagation(); setEditingEvent(events.find(x => x.id === ev.id)); },
+                                                className: `px-1.5 py-0.5 text-[9px] font-bold rounded truncate text-white ${ev.color} cursor-pointer shadow-sm hover:opacity-80`
+                                            }, ev.title))
+                                        )
+                                    })()
+                                )
                             )
                         ),
                         React.createElement("div", { className: "absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-b from-zinc-50 dark:from-zinc-950 to-transparent translate-y-full pointer-events-none z-50 -mx-4 md:mx-0" })
