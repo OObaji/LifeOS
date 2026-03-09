@@ -875,10 +875,7 @@
                                     const isToday = isSameDay(d, new Date());
                                     const dayEvents = displayEvents.filter(ev => {
                                         const evStart = new Date(ev.instanceStart);
-                                        const evEnd = new Date(ev.instanceEnd);
-                                        const dayStart = new Date(d); dayStart.setHours(0, 0, 0, 0);
-                                        const dayEnd = new Date(d); dayEnd.setHours(23, 59, 59, 999);
-                                        return evStart < dayEnd && evEnd > dayStart;
+                                        return isSameDay(evStart, d);
                                     });
                                     return React.createElement("div", { key: i, onClick: () => { setSelectedDate(d); setView('day'); }, className: `border-r border-b border-zinc-200 dark:border-zinc-800/80 p-1 overflow-hidden cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/30 transition-colors flex flex-col h-24 md:h-32 ${isCurrentMonth ? '' : 'opacity-40 bg-zinc-100/50 dark:bg-zinc-900/20'}` },
                                         React.createElement("div", { className: `text-[10px] font-bold w-5 h-5 mx-auto mb-1 flex items-center justify-center rounded-full ${isToday ? 'bg-indigo-600 text-white' : 'text-zinc-700 dark:text-zinc-400'}` }, d.getDate()),
