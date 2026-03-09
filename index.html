@@ -647,7 +647,7 @@
                                                     });
                                                 }
                                             }, 
-                                            className: `absolute px-1.5 py-1 text-[10px] leading-tight text-white shadow-sm overflow-hidden cursor-pointer hover:z-[35] hover:shadow-md ${ev.isDragging ? 'opacity-80 z-50 scale-105 ring-1 ring-white/50 transition-none' : 'transition-transform z-10'} ${ev.color} ${ev.continuesFromPrev ? 'rounded-t-none border-t-0 opacity-90' : 'rounded-t'} ${ev.continuesToNext ? 'rounded-b-none border-b-0 opacity-90' : 'rounded-b'}`, 
+                                            className: `absolute px-1.5 py-1 text-[10px] leading-tight text-white shadow-sm overflow-hidden cursor-pointer hover:z-[35] hover:shadow-md border border-white/50 dark:border-zinc-950/50 ${ev.isDragging ? 'opacity-80 z-50 scale-105 ring-1 ring-white/50 transition-none' : 'transition-transform z-10'} ${ev.color} ${ev.continuesFromPrev ? 'rounded-t-none border-t-0 opacity-90' : 'rounded-lg'} ${ev.continuesToNext ? 'rounded-b-none border-b-0 opacity-90' : 'rounded-lg'}`, 
                                             style: { 
                                                 top: `${ev.topPercent}%`, 
                                                 height: `${ev.heightPercent}%`,
@@ -880,7 +880,7 @@
                                     return React.createElement("div", { key: i, onClick: () => { setSelectedDate(d); setView('day'); }, className: `border-r border-b border-zinc-200 dark:border-zinc-800/80 p-1 overflow-hidden cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/30 transition-colors flex flex-col h-24 md:h-32 ${isCurrentMonth ? '' : 'opacity-40 bg-zinc-100/50 dark:bg-zinc-900/20'}` },
                                         React.createElement("div", { className: `text-[10px] font-bold w-5 h-5 mx-auto mb-1 flex items-center justify-center rounded-full ${isToday ? 'bg-indigo-600 text-white' : 'text-zinc-700 dark:text-zinc-400'}` }, d.getDate()),
                                         React.createElement("div", { className: "flex-1 overflow-y-auto no-scrollbar space-y-[2px]" },
-                                            dayEvents.slice(0, 4).map((ev, idx) => React.createElement("div", { key: `${ev.id}-${idx}`, className: `text-[9px] px-1.5 py-0.5 rounded truncate text-white ${ev.color} leading-none`, title: ev.title }, ev.title)),
+                                            dayEvents.slice(0, 4).map((ev, idx) => React.createElement("div", { key: `${ev.id}-${idx}`, className: `text-[9px] px-1.5 py-0.5 rounded-md border border-white/30 dark:border-zinc-950/30 truncate text-white ${ev.color} leading-none`, title: ev.title }, ev.title)),
                                             dayEvents.length > 4 && React.createElement("div", { className: "text-[8px] text-zinc-400 font-bold text-center mt-0.5" }, `+${dayEvents.length - 4} more`)
                                         )
                                     );
@@ -890,7 +890,8 @@
                             React.createElement("div", { className: "flex-1 overflow-y-auto no-scrollbar relative" },
                                 view === 'day' ? renderGrid([selectedDate]) : renderGrid(Array.from({length: 7}, (_, i) => { const d = new Date(getWeekStart(selectedDate)); d.setDate(d.getDate() + i); return d; }))
                             )
-                        )
+                        ),
+                        editingEvent && renderEditor()
                     )
                 ),
                 React.createElement("div", { className: "w-full xl:w-80 flex flex-col gap-6 shrink-0 h-full overflow-y-auto no-scrollbar pb-24 xl:pb-0" },
@@ -907,7 +908,6 @@
                         React.createElement("textarea", { value: note, onChange: (e) => onUpdateDailyPlan({...dailyPlan, notes: e.target.value}), className: "w-full h-24 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 focus:border-indigo-500 outline-none resize-none text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:placeholder:text-zinc-600", placeholder: "Notes & thoughts..." })
                     )
                 ),
-                editingEvent && renderEditor(),
                 pendingRecurringEdit && renderRecurringEditModal()
             );
         };
