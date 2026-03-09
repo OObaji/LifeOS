@@ -248,7 +248,9 @@
             
             useEffect(() => { const handleEsc = (e) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', handleEsc); return () => window.removeEventListener('keydown', handleEsc); }, [onClose]);
 
-            return React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" }, React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-2xl p-6" }, React.createElement("h2", { className: "text-xl font-bold mb-4 text-zinc-900 dark:text-white" }, "Cloud Sync Setup"), React.createElement("input", { value: url, onChange: e => setUrl(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), placeholder: "Supabase URL", className: "w-full mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white" }), React.createElement("input", { value: key, onChange: e => setKey(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), type: "password", placeholder: "Anon Key", className: "w-full mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white" }), React.createElement("div", { className: "flex justify-end gap-3" }, React.createElement("button", { onClick: onClose, className: "px-4 py-2 text-zinc-500" }, "Cancel"), React.createElement("button", { onClick: handleSave, className: "px-6 py-2 bg-indigo-600 text-white rounded-lg" }, "Save"))));
+            return React.createElement("div", { className: "fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-8" },
+                React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar" }, React.createElement("h2", { className: "text-xl font-bold mb-4 text-zinc-900 dark:text-white" }, "Cloud Sync Setup"), React.createElement("input", { value: url, onChange: e => setUrl(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), placeholder: "Supabase URL", className: "w-full mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white" }), React.createElement("input", { value: key, onChange: e => setKey(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), type: "password", placeholder: "Anon Key", className: "w-full mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white" }), React.createElement("div", { className: "flex justify-end gap-3" }, React.createElement("button", { onClick: onClose, className: "px-4 py-2 text-zinc-500" }, "Cancel"), React.createElement("button", { onClick: handleSave, className: "px-6 py-2 bg-indigo-600 text-white rounded-lg" }, "Save")))
+            );
         };
         
         const ScheduleView = ({ events, onAddEvent, onUpdateEvent, onDeleteEvent, dailyPlan = {}, onUpdateDailyPlan, weeklyPlan = {} }) => {
@@ -256,7 +258,8 @@
             const [selectedDate, setSelectedDate] = useState(new Date());
             const [editingEvent, setEditingEvent] = useState(null);
             const [currentTime, setCurrentTime] = useState(new Date());
-            const [draggedEventId, setDraggedEventId] = useState(null);
+            const [dragState, setDragState] = useState(null);
+            const [pendingRecurringEdit, setPendingRecurringEdit] = useState(null);
             const [dragOffset, setDragOffset] = useState({ y: 0 });
             const [timeSelection, setTimeSelection] = useState(null);
             const gridRef = useRef(null);
@@ -289,12 +292,13 @@
                 const handleEsc = (e) => {
                     if (e.key === 'Escape') {
                         if (editingEvent) setEditingEvent(null);
+                        if (pendingRecurringEdit) setPendingRecurringEdit(null);
                         if (timeSelection) setTimeSelection(null);
                     }
                 };
                 window.addEventListener('keydown', handleEsc);
                 return () => window.removeEventListener('keydown', handleEsc);
-            }, [editingEvent, timeSelection]);
+            }, [editingEvent, pendingRecurringEdit, timeSelection]);
 
             const isSameDay = (d1, d2) => d1.toDateString() === d2.toDateString();
             
@@ -339,7 +343,6 @@
                     onAddEvent(editingEvent);
                 } else {
                     if (saveType === 'single' && editingEvent.originalRecurrence && editingEvent.originalRecurrence !== 'none') {
-                        // Create a new event for this specific instance
                         const newSingleEvent = {
                             ...editingEvent,
                             id: generateUUID(),
@@ -349,7 +352,6 @@
                         };
                         onAddEvent(newSingleEvent);
 
-                        // We need to add an exception to the original recurring event so it doesn't show up on this day anymore.
                         const originalEvent = events.find(e => e.id === editingEvent.id);
                         if (originalEvent) {
                             const exceptionDateStr = new Date(editingEvent.start).toDateString();
@@ -362,7 +364,6 @@
                             }
                         }
                     } else {
-                        // Regular update (updates the entire series or a normal non-recurring event)
                         onUpdateEvent(editingEvent);
                     }
                 }
@@ -372,7 +373,7 @@
             const deleteEvent = () => { if (editingEvent.id && confirm("Delete this event?")) { onDeleteEvent(editingEvent.id); setEditingEvent(null); } };
 
             const handleTimeSelectStart = (e, date) => {
-                if(e.button !== 0 || draggedEventId) return;
+                if(e.button !== 0 || dragState) return;
                 const targetElement = e.currentTarget;
                 const rect = targetElement.getBoundingClientRect();
                 const y = e.clientY - rect.top;
@@ -382,12 +383,21 @@
 
             const handleMouseDown = (e, ev) => {
                 if(e.button !== 0) return; e.stopPropagation();
-                setDraggedEventId(ev.id); dragStartPos.current = { x: e.clientX, y: e.clientY }; isDraggingRef.current = false;
-                const rect = e.currentTarget.getBoundingClientRect(); setDragOffset({ y: e.clientY - rect.top });
+                setDragState({
+                    id: ev.id,
+                    instanceStart: new Date(ev.instanceStart),
+                    newStart: new Date(ev.instanceStart),
+                    newEnd: new Date(ev.instanceEnd),
+                    baseEvent: events.find(x => x.id === ev.id)
+                });
+                dragStartPos.current = { x: e.clientX, y: e.clientY };
+                isDraggingRef.current = false;
+                const rect = e.currentTarget.getBoundingClientRect(); 
+                setDragOffset({ y: e.clientY - rect.top });
             };
 
             const handleMouseMove = (e) => {
-                if (draggedEventId && gridRef.current) {
+                if (dragState && gridRef.current) {
                     isDraggingRef.current = true;
                     const gridRect = gridRef.current.getBoundingClientRect();
                     const relativeY = e.clientY - gridRect.top - dragOffset.y;
@@ -405,16 +415,12 @@
                         targetDate = weekDays[dayIdx] || weekDays[0];
                     }
 
-                    const ev = events.find(item => item.id === draggedEventId);
-                    if(!ev) return;
-                    const durationMs = new Date(ev.end) - new Date(ev.start);
+                    const durationMs = new Date(dragState.baseEvent.end) - new Date(dragState.baseEvent.start);
                     const newStart = new Date(targetDate);
                     newStart.setHours(hours, minutes, 0, 0);
                     const newEnd = new Date(newStart.getTime() + durationMs);
 
-                    // Note: Dragging updates the entire series for now to prevent massive complexity. 
-                    // To do single-instance dragging requires generating a new event on drop.
-                    onUpdateEvent({ ...ev, start: toLocalISO(newStart), end: toLocalISO(newEnd) });
+                    setDragState(prev => ({ ...prev, newStart, newEnd }));
                 } else if (timeSelection) {
                     const rect = timeSelection.targetElement.getBoundingClientRect();
                     const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
@@ -424,7 +430,22 @@
             };
 
             const handleMouseUp = () => {
-                if (draggedEventId) { setDraggedEventId(null); setTimeout(() => { isDraggingRef.current = false; }, 0); }
+                if (dragState) { 
+                    if (isDraggingRef.current) {
+                        const { id, instanceStart, newStart, newEnd, baseEvent } = dragState;
+                        const isRecurring = baseEvent.recurrence && baseEvent.recurrence !== 'none';
+                        
+                        if (instanceStart.getTime() !== newStart.getTime()) {
+                            if (isRecurring) {
+                                setPendingRecurringEdit({ baseEvent, instanceStart, newStart, newEnd });
+                            } else {
+                                onUpdateEvent({ ...baseEvent, start: toLocalISO(newStart), end: toLocalISO(newEnd) });
+                            }
+                        }
+                    }
+                    setDragState(null); 
+                    setTimeout(() => { isDraggingRef.current = false; }, 0); 
+                }
                 if (timeSelection) {
                     const { date, startMins, currentMins } = timeSelection;
                     const minVal = Math.min(startMins, currentMins); 
@@ -488,7 +509,7 @@
                     
                     if (dStart < initialStartDay) return;
                     if (recurEnd && dStart > recurEnd) return;
-                    if (exceptions.includes(dStart.toDateString())) return; // Skip if this instance was edited/deleted individually
+                    if (exceptions.includes(dStart.toDateString())) return; 
                     
                     let matches = false;
                     if (recur === 'daily') matches = true;
@@ -509,7 +530,16 @@
                     }
                 });
             });
-            const upcomingEvents = syntheticEvents.filter(e => e.instanceEnd > nowTime).sort((a, b) => a.instanceStart - b.instanceStart);
+
+            // Map dragged event overriding values securely
+            let displayEvents = syntheticEvents.map(ev => {
+                if (dragState && ev.id === dragState.id && isSameDay(new Date(ev.instanceStart), dragState.instanceStart)) {
+                    return { ...ev, originalInstanceStart: ev.instanceStart, instanceStart: dragState.newStart, instanceEnd: dragState.newEnd, isDragging: true };
+                }
+                return ev;
+            });
+
+            const upcomingEvents = displayEvents.filter(e => e.instanceEnd > nowTime).sort((a, b) => a.instanceStart - b.instanceStart);
             const isHappeningNow = upcomingEvents[0] && upcomingEvents[0].instanceStart <= nowTime && upcomingEvents[0].instanceEnd >= nowTime;
 
             const CurrentTimeLine = ({ className = "absolute left-0 right-0" }) => {
@@ -532,7 +562,7 @@
                                 isSameDay(d, new Date()) && React.createElement(CurrentTimeLine, { className: "absolute left-0 right-0" }),
                                 hours.map(h => React.createElement("div", { key: h, className: "flex-1 border-b border-zinc-200 dark:border-zinc-800/80 cursor-crosshair hover:bg-zinc-50 dark:hover:bg-zinc-800/20 min-h-[80px]" })),
                                 (() => {
-                                    const dayEventsRaw = syntheticEvents.filter(ev => {
+                                    const dayEventsRaw = displayEvents.filter(ev => {
                                         const evStart = new Date(ev.instanceStart);
                                         const evEnd = new Date(ev.instanceEnd);
                                         return evStart < dayEnd && evEnd > dayStart;
@@ -600,7 +630,6 @@
                                     });
 
                                     return processedEvents.map(ev => {
-                                        const isDragging = draggedEventId === ev.id;
                                         return React.createElement("div", { 
                                             key: `${ev.id}-${d.getTime()}`, 
                                             onMouseDown: (e) => handleMouseDown(e, ev),
@@ -612,13 +641,13 @@
                                                     const originalEvent = events.find(x => x.id === ev.id);
                                                     setEditingEvent({
                                                         ...originalEvent,
-                                                        start: toLocalISO(new Date(ev.instanceStart)),
+                                                        start: toLocalISO(new Date(ev.originalInstanceStart || ev.instanceStart)),
                                                         end: toLocalISO(new Date(ev.instanceEnd)),
                                                         originalRecurrence: originalEvent.recurrence
                                                     });
                                                 }
                                             }, 
-                                            className: `absolute px-1.5 py-1 text-[10px] leading-tight text-white shadow-sm overflow-hidden cursor-pointer hover:z-[35] hover:shadow-md ${isDragging ? 'opacity-80 z-50 scale-105 ring-1 ring-white/50 transition-none' : 'transition-transform z-10'} ${ev.color} ${ev.continuesFromPrev ? 'rounded-t-none border-t-0 opacity-90' : 'rounded-t'} ${ev.continuesToNext ? 'rounded-b-none border-b-0 opacity-90' : 'rounded-b'}`, 
+                                            className: `absolute px-1.5 py-1 text-[10px] leading-tight text-white shadow-sm overflow-hidden cursor-pointer hover:z-[35] hover:shadow-md ${ev.isDragging ? 'opacity-80 z-50 scale-105 ring-1 ring-white/50 transition-none' : 'transition-transform z-10'} ${ev.color} ${ev.continuesFromPrev ? 'rounded-t-none border-t-0 opacity-90' : 'rounded-t'} ${ev.continuesToNext ? 'rounded-b-none border-b-0 opacity-90' : 'rounded-b'}`, 
                                             style: { 
                                                 top: `${ev.topPercent}%`, 
                                                 height: `${ev.heightPercent}%`,
@@ -651,13 +680,11 @@
 
                 return React.createElement("div", { className: "fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-8 animate-in fade-in duration-200" },
                     React.createElement("div", { className: "bg-[#09090b] border border-zinc-800 rounded-[24px] w-full max-w-[380px] relative shadow-2xl flex flex-col max-h-[90vh] overflow-hidden shrink-0" },
-                        // Fixed Header
                         React.createElement("div", { className: "flex justify-between items-center p-5 md:px-6 border-b border-zinc-800/60 shrink-0 bg-[#09090b]" },
                             React.createElement("h3", { className: "text-lg font-bold flex items-center gap-3 text-white" }, React.createElement("div", { className: `w-2 h-6 rounded-full shadow-sm ${editingEvent.color}` }), editingEvent.id ? "Edit Event" : "New Event"),
                             React.createElement("div", { className: "flex gap-1" }, editingEvent.id && React.createElement("button", { onClick: deleteEvent, className: "text-zinc-500 hover:text-red-500 p-2 rounded-full hover:bg-zinc-800/50 transition-colors" }, React.createElement(Trash2, { size: 18 })), React.createElement("button", { onClick: () => setEditingEvent(null), className: "text-zinc-500 hover:text-white p-2 rounded-full hover:bg-zinc-800/50 transition-colors" }, React.createElement(X, { size: 20 })))
                         ),
                         
-                        // Scrollable Body
                         React.createElement("div", { className: "p-5 md:px-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 bg-[#09090b]" },
                             React.createElement("div", null, React.createElement("label", { className: "text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block px-1" }, "Title"), React.createElement("input", { value: editingEvent.title, onChange: e => setEditingEvent({...editingEvent, title: e.target.value}), onKeyDown: e => e.key === 'Enter' && handleSaveEventAction('series'), placeholder: "What's happening?", autoFocus: true, className: "w-full p-4 bg-[#18181b] border border-transparent rounded-xl text-sm font-semibold text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-500 shadow-inner" })),
                             
@@ -723,7 +750,6 @@
                             )
                         ),
                         
-                        // Fixed Footer
                         React.createElement("div", { className: "p-5 md:px-6 border-t border-zinc-800/60 shrink-0 flex gap-3 bg-[#09090b]" }, 
                             isRecurringInstance ? (
                                 React.createElement(React.Fragment, null,
@@ -737,6 +763,64 @@
                     )
                 );
             };
+
+            const renderRecurringEditModal = () => (
+                React.createElement("div", { className: "fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-8 animate-in fade-in duration-200" },
+                    React.createElement("div", { className: "bg-[#09090b] border border-zinc-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl flex flex-col gap-6" },
+                        React.createElement("div", null, 
+                            React.createElement("h3", { className: "text-xl font-bold text-white mb-2" }, "Edit Recurring Event"),
+                            React.createElement("p", { className: "text-sm text-zinc-400 leading-relaxed" }, "You moved a repeating event. Do you want to update only this occurrence, or shift the entire series?")
+                        ),
+                        React.createElement("div", { className: "flex flex-col gap-3" },
+                            React.createElement("button", { onClick: () => {
+                                const newSingleEvent = {
+                                    ...pendingRecurringEdit.baseEvent,
+                                    id: generateUUID(),
+                                    start: toLocalISO(pendingRecurringEdit.newStart),
+                                    end: toLocalISO(pendingRecurringEdit.newEnd),
+                                    recurrence: 'none',
+                                    recurrenceEndDate: null,
+                                    recurrenceDays: []
+                                };
+                                onAddEvent(newSingleEvent);
+
+                                const exceptionDateStr = pendingRecurringEdit.instanceStart.toDateString();
+                                const exceptions = pendingRecurringEdit.baseEvent.exceptions || [];
+                                if (!exceptions.includes(exceptionDateStr)) {
+                                    onUpdateEvent({
+                                        ...pendingRecurringEdit.baseEvent,
+                                        exceptions: [...exceptions, exceptionDateStr]
+                                    });
+                                }
+                                setPendingRecurringEdit(null);
+                            }, className: "w-full p-4 bg-zinc-800 text-white hover:bg-zinc-700 rounded-xl font-bold transition-all shadow-md active:scale-[0.98] text-sm" }, "Only this event"),
+                            React.createElement("button", { onClick: () => {
+                                const delta = pendingRecurringEdit.newStart.getTime() - pendingRecurringEdit.instanceStart.getTime();
+                                const newBaseStart = new Date(new Date(pendingRecurringEdit.baseEvent.start).getTime() + delta);
+                                const newBaseEnd = new Date(new Date(pendingRecurringEdit.baseEvent.end).getTime() + delta);
+                                
+                                const oldDay = pendingRecurringEdit.instanceStart.getDay();
+                                const newDay = pendingRecurringEdit.newStart.getDay();
+                                const dayShift = newDay - oldDay;
+                                
+                                let newRecurrenceDays = pendingRecurringEdit.baseEvent.recurrenceDays || [new Date(pendingRecurringEdit.baseEvent.start).getDay()];
+                                if (dayShift !== 0) {
+                                    newRecurrenceDays = newRecurrenceDays.map(d => (d + dayShift + 7) % 7);
+                                }
+
+                                onUpdateEvent({
+                                    ...pendingRecurringEdit.baseEvent,
+                                    start: toLocalISO(newBaseStart),
+                                    end: toLocalISO(newBaseEnd),
+                                    recurrenceDays: newRecurrenceDays
+                                });
+                                setPendingRecurringEdit(null);
+                            }, className: "w-full p-4 bg-white text-black hover:bg-zinc-200 rounded-xl font-bold transition-all shadow-md active:scale-[0.98] text-sm" }, "Entire series"),
+                            React.createElement("button", { onClick: () => setPendingRecurringEdit(null), className: "w-full p-3 text-zinc-500 hover:text-white font-bold transition-colors" }, "Cancel")
+                        )
+                    )
+                )
+            );
 
             return React.createElement("div", { className: "flex flex-col xl:flex-row gap-6 w-full max-w-[1600px] mx-auto h-[calc(100vh-12rem)] md:h-[calc(100vh-6rem)]" },
                 React.createElement("div", { className: "flex-1 flex flex-col min-w-0 relative h-full" },
@@ -789,7 +873,7 @@
                                 getMonthDays(selectedDate).map((d, i) => {
                                     const isCurrentMonth = d.getMonth() === selectedDate.getMonth();
                                     const isToday = isSameDay(d, new Date());
-                                    const dayEvents = syntheticEvents.filter(ev => {
+                                    const dayEvents = displayEvents.filter(ev => {
                                         const evStart = new Date(ev.instanceStart);
                                         const evEnd = new Date(ev.instanceEnd);
                                         const dayStart = new Date(d); dayStart.setHours(0, 0, 0, 0);
@@ -826,7 +910,8 @@
                         React.createElement("textarea", { value: note, onChange: (e) => onUpdateDailyPlan({...dailyPlan, notes: e.target.value}), className: "w-full h-24 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 focus:border-indigo-500 outline-none resize-none text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:placeholder:text-zinc-600", placeholder: "Notes & thoughts..." })
                     )
                 ),
-                editingEvent && renderEditor()
+                editingEvent && renderEditor(),
+                pendingRecurringEdit && renderRecurringEditModal()
             );
         };
 
