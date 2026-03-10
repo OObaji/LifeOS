@@ -329,6 +329,8 @@
             const editDailyTask = (day, id, text) => onUpdate({ ...plan, dailyTasks: { ...dailyTasks, [day]: (dailyTasks[day] || []).map(t => t.id === id ? { ...t, text } : t) } });
             const reorderDailyTask = (day, newItems) => onUpdate({ ...plan, dailyTasks: { ...dailyTasks, [day]: newItems } });
 
+            const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-full flex flex-col overflow-y-auto max-w-7xl mx-auto" },
                  React.createElement("div", { className: "flex justify-between items-center mb-8" },
                     React.createElement("div", null, React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "Weekly Vision"), React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 text-sm" }, "Zoom out. execute strategy.")),
@@ -336,12 +338,16 @@
                 ),
                 React.createElement("div", null,
                     React.createElement("h3", { className: "text-xl font-bold text-zinc-900 dark:text-white mb-4 flex items-center gap-2" }, React.createElement(Calendar, { size: 20 }), "The Week Ahead"),
-                    React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4" }, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
-                        React.createElement("div", { key: day, className: "p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors flex flex-col h-full min-h-[200px]" },
-                            React.createElement("div", { className: "text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3 border-b border-zinc-100 dark:border-zinc-800 pb-2" }, day),
+                    React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4" }, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => {
+                        const isToday = day === todayName;
+                        return React.createElement("div", { key: day, className: `p-4 rounded-2xl transition-all flex flex-col h-full min-h-[200px] ${isToday ? 'bg-indigo-50/50 dark:bg-indigo-900/20 border-2 border-indigo-500 shadow-md transform scale-[1.01]' : 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-zinc-300 dark:hover:border-zinc-700'}` },
+                            React.createElement("div", { className: `text-xs font-bold uppercase tracking-widest mb-3 border-b pb-2 flex justify-between items-center ${isToday ? 'text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800/50' : 'text-zinc-400 border-zinc-100 dark:border-zinc-800'}` }, 
+                                React.createElement("span", null, day),
+                                isToday && React.createElement("span", { className: "text-[9px] bg-indigo-500 text-white px-2 py-0.5 rounded-full shadow-sm" }, "TODAY")
+                            ),
                             React.createElement(EditableList, { items: dailyTasks[day] || [], onAdd: (text) => addDailyTask(day, text), onToggle: (id) => toggleDailyTask(day, id), onDelete: (id) => deleteDailyTask(day, id), onEdit: (id, text) => editDailyTask(day, id, text), onReorder: (newItems) => reorderDailyTask(day, newItems), placeholder: "Add task..." })
-                        )
-                    )))
+                        );
+                    }))
                 )
             );
         };
