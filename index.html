@@ -464,10 +464,15 @@
             const [title, setTitle] = useState("");
             const [date, setDate] = useState("");
             const handleAdd = () => { if (title && date) { onAdd({ title, date }); setTitle(""); setDate(""); } };
+            
             const calculateDays = (targetDate) => {
                 const diff = new Date(targetDate) - new Date();
                 return Math.ceil(diff / (1000 * 60 * 60 * 24));
             };
+
+            const activeCountdowns = countdowns.filter(c => calculateDays(c.date) >= 0).sort((a, b) => new Date(a.date) - new Date(b.date));
+            const finishedCountdowns = countdowns.filter(c => calculateDays(c.date) < 0).sort((a, b) => new Date(b.date) - new Date(a.date));
+
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 max-w-6xl mx-auto" },
                 React.createElement("div", { className: "flex justify-between items-center mb-8" },
                     React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "Countdowns")
@@ -478,16 +483,30 @@
                     React.createElement("button", { onClick: handleAdd, className: "bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-500 shadow-glow-sm" }, "Add Event")
                 ),
                 React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" },
-                    countdowns.sort((a,b) => new Date(a.date) - new Date(b.date)).map(c => {
+                    activeCountdowns.map(c => {
                         const days = calculateDays(c.date);
                         return React.createElement("div", { key: c.id, className: "bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden group hover:border-indigo-500/50 transition-colors" },
                             React.createElement("div", { className: "absolute top-4 right-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" },
                                 React.createElement("button", { onClick: () => onDelete(c.id), className: "text-red-500 hover:text-red-600 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 p-2 rounded-xl transition-colors" }, React.createElement(Trash2, { size: 16 }))
                             ),
-                            React.createElement("div", { className: "text-5xl font-black text-indigo-600 dark:text-indigo-400 mb-2" }, days > 0 ? days : 0),
+                            React.createElement("div", { className: "text-5xl font-black text-indigo-600 dark:text-indigo-400 mb-2" }, days),
                             React.createElement("div", { className: "text-xs font-bold uppercase tracking-widest text-zinc-400 mb-4" }, "Days Remaining"),
                             React.createElement("h3", { className: "text-xl font-bold text-zinc-900 dark:text-white truncate pr-10" }, c.title),
                             React.createElement("p", { className: "text-sm text-zinc-500 mt-1 flex items-center gap-1" }, React.createElement(Calendar, { size: 14 }), new Date(c.date).toLocaleDateString())
+                        );
+                    }),
+                    finishedCountdowns.map(c => {
+                        return React.createElement("div", { key: c.id, className: "bg-zinc-50 dark:bg-zinc-900/40 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800/50 shadow-sm relative overflow-hidden group transition-colors opacity-70 hover:opacity-100" },
+                            React.createElement("div", { className: "absolute top-4 right-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" },
+                                React.createElement("button", { onClick: () => onDelete(c.id), className: "text-red-500 hover:text-red-600 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 p-2 rounded-xl transition-colors" }, React.createElement(Trash2, { size: 16 }))
+                            ),
+                            React.createElement("div", { className: "flex items-center gap-3 text-emerald-500 mb-2 h-[48px]" }, 
+                                React.createElement(CheckCircle2, { size: 36, strokeWidth: 3 }), 
+                                React.createElement("span", { className: "text-3xl font-black" }, "Done")
+                            ),
+                            React.createElement("div", { className: "text-xs font-bold uppercase tracking-widest text-zinc-400 mb-4" }, "Finished"),
+                            React.createElement("h3", { className: "text-xl font-bold text-zinc-500 dark:text-zinc-500 line-through truncate pr-10" }, c.title),
+                            React.createElement("p", { className: "text-sm text-zinc-400 mt-1 flex items-center gap-1" }, React.createElement(Calendar, { size: 14 }), new Date(c.date).toLocaleDateString())
                         );
                     })
                 )
