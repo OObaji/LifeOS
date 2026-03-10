@@ -278,624 +278,12 @@
                 React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar" }, React.createElement("h2", { className: "text-xl font-bold mb-4 text-zinc-900 dark:text-white" }, "Cloud Sync Setup"), React.createElement("input", { value: url, onChange: e => setUrl(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), placeholder: "Supabase URL", className: "w-full mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-base" }), React.createElement("input", { value: key, onChange: e => setKey(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), type: "password", placeholder: "Anon Key", className: "w-full mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-base" }), React.createElement("div", { className: "flex justify-end gap-3" }, React.createElement("button", { onClick: onClose, className: "px-4 py-2 text-zinc-500" }, "Cancel"), React.createElement("button", { onClick: handleSave, className: "px-6 py-2 bg-indigo-600 text-white rounded-lg" }, "Save")))
             );
         };
-        
-        const ScheduleView = ({ events, onAddEvent, onUpdateEvent, onDeleteEvent, dailyPlan = {}, onUpdateDailyPlan, weeklyPlan = {} }) => {
-            const [view, setView] = useState('week');
-            const [selectedDate, setSelectedDate] = useState(new Date());
-            const [editingEvent, setEditingEvent] = useState(null);
-            const [currentTime, setCurrentTime] = useState(new Date());
-            const [dragState, setDragState] = useState(null);
-            const [pendingRecurringEdit, setPendingRecurringEdit] = useState(null);
-            const [dragOffset, setDragOffset] = useState({ y: 0 });
-            const [timeSelection, setTimeSelection] = useState(null);
-            const gridRef = useRef(null);
-            const dragStartPos = useRef({ x: 0, y: 0 });
-            const isDraggingRef = useRef(false);
-
-            const EVENT_COLORS = [
-                { bg: "bg-teal-500", label: "Personal" }, { bg: "bg-emerald-500", label: "Habits" }, { bg: "bg-blue-500", label: "Work" },
-                { bg: "bg-violet-500", label: "University" }, { bg: "bg-amber-500", label: "Events" }, { bg: "bg-pink-500", label: "Celebration" },
-                { bg: "bg-slate-500", label: "Others" }
-            ];
-
-            const minorTasks = dailyPlan.minorTasks || [];
-            const note = dailyPlan.notes || '';
-            const dayName = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
-            const dayTasks = weeklyPlan?.dailyTasks?.[dayName] || [];
-
-            const addMinorTask = (text) => { onUpdateDailyPlan({ ...dailyPlan, minorTasks: [...minorTasks, { id: generateUUID(), text, completed: false }] }); };
-            const toggleMinorTask = (id) => { onUpdateDailyPlan({ ...dailyPlan, minorTasks: minorTasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t) }); };
-            const deleteMinorTask = (id) => { onUpdateDailyPlan({ ...dailyPlan, minorTasks: minorTasks.filter(t => t.id !== id) }); };
-            const editMinorTask = (id, text) => { onUpdateDailyPlan({ ...dailyPlan, minorTasks: minorTasks.map(t => t.id === id ? { ...t, text } : t) }); };
-            const reorderMinorTask = (newItems) => { onUpdateDailyPlan({ ...dailyPlan, minorTasks: newItems }); };
-
-            useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 60000); return () => clearInterval(t); }, []);
-
-            useEffect(() => {
-                const handleEsc = (e) => {
-                    if (e.key === 'Escape') {
-                        if (editingEvent) setEditingEvent(null);
-                        if (pendingRecurringEdit) setPendingRecurringEdit(null);
-                        if (timeSelection) setTimeSelection(null);
-                    }
-                };
-                window.addEventListener('keydown', handleEsc);
-                return () => window.removeEventListener('keydown', handleEsc);
-            }, [editingEvent, pendingRecurringEdit, timeSelection]);
-
-            const isSameDay = (d1, d2) => d1.toDateString() === d2.toDateString();
-            const getWeekStart = (date) => { const d = new Date(date); const day = d.getDay(); const diff = d.getDate() - day; return new Date(d.setDate(diff)); };
-            const toLocalISO = (d) => { const offset = d.getTimezoneOffset() * 60000; return new Date(d.getTime() - offset).toISOString().slice(0, 16); };
-            const formatTime = (iso) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
-
-            const getMonthDays = (date) => {
-                const year = date.getFullYear(); const month = date.getMonth(); const firstDay = new Date(year, month, 1);
-                let dayOfWeek = firstDay.getDay(); const diff = dayOfWeek; const start = new Date(firstDay); start.setDate(firstDay.getDate() - diff);
-                return Array.from({length: 42}, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d; });
-            };
-
-            const openNewEvent = (defaultStart = null, defaultEnd = null, isAllDay = false) => {
-                const start = defaultStart ? new Date(defaultStart) : new Date(selectedDate);
-                if(!defaultStart) { const now = new Date(); start.setHours(now.getHours() + 1, 0, 0, 0); }
-                const end = defaultEnd ? new Date(defaultEnd) : new Date(start);
-                if(!defaultEnd) { if (isAllDay) { end.setHours(23, 59, 59, 999); } else { end.setHours(start.getHours() + 1, 0, 0, 0); } }
-                setEditingEvent({ title: "", start: toLocalISO(start), end: toLocalISO(end), color: isAllDay ? "bg-pink-500" : "bg-teal-500", recurrence: 'none', recurrenceDays: [start.getDay()], recurrenceEndDate: "", description: "", isAllDay });
-            };
-
-            const handleSaveEventAction = (saveType) => {
-                if (!editingEvent.title.trim()) return;
-                let finalEvent = { ...editingEvent };
-                if (finalEvent.isAllDay) {
-                    const sDate = finalEvent.start.split('T')[0];
-                    let eDate = finalEvent.end.split('T')[0];
-                    if (new Date(eDate) < new Date(sDate)) eDate = sDate;
-                    finalEvent.start = `${sDate}T00:00`;
-                    finalEvent.end = `${eDate}T23:59`;
-                }
-                if (!finalEvent.id) {
-                    onAddEvent(finalEvent);
-                } else {
-                    if (saveType === 'single' && finalEvent.originalRecurrence && finalEvent.originalRecurrence !== 'none') {
-                        const newSingleEvent = { ...finalEvent, id: generateUUID(), recurrence: 'none', recurrenceEndDate: null, recurrenceDays: [] };
-                        onAddEvent(newSingleEvent);
-                        const originalEvent = events.find(e => e.id === finalEvent.id);
-                        if (originalEvent) {
-                            const exceptionDateStr = new Date(finalEvent.originalInstanceStart || finalEvent.start).toDateString();
-                            const exceptions = originalEvent.exceptions || [];
-                            if (!exceptions.includes(exceptionDateStr)) { onUpdateEvent({ ...originalEvent, exceptions: [...exceptions, exceptionDateStr] }); }
-                        }
-                    } else { onUpdateEvent(finalEvent); }
-                }
-                setEditingEvent(null);
-            };
-
-            const deleteEvent = () => { if (editingEvent.id && confirm("Delete this event?")) { onDeleteEvent(editingEvent.id); setEditingEvent(null); } };
-
-            const handleTimeSelectStart = (e, date) => {
-                if((e.button && e.button !== 0) || dragState) return;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                const targetElement = e.currentTarget;
-                const rect = targetElement.getBoundingClientRect();
-                const y = clientY - rect.top;
-                const mins = (y / rect.height) * 1440;
-                setTimeSelection({ date, startMins: mins, currentMins: mins, targetElement });
-            };
-
-            const handlePointerDown = (e, ev) => {
-                if(e.button !== 0 && e.pointerType === 'mouse') return;
-                e.stopPropagation();
-                e.currentTarget.setPointerCapture(e.pointerId);
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                setDragState({ id: ev.id, instanceStart: new Date(ev.instanceStart), newStart: new Date(ev.instanceStart), newEnd: new Date(ev.instanceEnd), baseEvent: events.find(x => x.id === ev.id) });
-                dragStartPos.current = { x: clientX, y: clientY }; 
-                isDraggingRef.current = false;
-                const rect = e.currentTarget.getBoundingClientRect(); 
-                setDragOffset({ y: clientY - rect.top });
-            };
-
-            const handlePointerMove = (e) => {
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-                if (dragState && gridRef.current) {
-                    isDraggingRef.current = true;
-                    const gridRect = gridRef.current.getBoundingClientRect();
-                    const relativeY = clientY - gridRect.top - dragOffset.y;
-                    let totalMinutes = Math.max(0, Math.min(1439, Math.floor((relativeY / gridRect.height) * 1440)));
-                    totalMinutes = Math.round(totalMinutes / 15) * 15;
-                    const hours = Math.floor(totalMinutes / 60); const minutes = totalMinutes % 60;
-
-                    let targetDate = selectedDate;
-                    if (view === 'week') {
-                        const relativeX = clientX - gridRect.left;
-                        const colWidth = gridRect.width / 7; 
-                        const dayIdx = Math.max(0, Math.min(6, Math.floor(relativeX / colWidth)));
-                        const start = getWeekStart(selectedDate);
-                        const weekDays = Array.from({length: 7}, (_, i) => { const d = new Date(start); d.setDate(d.getDate() + i); return d; });
-                        targetDate = weekDays[dayIdx] || weekDays[0];
-                    }
-
-                    const durationMs = new Date(dragState.baseEvent.end) - new Date(dragState.baseEvent.start);
-                    const newStart = new Date(targetDate);
-                    newStart.setHours(hours, minutes, 0, 0);
-                    const newEnd = new Date(newStart.getTime() + durationMs);
-
-                    setDragState(prev => ({ ...prev, newStart, newEnd }));
-                } else if (timeSelection) {
-                    const rect = timeSelection.targetElement.getBoundingClientRect();
-                    const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
-                    const mins = (y / rect.height) * 1440;
-                    setTimeSelection(prev => prev ? { ...prev, currentMins: mins } : null);
-                }
-            };
-
-            const handlePointerUp = () => {
-                if (dragState) { 
-                    if (isDraggingRef.current) {
-                        const { id, instanceStart, newStart, newEnd, baseEvent } = dragState;
-                        const isRecurring = baseEvent.recurrence && baseEvent.recurrence !== 'none';
-                        if (instanceStart.getTime() !== newStart.getTime()) {
-                            if (isRecurring) { setPendingRecurringEdit({ baseEvent, instanceStart, newStart, newEnd }); } else { onUpdateEvent({ ...baseEvent, start: toLocalISO(newStart), end: toLocalISO(newEnd) }); }
-                        }
-                    }
-                    setDragState(null); 
-                    setTimeout(() => { isDraggingRef.current = false; }, 0); 
-                }
-                if (timeSelection) {
-                    const { date, startMins, currentMins } = timeSelection;
-                    const minVal = Math.min(startMins, currentMins); 
-                    const maxVal = Math.max(startMins, currentMins);
-                    const snappedStart = Math.floor(minVal / 15) * 15;
-                    let snappedEnd;
-                    if (maxVal - minVal < 15) { snappedEnd = snappedStart + 60; } else { snappedEnd = Math.ceil(maxVal / 15) * 15; }
-
-                    const startDate = new Date(date); startDate.setHours(Math.floor(snappedStart / 60), snappedStart % 60, 0, 0);
-                    const endDate = new Date(date); endDate.setHours(Math.floor(snappedEnd / 60), snappedEnd % 60, 0, 0);
-                    openNewEvent(startDate, endDate);
-                    setTimeSelection(null);
-                }
-            };
-
-            let syntheticEvents = [];
-            const nowTime = new Date();
-            let evaluationDaysMap = new Map();
-            for(let i=0; i<=14; i++) {
-                const d = new Date(nowTime); d.setDate(d.getDate() + i); d.setHours(0,0,0,0);
-                evaluationDaysMap.set(d.getTime(), d);
-            }
-            let visibleDays = [];
-            if (view === 'month') visibleDays = getMonthDays(selectedDate);
-            else if (view === 'week') visibleDays = Array.from({length: 7}, (_, i) => { const d = new Date(getWeekStart(selectedDate)); d.setDate(d.getDate() + i); return d; });
-            else visibleDays = [selectedDate];
-
-            visibleDays.forEach(d => { const dStart = new Date(d); dStart.setHours(0,0,0,0); evaluationDaysMap.set(dStart.getTime(), dStart); });
-
-            const evaluationDays = Array.from(evaluationDaysMap.values());
-            
-            events.forEach(ev => {
-                const recur = ev.recurrence || (ev.isHabit ? 'daily' : 'none');
-                const baseStart = new Date(ev.start);
-                const durationMs = new Date(ev.end) - baseStart;
-                const targetDays = ev.recurrenceDays || [baseStart.getDay()];
-                const recurEnd = ev.recurrenceEndDate ? new Date(ev.recurrenceEndDate) : null;
-                const exceptions = ev.exceptions || [];
-
-                if (recur === 'none') { syntheticEvents.push({...ev, instanceStart: baseStart, instanceEnd: new Date(ev.end)}); return; }
-                if (recurEnd) recurEnd.setHours(23, 59, 59, 999);
-
-                evaluationDays.forEach(d => {
-                    const dStart = new Date(d); dStart.setHours(0,0,0,0);
-                    const initialStartDay = new Date(baseStart); initialStartDay.setHours(0,0,0,0);
-                    
-                    if (dStart < initialStartDay) return;
-                    if (recurEnd && dStart > recurEnd) return;
-                    if (exceptions.includes(dStart.toDateString())) return; 
-                    
-                    let matches = false;
-                    if (recur === 'daily') matches = true;
-                    else if (recur === 'weekdays') matches = d.getDay() >= 1 && d.getDay() <= 5;
-                    else if (recur === 'weekly') matches = targetDays.includes(d.getDay());
-                    else if (recur === 'biweekly') {
-                        const bws = getWeekStart(baseStart); bws.setHours(0,0,0,0);
-                        const tws = getWeekStart(d); tws.setHours(0,0,0,0);
-                        const diffWeeks = Math.round((tws - bws) / (7 * 86400000));
-                        matches = diffWeeks >= 0 && diffWeeks % 2 === 0 && targetDays.includes(d.getDay());
-                    }
-                    else if (recur === 'yearly') { matches = d.getMonth() === baseStart.getMonth() && d.getDate() === baseStart.getDate(); }
-                    
-                    if(matches) {
-                        const iStart = new Date(d); iStart.setHours(baseStart.getHours(), baseStart.getMinutes(), 0, 0);
-                        if (iStart >= baseStart || isSameDay(iStart, baseStart)) {
-                            const iEnd = new Date(iStart.getTime() + durationMs);
-                            syntheticEvents.push({...ev, instanceStart: iStart, instanceEnd: iEnd});
-                        }
-                    }
-                });
-            });
-
-            let displayEvents = syntheticEvents.map(ev => {
-                if (dragState && ev.id === dragState.id && isSameDay(new Date(ev.instanceStart), dragState.instanceStart)) {
-                    return { ...ev, originalInstanceStart: ev.instanceStart, instanceStart: dragState.newStart, instanceEnd: dragState.newEnd, isDragging: true };
-                }
-                return ev;
-            });
-
-            const upcomingEvents = displayEvents.filter(e => e.instanceEnd > nowTime).sort((a, b) => a.instanceStart - b.instanceStart);
-            const isHappeningNow = upcomingEvents[0] && upcomingEvents[0].instanceStart <= nowTime && upcomingEvents[0].instanceEnd >= nowTime;
-
-            const CurrentTimeLine = ({ className = "absolute left-0 right-0" }) => {
-                const topPercent = (currentTime.getHours() * 60 + currentTime.getMinutes()) / 1440 * 100;
-                return React.createElement("div", { className: `${className} h-[1.5px] bg-red-500 z-30 pointer-events-none flex items-center shadow-[0_0_8px_rgba(239,68,68,0.5)]`, style: { top: `${topPercent}%` } }, React.createElement("div", { className: "w-2 h-2 bg-red-500 rounded-full -ml-[3px]" }));
-            };
-
-            const renderGrid = (daysArray) => {
-                const hours = Array.from({length: 24}, (_, i) => i);
-                return React.createElement("div", { className: "flex h-[1920px] relative touch-none", onPointerMove: handlePointerMove, onPointerUp: handlePointerUp, onPointerLeave: handlePointerUp },
-                    React.createElement("div", { className: "w-12 md:w-[60px] shrink-0 border-r border-zinc-200 dark:border-zinc-800/80 sticky left-0 z-20 bg-zinc-50 dark:bg-[#111113] flex flex-col" },
-                        hours.map(h => React.createElement("div", { key: h, className: "flex-1 text-[10px] text-zinc-400 dark:text-zinc-500 text-right pr-2 pt-1 font-mono border-b border-transparent min-h-[80px]" }, `${h}:00`))
-                    ),
-                    React.createElement("div", { ref: gridRef, className: `flex-1 grid grid-cols-${daysArray.length} relative` },
-                        daysArray.map((d, i) => {
-                            const dayStart = new Date(d); dayStart.setHours(0, 0, 0, 0);
-                            const dayEnd = new Date(d); dayEnd.setHours(23, 59, 59, 999);
-                            
-                            return React.createElement("div", { key: i, className: `border-r border-zinc-200 dark:border-zinc-800/80 relative h-full flex flex-col`, onPointerDown: (e) => handleTimeSelectStart(e, d) },
-                                isSameDay(d, new Date()) && React.createElement(CurrentTimeLine, { className: "absolute left-0 right-0" }),
-                                hours.map(h => React.createElement("div", { key: h, className: "flex-1 border-b border-zinc-200 dark:border-zinc-800/80 cursor-crosshair hover:bg-zinc-50 dark:hover:bg-zinc-800/20 min-h-[80px]" })),
-                                (() => {
-                                    const dayEventsRaw = displayEvents.filter(ev => {
-                                        if (ev.isAllDay) return false; 
-                                        const evStart = new Date(ev.instanceStart);
-                                        const evEnd = new Date(ev.instanceEnd);
-                                        return evStart < dayEnd && evEnd > dayStart;
-                                    });
-
-                                    const processedEvents = dayEventsRaw.map(ev => {
-                                        const eStart = new Date(ev.instanceStart);
-                                        const eEnd = new Date(ev.instanceEnd);
-                                        const effectiveStart = eStart < dayStart ? dayStart : eStart;
-                                        const effectiveEnd = eEnd > dayEnd ? dayEnd : eEnd;
-                                        const topPercent = (effectiveStart.getHours() * 60 + effectiveStart.getMinutes()) / 1440 * 100;
-                                        const durationMinutes = Math.max((effectiveEnd - effectiveStart) / 60000, 15);
-                                        const heightPercent = (durationMinutes / 1440) * 100;
-                                        return { ...ev, effectiveStart, effectiveEnd, topPercent, heightPercent, durationMinutes, continuesFromPrev: eStart < dayStart, continuesToNext: eEnd > dayEnd };
-                                    }).sort((a, b) => a.effectiveStart - b.effectiveStart || b.durationMinutes - a.durationMinutes);
-
-                                    const overlappingGroups = [];
-                                    let currentGroup = [];
-                                    let groupEnd = new Date(0);
-
-                                    processedEvents.forEach(ev => {
-                                        if (ev.effectiveStart >= groupEnd) {
-                                            if (currentGroup.length > 0) overlappingGroups.push(currentGroup);
-                                            currentGroup = [ev];
-                                            groupEnd = ev.effectiveEnd;
-                                        } else {
-                                            currentGroup.push(ev);
-                                            if (ev.effectiveEnd > groupEnd) groupEnd = ev.effectiveEnd;
-                                        }
-                                    });
-                                    if (currentGroup.length > 0) overlappingGroups.push(currentGroup);
-
-                                    overlappingGroups.forEach(group => {
-                                        const columns = [];
-                                        group.forEach(ev => {
-                                            let placed = false;
-                                            for (let i = 0; i < columns.length; i++) {
-                                                if (!columns[i].some(e => e.effectiveStart < ev.effectiveEnd && e.effectiveEnd > ev.effectiveStart)) {
-                                                    columns[i].push(ev); ev.column = i; placed = true; break;
-                                                }
-                                            }
-                                            if (!placed) { columns.push([ev]); ev.column = columns.length - 1; }
-                                        });
-                                        group.forEach(ev => { ev.colCount = columns.length; });
-                                    });
-
-                                    return processedEvents.map(ev => {
-                                        return React.createElement("div", { 
-                                            key: `${ev.id}-${d.getTime()}`, 
-                                            onPointerDown: (e) => handlePointerDown(e, ev),
-                                            onClick: (e) => { 
-                                                e.stopPropagation(); 
-                                                const dx = Math.abs(e.clientX - dragStartPos.current.x); 
-                                                const dy = Math.abs(e.clientY - dragStartPos.current.y); 
-                                                if (dx < 5 && dy < 5) {
-                                                    const originalEvent = events.find(x => x.id === ev.id);
-                                                    setEditingEvent({
-                                                        ...originalEvent,
-                                                        start: toLocalISO(new Date(ev.originalInstanceStart || ev.instanceStart)),
-                                                        end: toLocalISO(new Date(ev.instanceEnd)),
-                                                        originalRecurrence: originalEvent.recurrence,
-                                                        originalInstanceStart: ev.originalInstanceStart || ev.instanceStart
-                                                    });
-                                                }
-                                            }, 
-                                            className: `absolute px-1.5 py-1 text-[10px] leading-tight text-white shadow-sm overflow-hidden cursor-pointer hover:z-[35] hover:shadow-md border border-white/50 dark:border-zinc-950/50 touch-none ${ev.isDragging ? 'opacity-80 z-50 scale-105 ring-1 ring-white/50 transition-none' : 'transition-transform z-10'} ${ev.color} ${ev.continuesFromPrev ? 'rounded-t-none border-t-0 opacity-90' : 'rounded-lg'} ${ev.continuesToNext ? 'rounded-b-none border-b-0 opacity-90' : 'rounded-lg'}`, 
-                                            style: { top: `${ev.topPercent}%`, height: `${ev.heightPercent}%`, left: `calc(${ev.column * (100 / ev.colCount)}% + 2px)`, width: `calc(${100 / ev.colCount}% - 4px)` }
-                                        },
-                                            React.createElement("div", { className: "font-semibold truncate" }, ev.title),
-                                            ev.durationMinutes > 35 && React.createElement("div", { className: "opacity-80 text-[8px] font-mono mt-0.5 pointer-events-none truncate" }, `${formatTime(ev.instanceStart)} - ${formatTime(ev.instanceEnd)}`)
-                                        );
-                                    });
-                                })(),
-                                timeSelection && isSameDay(timeSelection.date, d) && React.createElement("div", {
-                                    className: "absolute left-0.5 right-0.5 rounded bg-indigo-500/30 border border-indigo-500/50 z-20 pointer-events-none",
-                                    style: { top: `${Math.min(timeSelection.startMins, timeSelection.currentMins) / 1440 * 100}%`, height: `${Math.max(15, Math.abs(timeSelection.currentMins - timeSelection.startMins)) / 1440 * 100}%` }
-                                })
-                            )
-                        })
-                    )
-                );
-            };
-
-            const renderEditor = () => {
-                const startDateStr = editingEvent.start.split('T')[0];
-                const startTimeStr = editingEvent.start.split('T')[1];
-                const endDateStr = editingEvent.end.split('T')[0];
-                const endTimeStr = editingEvent.end.split('T')[1];
-                const isRecurringInstance = editingEvent.id && editingEvent.originalRecurrence && editingEvent.originalRecurrence !== 'none';
-
-                return React.createElement("div", { className: "fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-8 animate-in fade-in duration-200" },
-                    React.createElement("div", { className: "bg-[#09090b] border border-zinc-800 rounded-[24px] w-full max-w-[380px] relative shadow-2xl flex flex-col max-h-[90vh] overflow-hidden shrink-0" },
-                        React.createElement("div", { className: "flex justify-between items-center p-5 md:px-6 border-b border-zinc-800/60 shrink-0 bg-[#09090b]" },
-                            React.createElement("h3", { className: "text-lg font-bold flex items-center gap-3 text-white" }, React.createElement("div", { className: `w-2 h-6 rounded-full shadow-sm ${editingEvent.color}` }), editingEvent.id ? "Edit Event" : "New Event"),
-                            React.createElement("div", { className: "flex gap-1" }, editingEvent.id && React.createElement("button", { onClick: deleteEvent, className: "text-zinc-500 hover:text-red-500 p-2 rounded-full hover:bg-zinc-800/50 transition-colors" }, React.createElement(Trash2, { size: 18 })), React.createElement("button", { onClick: () => setEditingEvent(null), className: "text-zinc-500 hover:text-white p-2 rounded-full hover:bg-zinc-800/50 transition-colors" }, React.createElement(X, { size: 20 })))
-                        ),
-                        
-                        React.createElement("div", { className: "p-5 md:px-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 bg-[#09090b]" },
-                            React.createElement("div", null, React.createElement("label", { className: "text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block px-1" }, "Title"), React.createElement("input", { value: editingEvent.title, onChange: e => setEditingEvent({...editingEvent, title: e.target.value}), onKeyDown: e => e.key === 'Enter' && handleSaveEventAction('series'), placeholder: "What's happening?", autoFocus: true, className: "w-full p-4 bg-[#18181b] border border-transparent rounded-xl text-base font-semibold text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-500 shadow-inner" })),
-                            
-                            React.createElement("div", { className: "flex items-center gap-2 mb-2 p-2 rounded-xl bg-zinc-900/50 border border-zinc-800/80 cursor-pointer w-fit" },
-                                React.createElement("input", { type: "checkbox", checked: editingEvent.isAllDay || false, onChange: e => setEditingEvent({...editingEvent, isAllDay: e.target.checked}), className: "w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-indigo-500 focus:ring-indigo-500 cursor-pointer" }),
-                                React.createElement("label", { onClick: () => setEditingEvent({...editingEvent, isAllDay: !editingEvent.isAllDay}), className: "text-xs font-bold text-zinc-300 uppercase tracking-wider cursor-pointer select-none" }, "All-Day Event")
-                            ),
-
-                            React.createElement("div", { className: "space-y-3" },
-                                React.createElement("div", null, 
-                                    React.createElement("label", { className: "text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block px-1" }, "Start"), 
-                                    React.createElement("div", { className: "flex gap-2" },
-                                        React.createElement("input", { type: "date", value: startDateStr, onChange: e => setEditingEvent({...editingEvent, start: `${e.target.value}T${startTimeStr}`}), className: "w-1/2 p-3 bg-[#18181b] border border-transparent rounded-xl text-white focus:outline-none focus:border-indigo-500 font-mono text-xs md:text-[13px] transition-colors shadow-inner [color-scheme:dark] flex-1" }),
-                                        !editingEvent.isAllDay && React.createElement("input", { type: "time", value: startTimeStr, onChange: e => setEditingEvent({...editingEvent, start: `${startDateStr}T${e.target.value}`}), className: "w-1/2 p-3 bg-[#18181b] border border-transparent rounded-xl text-white focus:outline-none focus:border-indigo-500 font-mono text-xs md:text-[13px] transition-colors shadow-inner [color-scheme:dark]" })
-                                    )
-                                ),
-                                React.createElement("div", null, 
-                                    React.createElement("label", { className: "text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block px-1" }, "End"), 
-                                    React.createElement("div", { className: "flex gap-2" },
-                                        React.createElement("input", { type: "date", value: endDateStr, onChange: e => setEditingEvent({...editingEvent, end: `${e.target.value}T${endTimeStr}`}), className: "w-1/2 p-3 bg-[#18181b] border border-transparent rounded-xl text-white focus:outline-none focus:border-indigo-500 font-mono text-xs md:text-[13px] transition-colors shadow-inner [color-scheme:dark] flex-1" }),
-                                        !editingEvent.isAllDay && React.createElement("input", { type: "time", value: endTimeStr, onChange: e => setEditingEvent({...editingEvent, end: `${endDateStr}T${e.target.value}`}), className: "w-1/2 p-3 bg-[#18181b] border border-transparent rounded-xl text-white focus:outline-none focus:border-indigo-500 font-mono text-xs md:text-[13px] transition-colors shadow-inner [color-scheme:dark]" })
-                                    )
-                                )
-                            ),
-                            
-                            React.createElement("div", null, 
-                                React.createElement("label", { className: "text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block px-1" }, "Recurrence"), 
-                                React.createElement("select", { value: editingEvent.recurrence || (editingEvent.isHabit ? 'daily' : 'none'), onChange: e => setEditingEvent({...editingEvent, recurrence: e.target.value}), className: "w-full p-3.5 bg-[#18181b] border border-transparent rounded-xl text-white focus:outline-none focus:border-indigo-500 font-medium text-[13px] transition-colors shadow-inner" }, 
-                                    React.createElement("option", { value: "none" }, "Does not repeat"),
-                                    React.createElement("option", { value: "daily" }, "Daily"),
-                                    React.createElement("option", { value: "weekdays" }, "Weekdays (Mon-Fri)"),
-                                    React.createElement("option", { value: "weekly" }, "Weekly"),
-                                    React.createElement("option", { value: "biweekly" }, "Bi-Weekly"),
-                                    React.createElement("option", { value: "yearly" }, "Yearly")
-                                ),
-                                ['weekly', 'biweekly'].includes(editingEvent.recurrence) && React.createElement("div", { className: "mt-3 flex gap-1 justify-between px-1" },
-                                    ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayChar, idx) => {
-                                        const isSelected = (editingEvent.recurrenceDays || [new Date(editingEvent.start).getDay()]).includes(idx);
-                                        return React.createElement("button", {
-                                            key: idx,
-                                            onClick: () => {
-                                                const currentDays = editingEvent.recurrenceDays || [new Date(editingEvent.start).getDay()];
-                                                let newDays;
-                                                if (currentDays.includes(idx)) { newDays = currentDays.filter(d => d !== idx); if (newDays.length === 0) newDays = [idx]; } else { newDays = [...currentDays, idx]; }
-                                                setEditingEvent({ ...editingEvent, recurrenceDays: newDays });
-                                            },
-                                            className: `w-8 h-8 rounded-full text-xs font-bold transition-all ${isSelected ? 'bg-indigo-500 text-white shadow-md' : 'bg-[#27272a] text-zinc-400 hover:bg-[#3f3f46]'}`
-                                        }, dayChar);
-                                    })
-                                ),
-                                editingEvent.recurrence !== 'none' && React.createElement("div", { className: "mt-3" },
-                                    React.createElement("label", { className: "text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block px-1" }, "Ends On (Optional)"),
-                                    React.createElement("input", { type: "date", value: editingEvent.recurrenceEndDate || '', onChange: e => setEditingEvent({...editingEvent, recurrenceEndDate: e.target.value}), className: "w-full p-3.5 bg-[#18181b] border border-transparent rounded-xl text-white focus:outline-none focus:border-indigo-500 font-mono text-xs md:text-[13px] transition-colors shadow-inner [color-scheme:dark]" })
-                                )
-                            ),
-                            React.createElement("div", null, 
-                                React.createElement("label", { className: "text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 block px-1" }, "Category"), 
-                                React.createElement("div", { className: "grid grid-cols-3 gap-2 px-1" }, 
-                                    EVENT_COLORS.map(c => React.createElement("button", { key: c.bg, onClick: () => setEditingEvent({...editingEvent, color: c.bg}), className: `flex items-center gap-2 p-2.5 rounded-xl transition-all shadow-md border ${editingEvent.color === c.bg ? 'border-white bg-[#202024] scale-105' : 'border-transparent bg-[#18181b] hover:bg-[#202024] opacity-80 hover:opacity-100'}` }, 
-                                        React.createElement("div", { className: `w-3 h-3 rounded-full ${c.bg}` }),
-                                        React.createElement("span", { className: "text-[11px] font-bold text-white" }, c.label)
-                                    ))
-                                )
-                            )
-                        ),
-                        
-                        React.createElement("div", { className: "p-5 md:px-6 border-t border-zinc-800/60 shrink-0 flex gap-3 bg-[#09090b]" }, 
-                            isRecurringInstance ? (
-                                React.createElement(React.Fragment, null,
-                                    React.createElement("button", { onClick: () => handleSaveEventAction('single'), className: "flex-1 p-3.5 bg-zinc-800 text-white hover:bg-zinc-700 rounded-xl font-bold transition-all shadow-md active:scale-[0.98] text-xs" }, "Only this event"),
-                                    React.createElement("button", { onClick: () => handleSaveEventAction('series'), className: "flex-1 p-3.5 bg-white text-black hover:bg-zinc-200 rounded-xl font-bold transition-all shadow-md active:scale-[0.98] text-xs" }, "Entire series")
-                                )
-                            ) : (
-                                React.createElement("button", { onClick: () => handleSaveEventAction('series'), className: "w-full p-3.5 bg-white text-black hover:bg-zinc-200 rounded-xl font-bold transition-all shadow-md active:scale-[0.98] text-sm" }, "Save Event")
-                            )
-                        )
-                    )
-                );
-            };
-
-            const renderRecurringEditModal = () => (
-                React.createElement("div", { className: "fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-8 animate-in fade-in duration-200" },
-                    React.createElement("div", { className: "bg-[#09090b] border border-zinc-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl flex flex-col gap-6" },
-                        React.createElement("div", null, 
-                            React.createElement("h3", { className: "text-xl font-bold text-white mb-2" }, "Edit Recurring Event"),
-                            React.createElement("p", { className: "text-sm text-zinc-400 leading-relaxed" }, "You moved a repeating event. Do you want to update only this occurrence, or shift the entire series?")
-                        ),
-                        React.createElement("div", { className: "flex flex-col gap-3" },
-                            React.createElement("button", { onClick: () => {
-                                const newSingleEvent = { ...pendingRecurringEdit.baseEvent, id: generateUUID(), start: toLocalISO(pendingRecurringEdit.newStart), end: toLocalISO(pendingRecurringEdit.newEnd), recurrence: 'none', recurrenceEndDate: null, recurrenceDays: [] };
-                                onAddEvent(newSingleEvent);
-                                const exceptionDateStr = pendingRecurringEdit.instanceStart.toDateString();
-                                const exceptions = pendingRecurringEdit.baseEvent.exceptions || [];
-                                if (!exceptions.includes(exceptionDateStr)) { onUpdateEvent({ ...pendingRecurringEdit.baseEvent, exceptions: [...exceptions, exceptionDateStr] }); }
-                                setPendingRecurringEdit(null);
-                            }, className: "w-full p-4 bg-zinc-800 text-white hover:bg-zinc-700 rounded-xl font-bold transition-all shadow-md active:scale-[0.98] text-sm" }, "Only this event"),
-                            React.createElement("button", { onClick: () => {
-                                const delta = pendingRecurringEdit.newStart.getTime() - pendingRecurringEdit.instanceStart.getTime();
-                                const newBaseStart = new Date(new Date(pendingRecurringEdit.baseEvent.start).getTime() + delta);
-                                const newBaseEnd = new Date(new Date(pendingRecurringEdit.baseEvent.end).getTime() + delta);
-                                const oldDay = pendingRecurringEdit.instanceStart.getDay(); const newDay = pendingRecurringEdit.newStart.getDay(); const dayShift = newDay - oldDay;
-                                let newRecurrenceDays = pendingRecurringEdit.baseEvent.recurrenceDays || [new Date(pendingRecurringEdit.baseEvent.start).getDay()];
-                                if (dayShift !== 0) { newRecurrenceDays = newRecurrenceDays.map(d => (d + dayShift + 7) % 7); }
-                                onUpdateEvent({ ...pendingRecurringEdit.baseEvent, start: toLocalISO(newBaseStart), end: toLocalISO(newBaseEnd), recurrenceDays: newRecurrenceDays });
-                                setPendingRecurringEdit(null);
-                            }, className: "w-full p-4 bg-white text-black hover:bg-zinc-200 rounded-xl font-bold transition-all shadow-md active:scale-[0.98] text-sm" }, "Entire series"),
-                            React.createElement("button", { onClick: () => setPendingRecurringEdit(null), className: "w-full p-3 text-zinc-500 hover:text-white font-bold transition-colors" }, "Cancel")
-                        )
-                    )
-                )
-            );
-
-            return React.createElement("div", { className: "flex flex-col xl:flex-row gap-6 w-full max-w-[1600px] mx-auto h-[calc(100vh-12rem)] md:h-[calc(100vh-6rem)]" },
-                React.createElement("div", { className: "flex-1 flex flex-col min-w-0 relative h-full" },
-                    React.createElement("div", { className: "sticky top-14 md:top-0 z-[45] bg-zinc-50 dark:bg-zinc-950 pt-4 pb-2 md:pt-0 md:pb-4 -mx-4 px-4 md:mx-0 md:px-0" },
-                        React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 shrink-0" },
-                            React.createElement("div", null,
-                                React.createElement("div", { className: "flex items-center gap-4 mb-1" },
-                                    React.createElement("h2", { className: "text-3xl md:text-4xl font-bold text-zinc-900 dark:text-white tracking-tight" }, selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })),
-                                    React.createElement("div", { className: "flex bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-1 shadow-sm" },
-                                        React.createElement("button", { onClick: () => { const newD = new Date(selectedDate); if (view === 'month') newD.setMonth(newD.getMonth() - 1); else newD.setDate(newD.getDate() - (view === 'week' ? 7 : 1)); setSelectedDate(newD); }, className: "p-1.5 hover:bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-500 transition-colors" }, React.createElement(ChevronLeft, { size: 16 })),
-                                        React.createElement("button", { onClick: () => { setSelectedDate(new Date()); }, className: "px-3 text-xs font-bold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors" }, "Today"),
-                                        React.createElement("button", { onClick: () => { const newD = new Date(selectedDate); if (view === 'month') newD.setMonth(newD.getMonth() + 1); else newD.setDate(newD.getDate() + (view === 'week' ? 7 : 1)); setSelectedDate(newD); }, className: "p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg text-zinc-500 transition-colors" }, React.createElement(ChevronRight, { size: 16 }))
-                                    )
-                                ),
-                                React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 font-medium text-sm hidden md:block" }, "Stay organized, stay ahead.")
-                            ),
-                            React.createElement("div", { className: "flex items-center gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-2xl shadow-sm min-w-[250px]" },
-                                React.createElement("div", { className: `w-10 h-10 rounded-xl flex items-center justify-center text-white ${upcomingEvents[0] ? upcomingEvents[0].color : 'bg-zinc-200 dark:bg-zinc-800/80 text-zinc-400'}` }, isHappeningNow ? React.createElement(Play, { size: 18, className: "animate-pulse" }) : React.createElement(Calendar, { size: 18 })),
-                                React.createElement("div", null, React.createElement("div", { className: "text-[10px] font-bold uppercase tracking-widest text-zinc-400" }, "Up Next"), React.createElement("div", { className: "font-bold text-sm text-zinc-900 dark:text-white truncate max-w-[150px]" }, upcomingEvents[0] ? upcomingEvents[0].title : "Nothing scheduled"))
-                            )
-                        ),
-                        React.createElement("div", { className: "flex justify-between items-center mb-4 shrink-0" },
-                            React.createElement("div", { className: "flex bg-zinc-200/50 dark:bg-zinc-800/50 p-1 rounded-xl" },
-                                ['day', 'week', 'month'].map(v => React.createElement("button", { key: v, onClick: () => setView(v), className: `px-5 py-1.5 rounded-lg text-sm font-bold capitalize transition-all ${view === v ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}` }, v))
-                            ),
-                            React.createElement("button", { onClick: () => openNewEvent(), className: "flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 shadow-glow-sm transition-all font-bold text-sm" }, React.createElement(Plus, { size: 16 }), "New Event")
-                        ),
-                        view === 'month' && React.createElement("div", { className: "grid grid-cols-7 border border-zinc-200 dark:border-zinc-800/80 bg-zinc-100 dark:bg-[#18181b] rounded-t-[1.5rem]" },
-                            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => React.createElement("div", { key: day, className: "text-center py-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500 border-r border-zinc-200 dark:border-zinc-800/80 last:border-r-0" }, day))
-                        ),
-                        view === 'week' && React.createElement(React.Fragment, null,
-                            React.createElement("div", { className: "flex border border-zinc-200 dark:border-zinc-800/80 bg-zinc-100 dark:bg-[#18181b] rounded-t-[1.5rem]" },
-                                React.createElement("div", { className: "w-12 md:w-[60px] shrink-0 border-r border-zinc-200 dark:border-zinc-800/80" }),
-                                React.createElement("div", { className: "flex-1 grid grid-cols-7" },
-                                    Array.from({length: 7}, (_, i) => { const d = new Date(getWeekStart(selectedDate)); d.setDate(d.getDate() + i); return d; }).map(d => React.createElement("div", { key: d.toISOString(), onClick: () => {setSelectedDate(d); setView('day');}, className: `text-center py-2 border-r border-zinc-200 dark:border-zinc-800/80 cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors` }, React.createElement("div", { className: `text-[10px] uppercase font-bold tracking-widest mb-1 ${isSameDay(d, new Date()) ? 'text-indigo-500 dark:text-indigo-400' : 'text-zinc-500'}` }, d.toLocaleDateString('en-US', { weekday: 'short' })), React.createElement("div", { className: `text-lg font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full ${isSameDay(d, new Date()) ? 'bg-indigo-600 text-white' : 'text-zinc-900 dark:text-white'}` }, d.getDate())))
-                                )
-                            ),
-                            React.createElement("div", { className: "flex border-x border-b border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#09090b]" },
-                                React.createElement("div", { className: "w-12 md:w-[60px] shrink-0 border-r border-zinc-200 dark:border-zinc-800/80 p-2 flex flex-col items-center justify-center" },
-                                    React.createElement("span", { className: "text-[8px] font-bold text-zinc-500 uppercase text-center" }, "All Day")
-                                ),
-                                React.createElement("div", { className: "flex-1 grid grid-cols-7" },
-                                    Array.from({length: 7}, (_, i) => { const d = new Date(getWeekStart(selectedDate)); d.setDate(d.getDate() + i); return d; }).map(d => {
-                                        const dayAllDayEvents = displayEvents.filter(ev => ev.isAllDay && isSameDay(ev.instanceStart, d));
-                                        return React.createElement("div", { key: d.toISOString(), onClick: () => openNewEvent(d, d, true), className: `border-r border-zinc-200 dark:border-zinc-800/80 p-1 space-y-1 min-h-[30px] cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-900/50 transition-colors` },
-                                            dayAllDayEvents.map(ev => React.createElement("div", {
-                                                key: ev.id,
-                                                onClick: (e) => { e.stopPropagation(); setEditingEvent(events.find(x => x.id === ev.id)); },
-                                                className: `px-1.5 py-0.5 text-[9px] font-bold rounded truncate text-white ${ev.color} cursor-pointer shadow-sm hover:opacity-80`
-                                            }, ev.title))
-                                        )
-                                    })
-                                )
-                            )
-                        ),
-                        view === 'day' && React.createElement(React.Fragment, null,
-                            React.createElement("div", { className: "flex border border-zinc-200 dark:border-zinc-800/80 bg-zinc-100 dark:bg-[#18181b] rounded-t-[1.5rem]" },
-                                React.createElement("div", { className: "w-12 md:w-[60px] shrink-0 border-r border-zinc-200 dark:border-zinc-800/80" }),
-                                React.createElement("div", { className: "flex-1 text-center py-2" }, 
-                                    React.createElement("div", { className: `text-[10px] uppercase font-bold tracking-widest mb-1 text-indigo-500 dark:text-indigo-400` }, selectedDate.toLocaleDateString('en-US', { weekday: 'long' })),
-                                    React.createElement("div", { className: `text-lg font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full bg-indigo-600 text-white` }, selectedDate.getDate())
-                                )
-                            ),
-                            React.createElement("div", { className: "flex border-x border-b border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#09090b]" },
-                                React.createElement("div", { className: "w-12 md:w-[60px] shrink-0 border-r border-zinc-200 dark:border-zinc-800/80 p-2 flex flex-col items-center justify-center" },
-                                    React.createElement("span", { className: "text-[8px] font-bold text-zinc-500 uppercase text-center" }, "All Day")
-                                ),
-                                React.createElement("div", { className: "flex-1", onClick: () => openNewEvent(selectedDate, selectedDate, true) },
-                                    (() => {
-                                        const dayAllDayEvents = displayEvents.filter(ev => ev.isAllDay && isSameDay(ev.instanceStart, selectedDate));
-                                        return React.createElement("div", { className: "p-1 space-y-1 min-h-[30px] cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-900/50 transition-colors h-full" },
-                                            dayAllDayEvents.map(ev => React.createElement("div", {
-                                                key: ev.id,
-                                                onClick: (e) => { e.stopPropagation(); setEditingEvent(events.find(x => x.id === ev.id)); },
-                                                className: `px-1.5 py-0.5 text-[9px] font-bold rounded truncate text-white ${ev.color} cursor-pointer shadow-sm hover:opacity-80`
-                                            }, ev.title))
-                                        )
-                                    })()
-                                )
-                            )
-                        ),
-                        React.createElement("div", { className: "absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-b from-zinc-50 dark:from-zinc-950 to-transparent translate-y-full pointer-events-none z-50 -mx-4 md:mx-0" })
-                    ),
-                    
-                    React.createElement("div", { className: "flex-1 bg-white dark:bg-[#111113] border-x border-b border-zinc-200 dark:border-zinc-800/80 rounded-b-[1.5rem] shadow-sm relative overflow-hidden flex flex-col z-0" },
-                        view === 'month' ? (
-                            React.createElement("div", { className: "flex-1 grid grid-cols-7 grid-rows-6 min-h-[600px] overflow-y-auto no-scrollbar" },
-                                getMonthDays(selectedDate).map((d, i) => {
-                                    const isCurrentMonth = d.getMonth() === selectedDate.getMonth();
-                                    const isToday = isSameDay(d, new Date());
-                                    const dayEvents = displayEvents.filter(ev => {
-                                        const evStart = new Date(ev.instanceStart);
-                                        return isSameDay(evStart, d);
-                                    });
-                                    return React.createElement("div", { key: i, onClick: () => { setSelectedDate(d); setView('day'); }, className: `border-r border-b border-zinc-200 dark:border-zinc-800/80 p-1 overflow-hidden cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/30 transition-colors flex flex-col h-24 md:h-32 ${isCurrentMonth ? '' : 'opacity-40 bg-zinc-100/50 dark:bg-zinc-900/20'}` },
-                                        React.createElement("div", { className: `text-[10px] font-bold w-5 h-5 mx-auto mb-1 flex items-center justify-center rounded-full ${isToday ? 'bg-indigo-600 text-white' : 'text-zinc-700 dark:text-zinc-400'}` }, d.getDate()),
-                                        React.createElement("div", { className: "flex-1 overflow-y-auto no-scrollbar space-y-[2px]" },
-                                            dayEvents.slice(0, 4).map((ev, idx) => React.createElement("div", { key: `${ev.id}-${idx}`, className: `text-[9px] px-1.5 py-0.5 rounded-md border border-white/30 dark:border-zinc-950/30 truncate text-white ${ev.color} leading-none`, title: ev.title }, ev.title)),
-                                            dayEvents.length > 4 && React.createElement("div", { className: "text-[8px] text-zinc-400 font-bold text-center mt-0.5" }, `+${dayEvents.length - 4} more`)
-                                        )
-                                    );
-                                })
-                            )
-                        ) : (
-                            React.createElement("div", { className: "flex-1 overflow-y-auto no-scrollbar relative" },
-                                view === 'day' ? renderGrid([selectedDate]) : renderGrid(Array.from({length: 7}, (_, i) => { const d = new Date(getWeekStart(selectedDate)); d.setDate(d.getDate() + i); return d; }))
-                            )
-                        ),
-                        editingEvent && renderEditor()
-                    )
-                ),
-                React.createElement("div", { className: "w-full xl:w-80 flex flex-col gap-6 shrink-0 h-full overflow-y-auto no-scrollbar pb-24 xl:pb-0" },
-                    React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] p-5 shadow-sm flex flex-col gap-4 max-h-[300px] overflow-y-auto no-scrollbar shrink-0" },
-                        React.createElement("div", { className: "flex items-center justify-between mb-1" }, React.createElement("h3", { className: "font-bold text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(Target, { size: 18, className: "text-indigo-500" }), `${dayName}'s Plan`)),
-                        dayTasks.length > 0 ? React.createElement("div", { className: "space-y-3" }, dayTasks.map(task => React.createElement("div", { key: task.id, className: "flex items-start gap-3" }, React.createElement(CheckCircle2, { size: 16, className: `mt-0.5 shrink-0 ${task.completed ? 'text-indigo-500' : 'text-zinc-300 dark:text-zinc-600'}` }), React.createElement("span", { className: `text-sm leading-snug font-medium ${task.completed ? 'text-zinc-400 dark:text-zinc-500 line-through' : 'text-zinc-700 dark:text-zinc-200'}` }, task.text)))) : React.createElement("p", { className: "text-sm text-zinc-400 italic" }, `No tasks planned for ${dayName}. Add them in the Weekly Plan.`)
-                    ),
-                    React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] p-5 shadow-sm flex-1 flex flex-col min-h-[300px] shrink-0" },
-                        React.createElement("h3", { className: "font-bold text-zinc-900 dark:text-white flex items-center gap-2 mb-4" }, React.createElement(ListTodo, { size: 18, className: "text-emerald-500" }), "Side Quests"),
-                        React.createElement(EditableList, { items: minorTasks, onAdd: addMinorTask, onToggle: toggleMinorTask, onDelete: deleteMinorTask, onEdit: editMinorTask, onReorder: reorderMinorTask, placeholder: "Add task..." })
-                    ),
-                    React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] p-5 shadow-sm shrink-0" },
-                        React.createElement("h3", { className: "font-bold text-zinc-900 dark:text-white flex items-center gap-2 mb-4" }, React.createElement(Edit3, { size: 18, className: "text-purple-500" }), "Reflection"),
-                        React.createElement("textarea", { value: note, onChange: (e) => onUpdateDailyPlan({...dailyPlan, notes: e.target.value}), className: "w-full h-24 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 focus:border-indigo-500 outline-none resize-none text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 text-base", placeholder: "Notes & thoughts..." })
-                    )
-                ),
-                pendingRecurringEdit && renderRecurringEditModal()
-            );
-        };
 
         const MonthlyPlanView = ({ plan, onUpdate }) => {
-            const theme = plan.theme || "";
-            const goals = plan.goals || []; 
             const rawWeeks = plan.weeks || {};
             const safeWeeks = (raw) => { if (!raw) return []; if (Array.isArray(raw)) return raw; if (typeof raw === 'string') return [{ id: generateUUID(), text: raw, completed: false }]; return []; }
             const weeks = { week1: safeWeeks(rawWeeks.week1), week2: safeWeeks(rawWeeks.week2), week3: safeWeeks(rawWeeks.week3), week4: safeWeeks(rawWeeks.week4) };
 
-            const updateField = (field, value) => onUpdate({ ...plan, [field]: value });
-            const addGoal = (text) => updateField('goals', [...goals, { id: generateUUID(), text, completed: false }]);
-            const toggleGoal = (id) => updateField('goals', goals.map(g => g.id === id ? { ...g, completed: !g.completed } : g));
-            const deleteGoal = (id) => updateField('goals', goals.filter(g => g.id !== id));
-            const editGoal = (id, text) => updateField('goals', goals.map(g => g.id === id ? { ...g, text } : g));
-            
             const addSprintItem = (weekKey, text) => onUpdate({ ...plan, weeks: { ...weeks, [weekKey]: [...weeks[weekKey], { id: generateUUID(), text, completed: false }] } });
             const toggleSprintItem = (weekKey, id) => onUpdate({ ...plan, weeks: { ...weeks, [weekKey]: weeks[weekKey].map(i => i.id === id ? { ...i, completed: !i.completed } : i) } });
             const deleteSprintItem = (weekKey, id) => onUpdate({ ...plan, weeks: { ...weeks, [weekKey]: weeks[weekKey].filter(i => i.id !== id) } });
@@ -918,11 +306,7 @@
             };
 
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-full flex flex-col overflow-y-auto max-w-7xl mx-auto" },
-                React.createElement("div", { className: "mb-8 flex flex-col items-center text-center" }, React.createElement("div", { className: "text-indigo-500 dark:text-indigo-400 font-bold uppercase tracking-widest text-xs mb-2" }, monthName), React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "Monthly Blueprint"), React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 text-sm" }, "The big picture. One month at a time.")),
-                React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8" },
-                    React.createElement("div", { className: "lg:col-span-1" }, React.createElement(Card, { title: "Monthly Theme", className: "h-full bg-purple-50/50 dark:bg-purple-900/10 border-purple-200 dark:border-purple-500/30" }, React.createElement("textarea", { value: theme, onChange: (e) => updateField('theme', e.target.value), placeholder: "e.g., 'Relentless Consistency' or 'Deep Health'", className: "w-full h-full min-h-[120px] bg-transparent text-lg font-bold text-purple-900 dark:text-purple-100 placeholder:text-purple-300 dark:placeholder:text-purple-700/50 resize-none focus:outline-none text-base" }))),
-                    React.createElement("div", { className: "lg:col-span-2" }, React.createElement(Card, { title: "Top Priorities", className: "h-full" }, React.createElement(EditableList, { items: goals, onAdd: addGoal, onToggle: toggleGoal, onDelete: deleteGoal, onEdit: editGoal, placeholder: "Add a major goal for this month..." })))
-                ),
+                React.createElement("div", { className: "mb-8 flex flex-col items-center text-center" }, React.createElement("div", { className: "text-indigo-500 dark:text-indigo-400 font-bold uppercase tracking-widest text-xs mb-2" }, monthName), React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "Monthly Vision"), React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 text-sm" }, "The big picture. One month at a time.")),
                 React.createElement("div", { className: "mb-8" },
                     React.createElement("h3", { className: "text-xl font-bold text-zinc-900 dark:text-white mb-4 flex items-center gap-2" }, React.createElement(CalendarRange, { size: 20 }), "Weekly Sprints"),
                     React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-6" }, ['week1', 'week2', 'week3', 'week4'].map((wKey, i) => {
@@ -937,15 +321,8 @@
         };
 
         const WeeklyPlanView = ({ plan, onUpdate }) => {
-            const focus = plan.focus || ""; const objectives = plan.objectives || []; const dailyTasks = plan.dailyTasks || {}; 
-            const updateField = (field, value) => onUpdate({ ...plan, [field]: value });
+            const dailyTasks = plan.dailyTasks || {}; 
             
-            const addObjective = (text) => updateField('objectives', [...objectives, { id: generateUUID(), text, completed: false }]);
-            const toggleObjective = (id) => updateField('objectives', objectives.map(o => o.id === id ? { ...o, completed: !o.completed } : o));
-            const deleteObjective = (id) => updateField('objectives', objectives.filter(o => o.id !== id));
-            const editObjective = (id, text) => updateField('objectives', objectives.map(o => o.id === id ? { ...o, text } : o));
-            const reorderObjectives = (newItems) => updateField('objectives', newItems);
-
             const addDailyTask = (day, text) => onUpdate({ ...plan, dailyTasks: { ...dailyTasks, [day]: [...(dailyTasks[day] || []), { id: generateUUID(), text, completed: false }] } });
             const toggleDailyTask = (day, id) => onUpdate({ ...plan, dailyTasks: { ...dailyTasks, [day]: (dailyTasks[day] || []).map(t => t.id === id ? { ...t, completed: !t.completed } : t) } });
             const deleteDailyTask = (day, id) => onUpdate({ ...plan, dailyTasks: { ...dailyTasks, [day]: (dailyTasks[day] || []).filter(t => t.id !== id) } });
@@ -954,12 +331,8 @@
 
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-full flex flex-col overflow-y-auto max-w-7xl mx-auto" },
                  React.createElement("div", { className: "flex justify-between items-center mb-8" },
-                    React.createElement("div", null, React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "Weekly Roadmap"), React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 text-sm" }, "Zoom out. execute strategy.")),
-                    React.createElement("button", { onClick: () => { if(confirm("Clear this week's roadmap?")) onUpdate({ focus: "", objectives: [], dailyTasks: {} }); }, className: "text-xs font-bold text-zinc-400 hover:text-red-500 flex items-center gap-1 transition-colors" }, React.createElement(Trash2, { size: 14 }), "Reset")
-                ),
-                React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8" },
-                    React.createElement("div", { className: "lg:col-span-1" }, React.createElement(Card, { title: "Weekly Compass", className: "h-full bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-200 dark:border-indigo-500/30" }, React.createElement("textarea", { value: focus, onChange: (e) => updateField('focus', e.target.value), placeholder: "What is the ONE thing that makes this week a success?", className: "w-full h-full min-h-[120px] bg-transparent text-lg font-bold text-indigo-900 dark:text-indigo-100 placeholder:text-indigo-300 dark:placeholder:text-indigo-700/50 resize-none focus:outline-none text-base" }))),
-                    React.createElement("div", { className: "lg:col-span-2" }, React.createElement(Card, { title: "Key Objectives", className: "h-full" }, React.createElement(EditableList, { items: objectives, onAdd: addObjective, onToggle: toggleObjective, onDelete: deleteObjective, onEdit: editObjective, onReorder: reorderObjectives, placeholder: "Add a goal for this week..." })))
+                    React.createElement("div", null, React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "Weekly Vision"), React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 text-sm" }, "Zoom out. execute strategy.")),
+                    React.createElement("button", { onClick: () => { if(confirm("Clear this week's roadmap?")) onUpdate({ dailyTasks: {} }); }, className: "text-xs font-bold text-zinc-400 hover:text-red-500 flex items-center gap-1 transition-colors" }, React.createElement(Trash2, { size: 14 }), "Reset")
                 ),
                 React.createElement("div", null,
                     React.createElement("h3", { className: "text-xl font-bold text-zinc-900 dark:text-white mb-4 flex items-center gap-2" }, React.createElement(Calendar, { size: 20 }), "The Week Ahead"),
@@ -1037,33 +410,6 @@
                         }), 
                         React.createElement("div", { className: "relative flex items-center gap-4 mt-4 pt-2" }, React.createElement("div", { className: "w-8 h-8 shrink-0 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 border-dashed flex items-center justify-center text-zinc-400 dark:text-zinc-500" }, React.createElement(Plus, { size: 14 })), React.createElement("input", { onKeyDown: (e) => { if(e.key === 'Enter' && e.target.value.trim()) { addItem('milestones', e.target.value); e.target.value = ''; } }, placeholder: "Add next step...", className: "bg-transparent text-sm text-zinc-500 dark:text-zinc-400 focus:text-zinc-900 dark:focus:text-white focus:outline-none w-full placeholder:text-zinc-400 dark:placeholder:text-zinc-700 text-base" }))
                     )
-                )
-            );
-        };
-
-        const DeadlinesView = ({ deadlines, onAddDeadline, onDeleteDeadline, onUpdateDeadline }) => {
-            const [newTitle, setNewTitle] = useState("");
-            const [newDate, setNewDate] = useState("");
-            const handleAdd = () => { if(newTitle && newDate) { onAddDeadline({ title: newTitle, date: newDate }); setNewTitle(""); setNewDate(""); } };
-            return React.createElement("div", { className: "p-4 md:p-8 pb-32 max-w-4xl mx-auto" },
-                React.createElement("h2", { className: "text-3xl font-bold mb-8 text-zinc-900 dark:text-white" }, "Deadlines"),
-                React.createElement("div", { className: "flex flex-col sm:flex-row gap-4 mb-8 bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm" },
-                    React.createElement("input", { value: newTitle, onChange: e => setNewTitle(e.target.value), onKeyDown: e => e.key === 'Enter' && handleAdd(), placeholder: "Task Name", className: "flex-1 bg-zinc-50 dark:bg-black/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 outline-none text-zinc-900 dark:text-white text-base focus:border-indigo-500" }),
-                    React.createElement("input", { type: "date", value: newDate, onChange: e => setNewDate(e.target.value), onKeyDown: e => e.key === 'Enter' && handleAdd(), className: "bg-zinc-50 dark:bg-black/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 outline-none text-zinc-900 dark:text-zinc-300 text-base focus:border-indigo-500 [color-scheme:light] dark:[color-scheme:dark]" }),
-                    React.createElement("button", { onClick: handleAdd, className: "bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-500 transition-colors shadow-glow-sm" }, "Add")
-                ),
-                React.createElement("div", { className: "space-y-4" },
-                    deadlines.sort((a,b) => new Date(a.date) - new Date(b.date)).map(d => {
-                        const days = Math.ceil((new Date(d.date) - new Date()) / (1000 * 60 * 60 * 24));
-                        const urgent = days <= 3 && days >= 0;
-                        return React.createElement("div", { key: d.id, className: `flex items-center justify-between p-5 rounded-2xl border transition-all hover:shadow-md ${urgent ? 'bg-red-50/50 dark:bg-red-900/10 border-red-200 dark:border-red-900/30' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800'}` },
-                            React.createElement("div", { className: "flex-1 min-w-0 pr-4" }, React.createElement("h3", { className: "font-bold text-lg text-zinc-900 dark:text-white truncate" }, d.title), React.createElement("p", { className: "text-sm text-zinc-500" }, new Date(d.date).toLocaleDateString())),
-                            React.createElement("div", { className: "flex items-center gap-4 shrink-0" },
-                                React.createElement("div", { className: "text-right" }, React.createElement("div", { className: `text-2xl font-bold leading-none ${urgent ? 'text-red-600' : 'text-zinc-900 dark:text-white'}` }, days < 0 ? "Overdue" : days), React.createElement("div", { className: "text-[10px] font-bold uppercase tracking-wider text-zinc-400 mt-1" }, "Days Left")),
-                                React.createElement("button", { onClick: () => onDeleteDeadline(d.id), className: "text-zinc-400 hover:text-red-500 bg-zinc-100 dark:bg-zinc-800 p-2.5 rounded-xl transition-colors" }, React.createElement(Trash2, { size: 18 }))
-                            )
-                        );
-                    })
                 )
             );
         };
@@ -1291,8 +637,21 @@
         };
 
         const App = () => {
-            const tabConfig = { dashboard: { label: "Dashboard", icon: Layout }, schedule: { label: "Schedule", icon: Calendar }, monthlyPlan: { label: "Monthly Plan", icon: CalendarRange }, weeklyPlan: { label: "Weekly Plan", icon: Calendar }, goals2026: { label: "2026 Vision", icon: Flag }, countdown: { label: "Countdown", icon: Hourglass }, ideaBoard: { label: "Idea Board", icon: Lightbulb }, braindump: { label: "Brain Dump", icon: Brain }, focus: { label: "Focus Timer", icon: Timer }, fitness: { label: "Fitness", icon: Dumbbell }, food: { label: "Nutrition", icon: Utensils }, library: { label: "Library", icon: Book }, profile: { label: "Profile", icon: User } };
-            const VALID_TABS = [...Object.keys(tabConfig), 'deadlines'];
+            const tabConfig = { 
+                dashboard: { label: "Dashboard", icon: Layout }, 
+                goals2026: { label: "2026 Vision", icon: Flag }, 
+                monthlyPlan: { label: "Monthly Vision", icon: CalendarRange }, 
+                weeklyPlan: { label: "Weekly Vision", icon: Calendar }, 
+                ideaBoard: { label: "Idea Board", icon: Lightbulb }, 
+                braindump: { label: "Brain Dump", icon: Brain }, 
+                focus: { label: "Focus Timer", icon: Timer }, 
+                library: { label: "Library", icon: Book }, 
+                fitness: { label: "Fitness", icon: Dumbbell }, 
+                food: { label: "Nutrition", icon: Utensils }, 
+                countdown: { label: "Countdown", icon: Hourglass },
+                profile: { label: "Profile", icon: User } 
+            };
+            const VALID_TABS = Object.keys(tabConfig);
             const [activeTab, setActiveTab] = useState(() => { const saved = localStorage.getItem('lifeos_active_tab'); return (saved && VALID_TABS.includes(saved)) ? saved : "dashboard"; });
             const [darkMode, setDarkMode] = useState(() => { const saved = localStorage.getItem('lifeos_dark_mode'); return saved !== null ? JSON.parse(saved) : true; });
             const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -1302,19 +661,17 @@
             
             const [user, setUser] = useState(null);
             const [showSettings, setShowSettings] = useState(false);
-            const [deadlines, setDeadlines] = useState([]);
             const [dumps, setDumps] = useState([]);
             const [countdowns, setCountdowns] = useState([]);
             const [ideaNotes, setIdeaNotes] = useState([]);
-            const [events, setEvents] = useState([]);
             const [meals, setMeals] = useState(DEFAULT_MEALS);
             const [goalsData, setGoalsData] = useState(DEFAULT_GOALS_DATA);
             const [dashboardData, setDashboardData] = useState({});
             const [books, setBooks] = useState([]);
             const [bookCategories, setBookCategories] = useState(DEFAULT_BOOK_CATEGORIES);
             const [dailyPlan, setDailyPlan] = useState({ priorities: ['', '', ''], schedule: {}, notes: '', minorTasks: [] });
-            const [weeklyPlan, setWeeklyPlan] = useState({ focus: "", objectives: [], dailyTasks: {} });
-            const [monthlyPlan, setMonthlyPlan] = useState({ theme: "", goals: [], weeks: { week1: [], week2: [], week3: [], week4: [] } });
+            const [weeklyPlan, setWeeklyPlan] = useState({ dailyTasks: {} });
+            const [monthlyPlan, setMonthlyPlan] = useState({ weeks: { week1: [], week2: [], week3: [], week4: [] } });
             const [fitnessData, setFitnessData] = useState({ gym: GYM_WORKOUT_PLAN, home: HOME_WORKOUT_PLAN, gymInfo: { pin: '', notes: '' } });
             
             const [activeSound, setActiveSound] = useState(null);
@@ -1374,8 +731,7 @@
                 if (!user.isLocal && isSupabaseConfigured) {
                     const fetchData = async () => {
                         try {
-                            const [dRes, bRes, mRes, aRes, lRes] = await Promise.all([
-                                supabase.from('deadlines').select('*').eq('user_id', user.id),
+                            const [bRes, mRes, aRes, lRes] = await Promise.all([
                                 supabase.from('brain_dumps').select('*').eq('user_id', user.id),
                                 supabase.from('meals').select('*').eq('user_id', user.id),
                                 supabase.from('app_data').select('*').eq('user_id', user.id).maybeSingle(),
@@ -1384,7 +740,6 @@
                             
                             if (!mounted) return;
 
-                            if(dRes.data) setDeadlines(dRes.data);
                             if(bRes.data) setDumps(bRes.data);
                             if(mRes.data && mRes.data.length > 0) setMeals(mRes.data);
                             if(lRes.data && lRes.data.length > 0) setBooks(lRes.data);
@@ -1399,22 +754,6 @@
                                 if(aRes.data.monthly_plan) setMonthlyPlan(aRes.data.monthly_plan);
                                 if(aRes.data.countdowns) setCountdowns(aRes.data.countdowns);
                                 if(aRes.data.idea_notes) setIdeaNotes(aRes.data.idea_notes);
-                                
-                                let appEvents = aRes.data.events || [];
-                                if (!localStorage.getItem(`lifeos_seeded_events_${user.id}`)) {
-                                    const existingIds = appEvents.map(e => e.id);
-                                    const toAdd = DEFAULT_EVENTS.filter(e => !existingIds.includes(e.id));
-                                    appEvents = [...appEvents, ...toAdd];
-                                    localStorage.setItem(`lifeos_seeded_events_${user.id}`, 'true');
-                                }
-                                setEvents(appEvents);
-                            } else {
-                                let appEvents = [];
-                                if (!localStorage.getItem(`lifeos_seeded_events_${user.id}`)) {
-                                    appEvents = [...DEFAULT_EVENTS];
-                                    localStorage.setItem(`lifeos_seeded_events_${user.id}`, 'true');
-                                }
-                                setEvents(appEvents);
                             }
                             setIsDataLoaded(true);
                         } catch (err) {
@@ -1424,7 +763,6 @@
                     fetchData();
                 } else {
                     const prefix = `lifeos_data_${user.id}_`;
-                    setDeadlines(JSON.parse(localStorage.getItem(`${prefix}deadlines`) || '[]'));
                     setDumps(JSON.parse(localStorage.getItem(`${prefix}dumps`) || '[]'));
                     setMeals(JSON.parse(localStorage.getItem(`${prefix}meals`) || JSON.stringify(DEFAULT_MEALS)));
                     setGoalsData(JSON.parse(localStorage.getItem(`${prefix}goals_2026`) || JSON.stringify(DEFAULT_GOALS_DATA)));
@@ -1433,19 +771,10 @@
                     setDashboardData(JSON.parse(localStorage.getItem(`${prefix}dashboard`) || '{}'));
                     setFitnessData(JSON.parse(localStorage.getItem(`${prefix}fitness`) || JSON.stringify({ gym: GYM_WORKOUT_PLAN, home: HOME_WORKOUT_PLAN })));
                     setDailyPlan(JSON.parse(localStorage.getItem(`${prefix}daily_plan`) || JSON.stringify({ priorities: ['', '', ''], schedule: {}, notes: '', minorTasks: [] })));
-                    setWeeklyPlan(JSON.parse(localStorage.getItem(`${prefix}weekly_plan`) || JSON.stringify({ focus: "", objectives: [], dailyTasks: {} })));
-                    setMonthlyPlan(JSON.parse(localStorage.getItem(`${prefix}monthly_plan`) || JSON.stringify({ theme: "", goals: [], weeks: { week1: [], week2: [], week3: [], week4: [] } })));
+                    setWeeklyPlan(JSON.parse(localStorage.getItem(`${prefix}weekly_plan`) || JSON.stringify({ dailyTasks: {} })));
+                    setMonthlyPlan(JSON.parse(localStorage.getItem(`${prefix}monthly_plan`) || JSON.stringify({ weeks: { week1: [], week2: [], week3: [], week4: [] } })));
                     setCountdowns(JSON.parse(localStorage.getItem(`${prefix}countdowns`) || '[]'));
                     setIdeaNotes(JSON.parse(localStorage.getItem(`${prefix}idea_notes`) || '[]'));
-                    
-                    let localEvents = JSON.parse(localStorage.getItem(`${prefix}events`) || '[]');
-                    if (!localStorage.getItem(`lifeos_seeded_events_${user.id}`)) {
-                        const existingIds = localEvents.map(e => e.id);
-                        const toAdd = DEFAULT_EVENTS.filter(e => !existingIds.includes(e.id));
-                        localEvents = [...localEvents, ...toAdd];
-                        localStorage.setItem(`lifeos_seeded_events_${user.id}`, 'true');
-                    }
-                    setEvents(localEvents);
                     
                     setIsDataLoaded(true);
                 }
@@ -1457,7 +786,6 @@
 
                 if (user.isLocal) {
                     const prefix = `lifeos_data_${user.id}_`;
-                    localStorage.setItem(`${prefix}deadlines`, JSON.stringify(deadlines));
                     localStorage.setItem(`${prefix}dumps`, JSON.stringify(dumps));
                     localStorage.setItem(`${prefix}meals`, JSON.stringify(meals));
                     localStorage.setItem(`${prefix}goals_2026`, JSON.stringify(goalsData));
@@ -1470,7 +798,6 @@
                     localStorage.setItem(`${prefix}monthly_plan`, JSON.stringify(monthlyPlan));
                     localStorage.setItem(`${prefix}countdowns`, JSON.stringify(countdowns));
                     localStorage.setItem(`${prefix}idea_notes`, JSON.stringify(ideaNotes));
-                    localStorage.setItem(`${prefix}events`, JSON.stringify(events));
                 } else if (isSupabaseConfigured) {
                     const syncAppData = async () => {
                         try {
@@ -1485,7 +812,6 @@
                                 monthly_plan: monthlyPlan,
                                 countdowns: countdowns,
                                 idea_notes: ideaNotes,
-                                events: events,
                                 updated_at: new Date().toISOString()
                             }, { onConflict: 'user_id' });
                         } catch(e) { console.error("Cloud sync failed:", e); }
@@ -1493,7 +819,7 @@
                     const timeoutId = setTimeout(syncAppData, 1500);
                     return () => clearTimeout(timeoutId);
                 }
-            }, [deadlines, dumps, meals, goalsData, dashboardData, books, bookCategories, fitnessData, dailyPlan, weeklyPlan, monthlyPlan, countdowns, ideaNotes, events, user, isDataLoaded]);
+            }, [dumps, meals, goalsData, dashboardData, books, bookCategories, fitnessData, dailyPlan, weeklyPlan, monthlyPlan, countdowns, ideaNotes, user, isDataLoaded]);
 
             const generateAIMealPlan = async () => {
                 const apiKey = "";
@@ -1517,10 +843,6 @@
 
             const handleLoginSuccess = (u) => { setUser(u); localStorage.setItem('lifeos_user_session', JSON.stringify(u)); };
             const handleLogout = async () => { if (isSupabaseConfigured) await supabase.auth.signOut(); localStorage.removeItem('lifeos_user_session'); setUser(null); };
-
-            const handleAddDeadline = (item) => { const newItem = { ...item, id: generateUUID(), user_id: user?.id }; setDeadlines(prev => [...prev, newItem]); if (!user.isLocal && isSupabaseConfigured) supabase.from('deadlines').insert(newItem).then(); };
-            const handleDeleteDeadline = (id) => { setDeadlines(prev => prev.filter(i => i.id !== id)); if (!user.isLocal && isSupabaseConfigured) supabase.from('deadlines').delete().eq('id', id).then(); };
-            const handleUpdateDeadline = (item) => { setDeadlines(prev => prev.map(i => i.id === item.id ? item : i)); if (!user.isLocal && isSupabaseConfigured) supabase.from('deadlines').update(item).eq('id', item.id).then(); };
             
             const handleAddDump = (text) => { const newItem = { text, id: generateUUID(), user_id: user?.id }; setDumps(prev => [...prev, newItem]); if (!user.isLocal && isSupabaseConfigured) supabase.from('brain_dumps').insert(newItem).then(); };
             const handleDeleteDump = (id) => { setDumps(prev => prev.filter(d => d.id !== id)); if (!user.isLocal && isSupabaseConfigured) supabase.from('brain_dumps').delete().eq('id', id).then(); };
@@ -1558,9 +880,6 @@
             const handleAddIdeaNote = (note) => setIdeaNotes(prev => [...prev, { ...note, id: note.id || generateUUID() }]);
             const handleUpdateIdeaNote = (note) => setIdeaNotes(prev => prev.map(n => n.id === note.id ? note : n));
             const handleDeleteIdeaNote = (id) => setIdeaNotes(prev => prev.filter(n => n.id !== id));
-            const handleAddEvent = (item) => setEvents(prev => [...prev, { ...item, id: item.id || generateUUID() }]);
-            const handleUpdateEvent = (item) => setEvents(prev => prev.map(e => e.id === item.id ? item : e));
-            const handleDeleteEvent = (id) => setEvents(prev => prev.filter(e => e.id !== id));
 
             if (!user) return React.createElement(LandingPage, { onLoginSuccess: handleLoginSuccess, onGuestLogin: handleLoginSuccess });
 
@@ -1569,19 +888,17 @@
                 React.createElement(MobileTopBar, { handleLogout, user, darkMode, toggleDarkMode: () => setDarkMode(!darkMode), onProfileClick: () => setActiveTab('profile') }),
                 React.createElement(MobileNavBar, { activeTab, setActiveTab, tabConfig }),
                 React.createElement("main", { className: "md:ml-64 p-4 md:p-8 pb-28 md:pb-8 pt-20 md:pt-8 min-h-screen box-border" },
-                    activeTab === 'dashboard' && React.createElement(DashboardView, { onNavigate: setActiveTab, deadlines, dashboardData, onUpdateDashboard: handleUpdateDashboard, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset, meals, fitnessData, goalsData, dumps, books }),
-                    activeTab === 'schedule' && React.createElement(ScheduleView, { events, onAddEvent: handleAddEvent, onUpdateEvent: handleUpdateEvent, onDeleteEvent: handleDeleteEvent, dailyPlan, onUpdateDailyPlan: handleUpdateDailyPlan, weeklyPlan }),
-                    activeTab === 'monthlyPlan' && React.createElement(MonthlyPlanView, { plan: monthlyPlan, onUpdate: handleUpdateMonthlyPlan }),
-                    activeTab === 'weeklyPlan' && React.createElement(WeeklyPlanView, { plan: weeklyPlan, onUpdate: handleUpdateWeeklyPlan, monthlyPlan }),
+                    activeTab === 'dashboard' && React.createElement(DashboardView, { onNavigate: setActiveTab, dashboardData, onUpdateDashboard: handleUpdateDashboard, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset, meals, fitnessData, goalsData, dumps, books }),
                     activeTab === 'goals2026' && React.createElement(Goals2026View, { goalsData, onUpdateGoals: handleUpdateGoals2026 }),
-                    activeTab === 'deadlines' && React.createElement(DeadlinesView, { deadlines, onAddDeadline: handleAddDeadline, onDeleteDeadline: handleDeleteDeadline, onUpdateDeadline: handleUpdateDeadline }),
-                    activeTab === 'focus' && React.createElement(FocusView, { activeSound, isPlayingSound, toggleSound, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset }),
-                    activeTab === 'braindump' && React.createElement(BrainDumpView, { dumps, onAddDump: handleAddDump, onDeleteDump: handleDeleteDump, onUpdateDump: handleUpdateDump }),
-                    activeTab === 'countdown' && React.createElement(CountdownView, { countdowns, onAdd: handleAddCountdown, onDelete: handleDeleteCountdown }),
+                    activeTab === 'monthlyPlan' && React.createElement(MonthlyPlanView, { plan: monthlyPlan, onUpdate: handleUpdateMonthlyPlan }),
+                    activeTab === 'weeklyPlan' && React.createElement(WeeklyPlanView, { plan: weeklyPlan, onUpdate: handleUpdateWeeklyPlan }),
                     activeTab === 'ideaBoard' && React.createElement(IdeaBoardView, { notes: ideaNotes, onAdd: handleAddIdeaNote, onUpdate: handleUpdateIdeaNote, onDelete: handleDeleteIdeaNote }),
+                    activeTab === 'braindump' && React.createElement(BrainDumpView, { dumps, onAddDump: handleAddDump, onDeleteDump: handleDeleteDump, onUpdateDump: handleUpdateDump }),
+                    activeTab === 'focus' && React.createElement(FocusView, { activeSound, isPlayingSound, toggleSound, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset }),
+                    activeTab === 'library' && React.createElement(LibraryView, { books, categories: bookCategories, onAddBook: handleAddBook, onDeleteBook: handleDeleteBook, onUpdateBook: handleUpdateBook }),
                     activeTab === 'fitness' && React.createElement(FitnessView, { fitnessData, onUpdateFitness: handleUpdateFitness }),
                     activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal, onAIGenerate: generateAIMealPlan }),
-                    activeTab === 'library' && React.createElement(LibraryView, { books, categories: bookCategories, onAddBook: handleAddBook, onDeleteBook: handleDeleteBook, onUpdateBook: handleUpdateBook }),
+                    activeTab === 'countdown' && React.createElement(CountdownView, { countdowns, onAdd: handleAddCountdown, onDelete: handleDeleteCountdown }),
                     activeTab === 'profile' && React.createElement(ProfileView, { user, onLogout: handleLogout, onUpdateProfile: handleUpdateProfile })
                 ),
                 showSettings && React.createElement(SettingsView, { onClose: () => setShowSettings(false), onSave: () => window.location.reload() })
