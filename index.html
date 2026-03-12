@@ -579,6 +579,20 @@
             const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
             const types = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
             const [isGenerating, setIsGenerating] = useState(false);
+            const [currentTime, setCurrentTime] = useState(new Date());
+
+            useEffect(() => {
+                const t = setInterval(() => setCurrentTime(new Date()), 60000);
+                return () => clearInterval(t);
+            }, []);
+
+            const currentDayName = currentTime.toLocaleDateString('en-US', { weekday: 'long' });
+            const hour = currentTime.getHours();
+            let currentMealType = 'Snacks';
+            if (hour >= 4 && hour < 11) currentMealType = 'Breakfast';
+            else if (hour >= 11 && hour < 15) currentMealType = 'Lunch';
+            else if (hour >= 15 && hour < 18) currentMealType = 'Snacks';
+            else currentMealType = 'Dinner';
 
             const handleGenerate = async () => {
                 setIsGenerating(true);
@@ -600,13 +614,18 @@
                 React.createElement("div", { className: "overflow-x-auto no-scrollbar bg-white dark:bg-zinc-900 rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-sm p-4 md:p-6" },
                     React.createElement("div", { className: "min-w-[900px] grid grid-cols-8 gap-4" },
                         React.createElement("div", null),
-                        days.map(d => React.createElement("div", { key: d, className: "text-center font-bold text-xs uppercase tracking-widest text-zinc-500 pb-4" }, d.substring(0, 3))),
+                        days.map(d => React.createElement("div", { key: d, className: `text-center font-bold text-xs uppercase tracking-widest pb-4 ${d === currentDayName ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-500'}` }, d.substring(0, 3))),
                         types.map(t => React.createElement(React.Fragment, { key: t },
                             React.createElement("div", { className: "font-bold text-zinc-900 dark:text-white flex items-center justify-end pr-4 text-sm tracking-wide border-r border-zinc-100 dark:border-zinc-800" }, t),
                             days.map(d => {
                                 const meal = meals.find(m => m.day === d && m.type === t);
-                                return React.createElement("div", { key: `${d}-${t}`, className: "bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-100 dark:border-zinc-800/80 rounded-xl p-2 hover:border-indigo-300 dark:hover:border-indigo-700/50 transition-colors focus-within:ring-1 focus-within:ring-indigo-500 focus-within:border-indigo-500" },
-                                    React.createElement("textarea", { value: meal?.text || '', onChange: e => onUpdateMeal(d, t, e.target.value), className: "w-full h-24 bg-transparent outline-none resize-none text-xs text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 p-1 font-medium", placeholder: "Empty..." })
+                                const isCurrentMeal = d === currentDayName && t === currentMealType;
+                                return React.createElement("div", { key: `${d}-${t}`, className: `relative rounded-xl p-2 transition-colors focus-within:ring-1 focus-within:ring-indigo-500 focus-within:border-indigo-500 ${isCurrentMeal ? 'bg-indigo-50/80 dark:bg-indigo-500/10 ring-2 ring-indigo-500 z-10 shadow-md transform scale-[1.02]' : 'bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-100 dark:border-zinc-800/80 hover:border-indigo-300 dark:hover:border-indigo-700/50'}` },
+                                    isCurrentMeal && React.createElement("div", { className: "absolute -top-2.5 right-2 flex items-center gap-1 bg-indigo-500 text-white px-2 py-0.5 rounded-full shadow-sm z-20" },
+                                        React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-white animate-pulse" }),
+                                        React.createElement("span", { className: "text-[9px] font-bold uppercase tracking-widest" }, "Now")
+                                    ),
+                                    React.createElement("textarea", { value: meal?.text || '', onChange: e => onUpdateMeal(d, t, e.target.value), className: `w-full h-24 bg-transparent outline-none resize-none text-xs p-1 font-medium ${isCurrentMeal ? 'text-indigo-950 dark:text-indigo-100 placeholder:text-indigo-300 dark:placeholder:text-indigo-700/50' : 'text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400'}`, placeholder: "Empty..." })
                                 );
                             })
                         ))
