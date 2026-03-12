@@ -576,6 +576,20 @@
                                         </div>
                                     </div>
                                 </div>
+                                <!-- Bonus Mission -->
+                                <div class="bg-indigo-500/10 p-6 rounded-2xl border border-indigo-500/20">
+                                    <h3 class="font-bold text-indigo-200 text-xs uppercase tracking-widest mb-4">Bonus Mission</h3>
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-indigo-300 uppercase tracking-widest mb-1">Task</label>
+                                            <input type="text" id="bonus-task-input" placeholder="e.g. Write quarterly review..." class="w-full p-3 rounded-xl bg-black/40 text-white border border-white/10 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-sm mb-4">
+                                            
+                                            <label class="block text-[10px] font-bold text-indigo-300 uppercase tracking-widest mb-1">Duration (Mins)</label>
+                                            <input type="number" id="bonus-task-duration" value="60" class="w-full p-3 rounded-xl bg-black/40 text-white border border-white/10 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-sm font-mono">
+                                            <p class="text-[9px] text-indigo-400/60 mt-2">The start time will be randomly assigned during your shift.</p>
+                                        </div>
+                                    </div>
+                                </div>
                              </div>
                             <button id="start-shift-btn" class="mt-8 w-full px-8 py-5 bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-extrabold text-xl rounded-2xl shadow-lg hover:shadow-teal-500/40 hover:-translate-y-1 transition-all transform border-t border-white/20">Start Shift</button>
                         </div>
@@ -586,6 +600,7 @@
                                 <div>
                                     <h2 id="shift-motivation-quote" class="text-3xl md:text-5xl font-bold tracking-tight text-white neon-text mb-1">Let's get this bread!</h2>
                                     <p id="shift-mode-label" class="text-teal-200/50 font-mono text-xs tracking-widest uppercase">Productivity Station Active</p>
+                                    <p id="shift-encouragement" class="text-indigo-300/90 italic text-sm mt-3 font-medium transition-opacity duration-1000 max-w-md md:max-w-lg leading-relaxed"></p>
                                 </div>
                                 <div class="flex flex-col items-end gap-2">
                                     <div class="flex items-center gap-4">
@@ -2568,6 +2583,9 @@
                 const guideTheme = document.getElementById('current-hour-theme');
                 const shuffleVibeBtn = document.getElementById('shuffle-vibe-btn');
                 
+                const bonusTaskInput = document.getElementById('bonus-task-input');
+                const bonusTaskDuration = document.getElementById('bonus-task-duration');
+                
                 const locHomeBtn = document.getElementById('loc-home-btn');
                 const locOfficeBtn = document.getElementById('loc-office-btn');
                 let shiftLocation = localStorage.getItem('shiftLocation') || 'home';
@@ -2575,17 +2593,18 @@
                 // Variables for tracking dynamic vibe state
                 let currentVibeData = null;
                 let lastBaseHourTitle = null;
+                let customMission = null;
 
                 const shiftPlanHome = [
                     { hour: 1, title: "Hour 1", theme: "Laser Focus", icon: "🎯", effect: "constellation", task: "Deep work (Focus on work only)" },
-                    { hour: 2, title: "Hour 2", theme: "Passive Learning", icon: "🎧", effect: "bubbles", task: "Listen to an Audiobook while working" },
+                    { hour: 2, title: "Hour 2", theme: "Non-Negotiable", icon: "📅", effect: "bubbles", task: "Plan for the next day on Calendar" },
                     { hour: 3, title: "Hour 3", theme: "Physical Activation", icon: "💪", effect: "embers", task: "Do push ups" },
                     { hour: 4, title: "Hour 4", theme: "Growth Mindset", icon: "📝", effect: "rain", task: "Listen to personal development content (take notes)" },
                     { hour: 5, title: "Hour 5", theme: "Curiosity", icon: "🔍", effect: "constellation", task: "Find a new niche / interest" },
-                    { hour: 6, title: "Hour 6", theme: "Spirit", icon: "🙏", effect: "bubbles", task: "Pray" },
+                    { hour: 6, title: "Hour 6", theme: "Wealth Building", icon: "💰", effect: "bubbles", task: "Learn something new about finance" },
                     { hour: 7, title: "Hour 7", theme: "Playtime", icon: "⚽", effect: "embers", task: "Play a football match" },
                     { hour: 8, title: "Hour 8", theme: "Digital Detox", icon: "📱", effect: "snow", task: "Do one thing to fix your algorithm feed" },
-                    { hour: 9, title: "Hour 9", theme: "Wealth Building", icon: "💰", effect: "bubbles", task: "Document in your finance Journal" },
+                    { hour: 9, title: "Hour 9", theme: "Spirit", icon: "🙏", effect: "bubbles", task: "Pray" },
                     { hour: 10, title: "Hour 10", theme: "Faith & Focus", icon: "🕊️", effect: "constellation", task: "Listen to a Sermon or Worship songs" },
                     { hour: 11, title: "Hour 11", theme: "Health Planning", icon: "🏋️", effect: "rain", task: "Plan your next gym session" },
                     { hour: 12, title: "Hour 12", theme: "Reflection", icon: "📖", effect: "snow", task: "Read the bible & Document latest thoughts in your journal" }
@@ -2593,17 +2612,46 @@
                 
                 const shiftPlanOffice = [
                     { hour: 1, title: "Hour 1", theme: "Environment Prep", icon: "🧹", effect: "constellation", task: "Clean your workspace" },
-                    { hour: 2, title: "Hour 2", theme: "Laser Focus", icon: "🎯", effect: "bubbles", task: "Deep work (Focus on work only)" },
+                    { hour: 2, title: "Hour 2", theme: "Non-Negotiable", icon: "📅", effect: "bubbles", task: "Plan for the next day on Calendar" },
                     { hour: 3, title: "Hour 3", theme: "Passive Learning", icon: "🎙️", effect: "rain", task: "Listen to a podcast" },
                     { hour: 4, title: "Hour 4", theme: "Physical Reset", icon: "🪟", effect: "snow", task: "Break (Stretch & Look out the window)" },
                     { hour: 5, title: "Hour 5", theme: "Curiosity", icon: "🧠", effect: "embers", task: "Explore a new topic you've never heard about" },
                     { hour: 6, title: "Hour 6", theme: "Move", icon: "🚶", effect: "constellation", task: "Take a walk" },
                     { hour: 7, title: "Hour 7", theme: "Vibe Shift", icon: "🎵", effect: "bubbles", task: "Listen to Music" },
                     { hour: 8, title: "Hour 8", theme: "Wealth Building", icon: "📈", effect: "rain", task: "Do one thing to improve your finance" },
-                    { hour: 9, title: "Hour 9", theme: "Mental Gymnastics", icon: "♟️", effect: "embers", task: "Play a crossword puzzle game or chess" },
+                    { hour: 9, title: "Hour 9", theme: "Spirit", icon: "🙏", effect: "bubbles", task: "Pray" },
                     { hour: 10, title: "Hour 10", theme: "Career Growth", icon: "💼", effect: "snow", task: "Work on a Job application" },
                     { hour: 11, title: "Hour 11", theme: "Inspiration", icon: "📌", effect: "bubbles", task: "Get a new idea from Pinterest" },
                     { hour: 12, title: "Hour 12", theme: "Reflection", icon: "✨", effect: "constellation", task: "Break (Read something inspiring)" }
+                ];
+
+                const extraVibesPool = [
+                    { theme: "Tech Insights", icon: "💻", effect: "constellation", task: "Listen to a tech talk" },
+                    { theme: "Inspiration", icon: "💡", effect: "bubbles", task: "Listen to a TED talk" },
+                    { theme: "Fire Up", icon: "🔥", effect: "embers", task: "Listen to a motivational speech" },
+                    { theme: "Business Mind", icon: "🚀", effect: "constellation", task: "Listen to an entrepreneurial podcast" },
+                    { theme: "Visual Learning", icon: "📺", effect: "snow", task: "Watch educational YouTube" },
+                    { theme: "Deep Dive", icon: "🎞️", effect: "rain", task: "Watch a documentary" },
+                    { theme: "Brain Break", icon: "🍿", effect: "bubbles", task: "Watch a TV show episode" },
+                    { theme: "DJ Mode", icon: "🎧", effect: "embers", task: "Create a new playlist" },
+                    { theme: "Introspection", icon: "🤔", effect: "snow", task: "Reflect a bit about your life" },
+                    { theme: "Mental Clear", icon: "🧠", effect: "rain", task: "Brain dump" },
+                    { theme: "Idea Capture", icon: "✍️", effect: "constellation", task: "Journal an idea" },
+                    { theme: "Caffeine Hit", icon: "☕", effect: "embers", task: "Get a coffee" },
+                    { theme: "Zen Moment", icon: "🍵", effect: "bubbles", task: "You deserve a green tea" }
+                ];
+
+                const shiftMotivations = [
+                    "The world is sleeping, but your dreams are waking up. Keep grinding.",
+                    "Night shifts build the foundation for daytime freedom. You've got this.",
+                    "Every hour you push through right now is an investment in your future.",
+                    "It's quiet. It's peaceful. It's your time to dominate.",
+                    "Tired? Drink some water, stretch, and remember why you started.",
+                    "You are outworking everyone who is resting right now. Stay focused.",
+                    "The hardest shifts create the strongest work ethic. Keep pushing.",
+                    "One task at a time. The morning light will be here before you know it.",
+                    "Discipline is doing what needs to be done, even when the rest of the world is asleep.",
+                    "Embrace the quiet of the night. This is where the real progress happens."
                 ];
 
                 let shiftTimer; let shiftStartTime; let shiftEndTime; let totalShiftDuration;
@@ -2626,6 +2674,12 @@
                     const storedStart = localStorage.getItem('shiftStartTime');
                     const storedEnd = localStorage.getItem('shiftEndTime');
                     const storedTitle = localStorage.getItem('shiftTitle');
+                    const storedCustomMission = localStorage.getItem('shiftCustomMission');
+                    
+                    if (storedCustomMission) {
+                        try { customMission = JSON.parse(storedCustomMission); } catch(e){}
+                    }
+
                     if (storedStart && storedEnd) {
                         const now = new Date();
                         const end = new Date(storedEnd);
@@ -2682,6 +2736,31 @@
                     progressEl.className = "absolute top-0 bottom-0 left-0 bg-green-500/50 border-r-2 border-green-400 shadow-[0_0_20px_rgba(34,197,94,0.5)] transition-all duration-1000 z-0";
                     progressEl.style.width = '0%';
                     shiftBlocksContainer.appendChild(progressEl);
+
+                    // 1.5 Add Custom Mission Block (Top Layer - PURPLE)
+                    if (customMission) {
+                        const startOffset = new Date(customMission.start) - shiftStartTime;
+                        let endOffset = new Date(customMission.end) - shiftStartTime;
+                        
+                        if (endOffset > totalShiftDuration) endOffset = totalShiftDuration;
+                        
+                        if (startOffset >= 0 && startOffset < totalShiftDuration) {
+                            const duration = endOffset - startOffset;
+                            const leftPercent = Math.max(0, Math.min(100, (startOffset / totalShiftDuration) * 100));
+                            const widthPercent = Math.max(0, Math.min(100 - leftPercent, (duration / totalShiftDuration) * 100));
+                            
+                            const el = document.createElement('div');
+                            el.className = "absolute top-3 bottom-3 bg-purple-500/40 border border-purple-400/60 z-10 flex items-center justify-center overflow-hidden group hover:bg-purple-500/60 transition-colors cursor-help shadow-[0_0_10px_rgba(168,85,247,0.4)]";
+                            el.style.left = `${leftPercent}%`;
+                            el.style.width = `${widthPercent}%`;
+                            el.style.backgroundImage = "repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(216, 180, 254, 0.2) 5px, rgba(216, 180, 254, 0.2) 10px)";
+                            el.title = `Bonus Mission: ${customMission.task}`;
+                            
+                            el.innerHTML = `<span class="text-[10px] font-black text-purple-100 tracking-widest uppercase whitespace-nowrap bg-black/50 px-1 rounded shadow-sm hidden md:block">Mission</span><span class="md:hidden text-[10px]">🔥</span>`;
+                            
+                            shiftBlocksContainer.appendChild(el);
+                        }
+                    }
 
                     // 2. Add Hourly Markers (Middle Layer) - RELATIVE HOURS (H1, H2...)
                     let cursor = new Date(shiftStartTime.getTime() + (60 * 60 * 1000));
@@ -2811,18 +2890,41 @@
                 function updateShiftVisuals() {
                     if (!shiftStartTime) return;
                     
-                    const elapsedMs = new Date() - shiftStartTime;
+                    const now = new Date();
+                    const elapsedMs = now - shiftStartTime;
                     const currentHourIdx = Math.floor(elapsedMs / (1000 * 60 * 60));
                     const plan = shiftLocation === 'home' ? shiftPlanHome : shiftPlanOffice;
                     
                     // Safe index access
                     const safeIdx = Math.min(currentHourIdx, plan.length - 1);
-                    const baseHourData = plan[safeIdx] || plan[plan.length - 1];
+                    let activeData = plan[safeIdx] || plan[plan.length - 1];
 
-                    // Check if we rolled over into a new hour and reset the active vibe
-                    if (lastBaseHourTitle !== baseHourData.title) {
-                        lastBaseHourTitle = baseHourData.title;
-                        currentVibeData = baseHourData;
+                    // Priority Override for Custom Mission
+                    if (customMission && now >= new Date(customMission.start) && now < new Date(customMission.end)) {
+                        activeData = {
+                            title: "Bonus Mission",
+                            theme: "Priority Override",
+                            icon: "🔥",
+                            effect: "embers",
+                            task: customMission.task
+                        };
+                    }
+
+                    // Check if we rolled over into a new hour or phase and reset the active vibe
+                    if (lastBaseHourTitle !== activeData.title) {
+                        lastBaseHourTitle = activeData.title;
+                        currentVibeData = activeData;
+                        
+                        // Update motivation quote on hour change
+                        const randomMotivation = shiftMotivations[Math.floor(Math.random() * shiftMotivations.length)];
+                        const encouragementEl = document.getElementById('shift-encouragement');
+                        if (encouragementEl) {
+                            encouragementEl.style.opacity = 0;
+                            setTimeout(() => {
+                                encouragementEl.textContent = `"${randomMotivation}"`;
+                                encouragementEl.style.opacity = 1;
+                            }, 500);
+                        }
                     }
 
                     // Get currently displayed text to determine if we need to force re-render
@@ -2986,7 +3088,7 @@
                             paceWarning.classList.add('hidden');
                         }
                     }
-                }
+                } // End of shiftCountdown
 
                 function resetShiftTimer() {
                     clearInterval(shiftTimer); stopEffect(); 
@@ -3003,9 +3105,13 @@
                     lastBreachStart = null;
                     currentShiftMode = 'breach';
                     
-                    // Reset Vibe state
+                    // Reset Vibe state & Missions
                     currentVibeData = null;
                     lastBaseHourTitle = null;
+                    customMission = null;
+                    localStorage.removeItem('shiftCustomMission');
+                    bonusTaskInput.value = "";
+                    bonusTaskDuration.value = "60";
 
                     updateShiftModeUI();
 
@@ -3014,199 +3120,34 @@
                     startTimeInput.value = formatDateTimeForInput(now);
                     const eightHoursLater = new Date(now.getTime() + 8 * 60 * 60 * 1000);
                     endTimeInput.value = formatDateTimeForInput(eightHoursLater);
-
-                    setupView.classList.remove('hidden'); countdownView.classList.add('hidden'); endView.classList.add('hidden'); breakActiveDisplay.classList.add('hidden');
-                }
-                
-                // --- Canvas Animation Logic (Particles) ---
-                function initParticles(effectType) {
-                    const canvas = document.getElementById('shift-timer-canvas');
-                    if (!canvas) return;
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = window.innerWidth;
-                    canvas.height = window.innerHeight;
-                    particles = [];
                     
-                    const count = window.innerWidth > 768 ? 100 : 50;
+                    shiftTitleInput.value = "Let's get this bread!";
                     
-                    for(let i=0; i<count; i++) {
-                        particles.push({
-                            x: Math.random() * canvas.width,
-                            y: Math.random() * canvas.height,
-                            size: Math.random() * 2 + 1,
-                            speedX: (Math.random() - 0.5) * 0.5,
-                            speedY: (Math.random() - 0.5) * 0.5,
-                            opacity: Math.random() * 0.5 + 0.1,
-                            type: effectType
-                        });
-                    }
-                }
-                
-                function animateParticles() {
-                    const canvas = document.getElementById('shift-timer-canvas');
-                    if (!canvas) return;
-                    const ctx = canvas.getContext('2d');
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    
-                    particles.forEach(p => {
-                        ctx.beginPath();
-                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                        
-                        // Style based on type
-                        if (p.type === 'snow') ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
-                        else if (p.type === 'rain') ctx.fillStyle = `rgba(173, 216, 230, ${p.opacity})`;
-                        else if (p.type === 'embers') ctx.fillStyle = `rgba(255, 140, 0, ${p.opacity})`;
-                        else if (p.type === 'bubbles') ctx.fillStyle = `rgba(135, 206, 235, ${p.opacity})`;
-                        else ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`; // constellation default
-                        
-                        ctx.fill();
-                        
-                        // Move
-                        if (p.type === 'snow' || p.type === 'rain') {
-                             p.y += (Math.random() * 1 + 0.5); // Fall down
-                             if (p.y > canvas.height) p.y = 0;
-                        } else if (p.type === 'bubbles') {
-                             p.y -= (Math.random() * 1 + 0.5); // Float up
-                             if (p.y < 0) p.y = canvas.height;
-                        } else {
-                             p.x += p.speedX;
-                             p.y += p.speedY;
-                             if(p.x < 0 || p.x > canvas.width) p.speedX *= -1;
-                             if(p.y < 0 || p.y > canvas.height) p.speedY *= -1;
-                        }
-                    });
-                    
-                    // Constellation lines
-                    if (particles.length > 0 && particles[0].type === 'constellation') {
-                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-                        ctx.lineWidth = 0.5;
-                        for(let i=0; i<particles.length; i++) {
-                            for(let j=i+1; j<particles.length; j++) {
-                                const dx = particles[i].x - particles[j].x;
-                                const dy = particles[i].y - particles[j].y;
-                                const dist = Math.sqrt(dx*dx + dy*dy);
-                                if (dist < 100) {
-                                    ctx.beginPath();
-                                    ctx.moveTo(particles[i].x, particles[i].y);
-                                    ctx.lineTo(particles[j].x, particles[j].y);
-                                    ctx.stroke();
-                                }
-                            }
-                        }
-                    }
-                    
-                    animationFrameId = requestAnimationFrame(animateParticles);
-                }
-                
-                function startEffect(type) {
-                    cancelAnimationFrame(animationFrameId);
-                    initParticles(type);
-                    animateParticles();
-                }
-                
-                function stopEffect() {
-                    cancelAnimationFrame(animationFrameId);
+                    countdownView.classList.add('hidden'); endView.classList.add('hidden'); setupView.classList.remove('hidden');
                 }
 
-                function resizeCanvas() { 
-                    const c = document.getElementById('shift-timer-canvas');
-                    if(c) { c.width = window.innerWidth; c.height = window.innerHeight; initParticles(particles.length > 0 ? particles[0].type : 'constellation'); }
-                }
-                window.addEventListener('resize', resizeCanvas);
-
-                // --- Event Listeners & Init ---
-
-                locHomeBtn.addEventListener('click', () => { shiftLocation = 'home'; localStorage.setItem('shiftLocation', 'home'); updateLocButtons(); });
-                locOfficeBtn.addEventListener('click', () => { shiftLocation = 'office'; localStorage.setItem('shiftLocation', 'office'); updateLocButtons(); });
-                updateLocButtons();
-
-                // Shuffle Vibe Feature
-                shuffleVibeBtn.addEventListener('click', () => {
-                    if (!shiftStartTime) return; // Prevent shuffling if not running
-                    
-                    const plan = shiftLocation === 'home' ? shiftPlanHome : shiftPlanOffice;
-                    const elapsedMs = new Date() - shiftStartTime;
-                    const currentHourIdx = Math.floor(elapsedMs / (1000 * 60 * 60));
-                    const safeIdx = Math.min(currentHourIdx, plan.length - 1);
-                    const baseHourData = plan[safeIdx] || plan[plan.length - 1];
-
-                    // Pick random item except current
-                    let randomItem;
-                    do {
-                        randomItem = plan[Math.floor(Math.random() * plan.length)];
-                    } while (randomItem.task === currentVibeData.task && plan.length > 1);
-                    
-                    currentVibeData = {
-                        ...randomItem,
-                        title: baseHourData.title // Keep the actual hour title matching reality
-                    };
-
-                    // Emptying textContent forces the visualizer to re-render it in updateShiftVisuals()
-                    guideTitle.textContent = ""; 
-                    updateShiftVisuals();
-                    
-                    // Visual rotation effect on the icon
-                    const iconEl = shuffleVibeBtn.querySelector('svg');
-                    iconEl.style.transition = 'transform 0.4s ease-in-out';
-                    iconEl.style.transform = `rotate(${Math.random() * 360 + 180}deg)`;
-                });
-
-                // Preset Button Listeners
-                presetNormalBtn.addEventListener('click', () => {
-                    const now = new Date();
-                    // If it's morning (e.g. 01:00), assume shift started yesterday
-                    const isMorning = now.getHours() < 12;
-                    
-                    const start = new Date(now);
-                    if (isMorning) start.setDate(start.getDate() - 1);
-                    start.setHours(19, 0, 0, 0);
-                    
-                    const end = new Date(start);
-                    end.setDate(end.getDate() + 1);
-                    end.setHours(7, 0, 0, 0);
-
-                    startTimeInput.value = formatDateTimeForInput(start);
-                    endTimeInput.value = formatDateTimeForInput(end);
-                    shiftTitleInput.value = "Night Shift Grind";
-                });
-
-                presetOvertimeBtn.addEventListener('click', () => {
-                    const now = new Date();
-                    const isMorning = now.getHours() < 12;
-                    
-                    const start = new Date(now);
-                    if (isMorning) start.setDate(start.getDate() - 1);
-                    start.setHours(17, 0, 0, 0);
-                    
-                    const end = new Date(start);
-                    end.setDate(end.getDate() + 1);
-                    end.setHours(5, 0, 0, 0);
-
-                    startTimeInput.value = formatDateTimeForInput(start);
-                    endTimeInput.value = formatDateTimeForInput(end);
-                    shiftTitleInput.value = "Early Start Shift";
-                });
-
-                // Break Management Logic
-                let setupBreakList = JSON.parse(localStorage.getItem('shiftBreakTimes')) || [];
                 function renderSetupBreaks() {
                     breakTimesContainer.innerHTML = '';
+                    let setupBreakList = JSON.parse(localStorage.getItem('shiftBreakTimes')) || [];
                     setupBreakList.forEach((b, idx) => {
-                        const div = document.createElement('div');
-                        div.className = "flex justify-between items-center bg-white/10 p-2 rounded-lg border border-white/5";
-                        div.innerHTML = `<span class="font-mono text-sm font-bold text-gray-300">${b.time}</span><span class="text-xs text-gray-400 uppercase tracking-wider">${b.duration}m - ${b.type}</span><button class="text-red-400 hover:text-red-300 px-2" data-idx="${idx}">×</button>`;
-                        breakTimesContainer.appendChild(div);
+                        const el = document.createElement('div');
+                        el.className = "flex justify-between items-center bg-black/20 p-3 rounded-xl border border-white/5";
+                        el.innerHTML = `<div class="flex items-center gap-3"><span class="text-gray-400 font-mono text-sm">${b.time}</span><span class="text-white font-bold text-xs uppercase tracking-wider">${b.type}</span><span class="text-gray-500 text-xs">${b.duration}m</span></div>
+                        <button class="remove-setup-break text-gray-500 hover:text-red-400 transition-colors" data-idx="${idx}">✕</button>`;
+                        breakTimesContainer.appendChild(el);
                     });
-                    localStorage.setItem('shiftBreakTimes', JSON.stringify(setupBreakList));
-                    // Bind delete buttons
-                    breakTimesContainer.querySelectorAll('button').forEach(btn => {
+                    
+                    document.querySelectorAll('.remove-setup-break').forEach(btn => {
                         btn.addEventListener('click', (e) => {
-                            const idx = parseInt(e.target.dataset.idx);
-                            setupBreakList.splice(idx, 1);
+                            const i = e.target.dataset.idx;
+                            setupBreakList.splice(i, 1);
+                            localStorage.setItem('shiftBreakTimes', JSON.stringify(setupBreakList));
                             renderSetupBreaks();
                         });
                     });
                 }
+                
+                let setupBreakList = JSON.parse(localStorage.getItem('shiftBreakTimes')) || [];
                 
                 addBreakBtn.addEventListener('click', () => {
                     const time = prompt("Enter break start time (HH:MM, 24h format):", "02:00");
@@ -3215,6 +3156,7 @@
                     if (!duration) return;
                     setupBreakList.push({ time, duration: parseInt(duration), type: "Break" });
                     setupBreakList.sort((a,b) => a.time.localeCompare(b.time));
+                    localStorage.setItem('shiftBreakTimes', JSON.stringify(setupBreakList));
                     renderSetupBreaks();
                 });
                 
@@ -3225,67 +3167,175 @@
                         { time: "03:15", duration: 30, type: "Lunch" },
                         { time: "05:00", duration: 10, type: "Break 3" }
                     ];
+                    localStorage.setItem('shiftBreakTimes', JSON.stringify(setupBreakList));
                     renderSetupBreaks();
                 });
 
                 startBtn.addEventListener('click', () => {
                     const startTimeValue = startTimeInput.value; const endTimeValue = endTimeInput.value;
-                    if (!startTimeValue || !endTimeValue) { showAlert("Please select both a start and end date and time."); return; }
+                    if (!startTimeValue || !endTimeValue) { showAlert("Please set both start and end times."); return; }
                     shiftStartTime = new Date(startTimeValue); shiftEndTime = new Date(endTimeValue);
-                    if (shiftStartTime >= shiftEndTime) { showAlert("Start time must be before end time."); return; }
-                    if (shiftEndTime <= new Date()) { showAlert("The selected shift end time is in the past."); return; }
-                    localStorage.setItem('shiftStartTime', shiftStartTime.toISOString()); localStorage.setItem('shiftEndTime', shiftEndTime.toISOString()); localStorage.setItem('shiftTitle', shiftTitleInput.value);
+                    if (shiftEndTime <= shiftStartTime) { showAlert("End time must be after start time."); return; }
                     
-                    // Reset Breaches if requested
-                    if (resetBreachesToggle && resetBreachesToggle.checked) {
-                        const breachItems = JSON.parse(localStorage.getItem('breachItems')) || [];
-                        let hasChanges = false;
-                        breachItems.forEach(item => {
-                            if (item.completed) {
-                                item.completed = false;
-                                delete item.completedAt; // Clear timestamp so it doesn't count towards history if unchecked
-                                hasChanges = true;
+                    localStorage.setItem('shiftStartTime', shiftStartTime.toISOString());
+                    localStorage.setItem('shiftEndTime', shiftEndTime.toISOString());
+                    localStorage.setItem('shiftTitle', shiftTitleInput.value);
+
+                    // Initialize Breach logic state
+                    currentShiftMode = 'breach';
+                    accumulatedBreachMs = 0;
+                    lastBreachStart = new Date();
+                    localStorage.setItem('currentShiftMode', currentShiftMode);
+                    localStorage.setItem('shiftBreachTotalMs', accumulatedBreachMs);
+                    localStorage.setItem('shiftBreachSessionStart', lastBreachStart.toISOString());
+                    
+                    if(resetBreachesToggle.checked) {
+                        let bItems = JSON.parse(localStorage.getItem('breachItems')) || [];
+                        bItems.forEach(i => { i.completed = false; delete i.completedAt; });
+                        localStorage.setItem('breachItems', JSON.stringify(bItems));
+                        if(typeof renderDashboard === 'function') renderDashboard(); 
+                    }
+                    
+                    if(healthBreaksToggle.checked) {
+                        // Smart health breaks
+                        const sDuration = shiftEndTime - shiftStartTime;
+                        let hBreaks = [];
+                        for(let t = shiftStartTime.getTime() + 3600000; t < shiftEndTime.getTime(); t+= 3600000) {
+                            let overlap = false;
+                            const tDate = new Date(t);
+                            for(let b of setupBreakList) {
+                                const bTime = new Date(`${tDate.toDateString()} ${b.time}`);
+                                if(Math.abs(bTime - tDate) < 1800000) { overlap = true; break; }
                             }
-                        });
-                        if (hasChanges) {
-                            localStorage.setItem('breachItems', JSON.stringify(breachItems));
-                            // Refresh lists if they are initialized
-                            const uncompletedContainer = document.getElementById('breach-list-uncompleted-container');
-                            if (uncompletedContainer) {
-                                // Trigger a re-render of the list if we can access the render function scope
-                                // Since renderList is scoped inside setupBreachList, we can't call it directly here easily
-                                // but we can reload the page or rely on the user visiting the tab later.
-                                // For immediate feedback, we rely on the Pace Calculation logic which reads from localStorage.
+                            if(!overlap) {
+                                hBreaks.push({
+                                    time: tDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+                                    duration: 5,
+                                    type: "Health Walk"
+                                });
                             }
                         }
+                        setupBreakList = setupBreakList.concat(hBreaks);
+                        setupBreakList.sort((a,b) => a.time.localeCompare(b.time));
+                        localStorage.setItem('shiftBreakTimes', JSON.stringify(setupBreakList));
                     }
-
-                    // Initialize Breach Tracking
-                    accumulatedBreachMs = 0;
-                    localStorage.setItem('shiftBreachTotalMs', '0');
-                    currentShiftMode = 'breach'; // Default start in breach
-                    localStorage.setItem('currentShiftMode', 'breach');
-                    lastBreachStart = new Date(); // Start the timer immediately
-                    localStorage.setItem('shiftBreachSessionStart', lastBreachStart.toISOString());
+                    
+                    // Process Bonus Mission
+                    if (bonusTaskInput.value.trim()) {
+                        const bDur = parseInt(bonusTaskDuration.value) || 60;
+                        const s = shiftStartTime.getTime();
+                        const e = shiftEndTime.getTime();
+                        const durMs = bDur * 60000;
+                        const maxStart = e - durMs;
+                        
+                        if (maxStart > s) {
+                            // Auto Randomize within valid bounds
+                            const randomMs = s + Math.random() * (maxStart - s);
+                            const bDate = new Date(randomMs);
+                            
+                            customMission = {
+                                task: bonusTaskInput.value.trim(),
+                                start: bDate.toISOString(),
+                                end: new Date(bDate.getTime() + durMs).toISOString()
+                            };
+                            localStorage.setItem('shiftCustomMission', JSON.stringify(customMission));
+                        } else {
+                            showAlert("Shift is too short for this bonus mission duration.");
+                            customMission = null;
+                            localStorage.removeItem('shiftCustomMission');
+                        }
+                    } else {
+                        customMission = null;
+                        localStorage.removeItem('shiftCustomMission');
+                    }
+                    
                     updateShiftModeUI();
 
                     totalShiftDuration = (shiftEndTime - shiftStartTime); calculateActiveBreaks();
                     setupView.classList.add('hidden'); countdownView.classList.remove('hidden');
-                    endTimeLabel.textContent = `End: ${shiftEndTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`; startTimeLabel.textContent = `Start: ${shiftStartTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                    endTimeLabel.textContent = `End: ${shiftEndTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`; 
+                    startTimeLabel.textContent = `Start: ${shiftStartTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
                     generateShiftBlocks(); shiftCountdown(); shiftTimer = setInterval(shiftCountdown, 1000); startEffect('constellation');
                 });
 
-                resetBtn.addEventListener('click', resetShiftTimer); newShiftBtn.addEventListener('click', resetShiftTimer);
+                resetBtn.addEventListener('click', resetShiftTimer); 
+                newShiftBtn.addEventListener('click', resetShiftTimer);
+
+                presetNormalBtn.addEventListener('click', () => {
+                    const now = new Date();
+                    const start = new Date(now); start.setHours(19, 0, 0, 0);
+                    if (now.getHours() < 7) start.setDate(start.getDate() - 1);
+                    const end = new Date(start); end.setHours(7, 0, 0, 0); end.setDate(end.getDate() + 1);
+                    startTimeInput.value = formatDateTimeForInput(start); endTimeInput.value = formatDateTimeForInput(end);
+                });
+
+                presetOvertimeBtn.addEventListener('click', () => {
+                    const now = new Date();
+                    const start = new Date(now); start.setHours(17, 0, 0, 0);
+                    if (now.getHours() < 5) start.setDate(start.getDate() - 1);
+                    const end = new Date(start); end.setHours(5, 0, 0, 0); end.setDate(end.getDate() + 1);
+                    startTimeInput.value = formatDateTimeForInput(start); endTimeInput.value = formatDateTimeForInput(end);
+                });
+
+                locHomeBtn.addEventListener('click', () => { shiftLocation = 'home'; localStorage.setItem('shiftLocation', 'home'); updateLocButtons(); });
+                locOfficeBtn.addEventListener('click', () => { shiftLocation = 'office'; localStorage.setItem('shiftLocation', 'office'); updateLocButtons(); });
+                updateLocButtons();
+
+                // Shuffle Vibe Feature
+                shuffleVibeBtn.addEventListener('click', () => {
+                    if (!shiftStartTime) return; 
+
+                    if (currentVibeData && currentVibeData.title === "Bonus Mission") {
+                        showAlert("Bonus Missions are non-negotiable! Focus up! 🔥");
+                        return;
+                    }
+                    
+                    const plan = shiftLocation === 'home' ? shiftPlanHome : shiftPlanOffice;
+                    const combinedPool = [...plan, ...extraVibesPool];
+                    const elapsedMs = new Date() - shiftStartTime;
+                    const currentHourIdx = Math.floor(elapsedMs / (1000 * 60 * 60));
+                    const safeIdx = Math.min(currentHourIdx, plan.length - 1);
+                    const baseHourData = plan[safeIdx] || plan[plan.length - 1];
+
+                    // Pick random item except current
+                    let randomItem;
+                    do {
+                        randomItem = combinedPool[Math.floor(Math.random() * combinedPool.length)];
+                    } while (randomItem.task === currentVibeData.task && combinedPool.length > 1);
+                    
+                    currentVibeData = {
+                        ...randomItem,
+                        title: baseHourData.title // Keep the actual hour title matching reality
+                    };
+
+                    guideTitle.textContent = ""; 
+                    updateShiftVisuals();
+                    
+                    // Also shuffle motivation for an instant boost
+                    const randomMotivation = shiftMotivations[Math.floor(Math.random() * shiftMotivations.length)];
+                    const encouragementEl = document.getElementById('shift-encouragement');
+                    if (encouragementEl) {
+                        encouragementEl.style.opacity = 0;
+                        setTimeout(() => {
+                            encouragementEl.textContent = `"${randomMotivation}"`;
+                            encouragementEl.style.opacity = 1;
+                        }, 500);
+                    }
+                    
+                    const iconEl = shuffleVibeBtn.querySelector('svg');
+                    iconEl.style.transition = 'transform 0.4s ease-in-out';
+                    iconEl.style.transform = `rotate(${Math.random() * 360 + 180}deg)`;
+                });
                 
-                // Share QR Code
+                // Share QR
                 shareShiftBtn.addEventListener('click', () => {
-                    currentShareUrl = window.location.href; // In a real app this would be a deep link
                     qrContainer.innerHTML = '';
+                    currentShareUrl = window.location.href.split('?')[0] + `?shift=${encodeURIComponent(shiftTitleInput.value)}&s=${shiftStartTime.getTime()}&e=${shiftEndTime.getTime()}`;
                     new QRCode(qrContainer, {
                         text: currentShareUrl,
-                        width: 128,
-                        height: 128,
-                        colorDark : "#0f172a",
+                        width: 200,
+                        height: 200,
+                        colorDark : "#1e293b",
                         colorLight : "#ffffff",
                         correctLevel : QRCode.CorrectLevel.H
                     });
@@ -3331,6 +3381,66 @@
                         console.error('Fallback copy failed', err);
                     }
                     document.body.removeChild(textArea);
+                }
+
+                // Canvas Effects
+                const cvs = document.getElementById('shift-timer-canvas');
+                const ctx = cvs.getContext('2d');
+                
+                function resizeCanvas() {
+                    const parent = cvs.parentElement;
+                    cvs.width = parent.offsetWidth;
+                    cvs.height = parent.offsetHeight;
+                }
+                window.addEventListener('resize', resizeCanvas);
+                resizeCanvas();
+
+                function startEffect(type) {
+                    stopEffect();
+                    particles = [];
+                    for(let i = 0; i < 50; i++) {
+                        particles.push({
+                            x: Math.random() * cvs.width,
+                            y: Math.random() * cvs.height,
+                            r: Math.random() * 2 + 1,
+                            dx: (Math.random() - 0.5) * 0.5,
+                            dy: (Math.random() - 0.5) * 0.5,
+                            alpha: Math.random() * 0.5 + 0.1
+                        });
+                    }
+                    
+                    function animate() {
+                        ctx.clearRect(0, 0, cvs.width, cvs.height);
+                        
+                        if (type === 'constellation') {
+                            ctx.fillStyle = '#ffffff';
+                            particles.forEach((p, i) => {
+                                p.x += p.dx; p.y += p.dy;
+                                if (p.x < 0 || p.x > cvs.width) p.dx *= -1;
+                                if (p.y < 0 || p.y > cvs.height) p.dy *= -1;
+                                ctx.globalAlpha = p.alpha;
+                                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+                                
+                                for(let j = i + 1; j < particles.length; j++) {
+                                    const p2 = particles[j];
+                                    const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+                                    if (dist < 100) {
+                                        ctx.globalAlpha = (100 - dist) / 100 * 0.2;
+                                        ctx.strokeStyle = '#ffffff';
+                                        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+                                    }
+                                }
+                            });
+                        }
+                        
+                        animationFrameId = requestAnimationFrame(animate);
+                    }
+                    animate();
+                }
+
+                function stopEffect() {
+                    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                    ctx.clearRect(0, 0, cvs.width, cvs.height);
                 }
 
                 checkStoredShift();
