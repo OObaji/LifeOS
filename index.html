@@ -1750,11 +1750,12 @@
                 if (!user.isLocal && isSupabaseConfigured) {
                     const fetchData = async () => {
                         try {
-                            const [bRes, mRes, aRes, lRes] = await Promise.all([
+                            const [bRes, mRes, aRes, lRes, tRes] = await Promise.all([
                                 supabase.from('brain_dumps').select('*').eq('user_id', user.id),
                                 supabase.from('meals').select('*').eq('user_id', user.id),
                                 supabase.from('app_data').select('*').eq('user_id', user.id).maybeSingle(),
-                                supabase.from('library').select('*').eq('user_id', user.id)
+                                supabase.from('library').select('*').eq('user_id', user.id),
+                                supabase.from('tasks').select('*').eq('user_id', user.id).order('order_index', { ascending: true, nullsFirst: false })
                             ]);
                             
                             if (!mounted) return;
@@ -1762,6 +1763,7 @@
                             if(bRes.data) setDumps(bRes.data);
                             if(mRes.data && mRes.data.length > 0) setMeals(mRes.data);
                             if(lRes.data && lRes.data.length > 0) setBooks(lRes.data);
+                            if(tRes.data) setTasks(tRes.data.sort((a,b) => (a.order_index || 0) - (b.order_index || 0)));
 
                             if(aRes.data) { 
                                 if(aRes.data.goals_2026) setGoalsData(aRes.data.goals_2026); 
@@ -1772,7 +1774,6 @@
                                 if(aRes.data.monthly_plan) setMonthlyPlan(aRes.data.monthly_plan);
                                 if(aRes.data.countdowns) setCountdowns(aRes.data.countdowns);
                                 if(aRes.data.idea_notes) setIdeaNotes(aRes.data.idea_notes);
-                                if(aRes.data.tasks) setTasks(aRes.data.tasks);
                                 
                                 let appEvents = aRes.data.events || [];
                                 if (!localStorage.getItem(`lifeos_seeded_events_${user.id}`)) {
@@ -1849,7 +1850,6 @@
                                 monthly_plan: monthlyPlan,
                                 countdowns: countdowns,
                                 idea_notes: ideaNotes,
-                                tasks: tasks,
                                 events: events,
                                 updated_at: new Date().toISOString()
                             }, { onConflict: 'user_id' });
@@ -1919,12 +1919,40 @@
             const handleUpdateIdeaNote = (note) => setIdeaNotes(prev => prev.map(n => n.id === note.id ? note : n));
             const handleDeleteIdeaNote = (id) => setIdeaNotes(prev => prev.filter(n => n.id !== id));
             
-            const handleAddTask = (text) => setTasks(prev => [...prev, { id: generateUUID(), text, completed: false }]);
-            const handleToggleTask = (id) => setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
-            const handleDeleteTask = (id) => setTasks(prev => prev.filter(t => t.id !== id));
-            const handleEditTask = (id, text) => setTasks(prev => prev.map(t => t.id === id ? { ...t, text } : t));
-            const handleReorderTasks = (newTasks) => setTasks(newTasks);
-            const handleClearCompletedTasks = () => setTasks(prev => prev.filter(t => !t.completed));
+            const handleAddTask = (text) => { 
+                const newItem = { id: generateUUID(), user_id: user?.id, text, completed: false, order_index: tasks.length };
+                setTasks(prev => [...prev, newItem]); 
+                if (!user.isLocal && isSupabaseConfigured) supabase.from('tasks').insert(newItem).then(); 
+            };
+            const handleToggleTask = (id) => { 
+                setTasks(prev => {
+                    const newTasks = prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+                    const updatedTask = newTasks.find(t => t.id === id);
+                    if (!user.isLocal && isSupabaseConfigured && updatedTask) supabase.from('tasks').update({ completed: updatedTask.completed }).eq('id', id).then();
+                    return newTasks;
+                }); 
+            };
+            const handleDeleteTask = (id) => { 
+                setTasks(prev => prev.filter(t => t.id !== id)); 
+                if (!user.isLocal && isSupabaseConfigured) supabase.from('tasks').delete().eq('id', id).then(); 
+            };
+            const handleEditTask = (id, text) => { 
+                setTasks(prev => prev.map(t => t.id === id ? { ...t, text } : t)); 
+                if (!user.isLocal && isSupabaseConfigured) supabase.from('tasks').update({ text }).eq('id', id).then(); 
+            };
+            const handleReorderTasks = (newTasks) => { 
+                const orderedTasks = newTasks.map((t, idx) => ({ ...t, order_index: idx }));
+                setTasks(orderedTasks); 
+                if (!user.isLocal && isSupabaseConfigured) {
+                    const updates = orderedTasks.map(t => ({ id: t.id, user_id: user.id, text: t.text, completed: t.completed, order_index: t.order_index }));
+                    supabase.from('tasks').upsert(updates).then();
+                }
+            };
+            const handleClearCompletedTasks = () => { 
+                const toDelete = tasks.filter(t => t.completed).map(t => t.id);
+                setTasks(prev => prev.filter(t => !t.completed)); 
+                if (!user.isLocal && isSupabaseConfigured && toDelete.length > 0) supabase.from('tasks').delete().in('id', toDelete).then(); 
+            };
 
             const handleAddEvent = (item) => setEvents(prev => [...prev, { ...item, id: item.id || generateUUID() }]);
             const handleUpdateEvent = (item) => setEvents(prev => prev.map(e => e.id === item.id ? item : e));
