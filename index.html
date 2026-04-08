@@ -322,7 +322,7 @@
             return { x: e.clientX, y: e.clientY };
         };
         
-        const ScheduleView = ({ events, onAddEvent, onUpdateEvent, onDeleteEvent, dailyPlan = {}, onUpdateDailyPlan, weeklyPlan = {} }) => {
+        const ScheduleView = ({ events, onAddEvent, onUpdateEvent, onDeleteEvent, dailyPlan = {}, onUpdateDailyPlan }) => {
             const [view, setView] = useState('week');
             const [selectedDate, setSelectedDate] = useState(new Date());
             const [editingEvent, setEditingEvent] = useState(null);
@@ -348,7 +348,6 @@
             const minorTasks = dailyPlan.minorTasks || [];
             const note = dailyPlan.notes || '';
             const dayName = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
-            const dayTasks = weeklyPlan?.dailyTasks?.[dayName] || [];
 
             const addMinorTask = (text) => { onUpdateDailyPlan({ ...dailyPlan, minorTasks: [...minorTasks, { id: generateUUID(), text, completed: false }] }); };
             const toggleMinorTask = (id) => { onUpdateDailyPlan({ ...dailyPlan, minorTasks: minorTasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t) }); };
@@ -1098,10 +1097,6 @@
                             )
                         )
                     ),
-                    React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] p-5 shadow-sm flex flex-col gap-4 max-h-[300px] overflow-y-auto no-scrollbar shrink-0" },
-                        React.createElement("div", { className: "flex items-center justify-between mb-1" }, React.createElement("h3", { className: "font-bold text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(Target, { size: 18, className: "text-indigo-500" }), `${dayName}'s Plan`)),
-                        dayTasks.length > 0 ? React.createElement("div", { className: "space-y-3" }, dayTasks.map(task => React.createElement("div", { key: task.id, className: "flex items-start gap-3" }, React.createElement(CheckCircle2, { size: 16, className: `mt-0.5 shrink-0 ${task.completed ? 'text-indigo-500' : 'text-zinc-300 dark:text-zinc-600'}` }), React.createElement("span", { className: `text-sm leading-snug font-medium ${task.completed ? 'text-zinc-400 dark:text-zinc-500 line-through' : 'text-zinc-700 dark:text-zinc-200'}` }, task.text)))) : React.createElement("p", { className: "text-sm text-zinc-400 italic" }, `No tasks planned for ${dayName}. Add them in the Weekly Plan.`)
-                    ),
                     React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] p-5 shadow-sm flex-1 flex flex-col min-h-[300px] shrink-0" },
                         React.createElement("h3", { className: "font-bold text-zinc-900 dark:text-white flex items-center gap-2 mb-4" }, React.createElement(ListTodo, { size: 18, className: "text-emerald-500" }), "Side Quests"),
                         React.createElement(EditableList, { items: minorTasks, onAdd: addMinorTask, onToggle: toggleMinorTask, onDelete: deleteMinorTask, onEdit: editMinorTask, onReorder: reorderMinorTask, placeholder: "Add task..." })
@@ -1159,38 +1154,6 @@
                         return React.createElement("div", { key: wKey, className: `p-6 border rounded-3xl shadow-sm flex flex-col h-full min-h-[450px] transition-all duration-300 ${isCurrent ? 'bg-indigo-50/30 dark:bg-indigo-900/10 border-indigo-500 ring-1 ring-indigo-500 transform scale-[1.01]' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'}` },
                             React.createElement("div", { className: "flex justify-between items-center mb-4 border-b border-zinc-100 dark:border-zinc-800 pb-3" }, React.createElement("div", null, React.createElement("span", { className: `text-sm font-bold uppercase tracking-widest block ${isCurrent ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400'}` }, `Sprint 0${i + 1}`), React.createElement("span", { className: "text-[11px] text-zinc-400 font-medium" }, label)), isCurrent && React.createElement("span", { className: "text-[10px] font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-500/30" }, "ACTIVE")),
                             React.createElement(EditableList, { items: weeks[wKey] || [], onAdd: (text) => addSprintItem(wKey, text), onToggle: (id) => toggleSprintItem(wKey, id), onDelete: (id) => deleteSprintItem(wKey, id), onEdit: (id, text) => editSprintItem(wKey, id, text), onReorder: (newItems) => reorderSprintItem(wKey, newItems), placeholder: "Add sprint task..." })
-                        );
-                    }))
-                )
-            );
-        };
-
-        const WeeklyPlanView = ({ plan, onUpdate }) => {
-            const dailyTasks = plan.dailyTasks || {}; 
-            
-            const addDailyTask = (day, text) => onUpdate({ ...plan, dailyTasks: { ...dailyTasks, [day]: [...(dailyTasks[day] || []), { id: generateUUID(), text, completed: false }] } });
-            const toggleDailyTask = (day, id) => onUpdate({ ...plan, dailyTasks: { ...dailyTasks, [day]: (dailyTasks[day] || []).map(t => t.id === id ? { ...t, completed: !t.completed } : t) } });
-            const deleteDailyTask = (day, id) => onUpdate({ ...plan, dailyTasks: { ...dailyTasks, [day]: (dailyTasks[day] || []).filter(t => t.id !== id) } });
-            const editDailyTask = (day, id, text) => onUpdate({ ...plan, dailyTasks: { ...dailyTasks, [day]: (dailyTasks[day] || []).map(t => t.id === id ? { ...t, text } : t) } });
-            const reorderDailyTask = (day, newItems) => onUpdate({ ...plan, dailyTasks: { ...dailyTasks, [day]: newItems } });
-
-            const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-
-            return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-full flex flex-col overflow-y-auto max-w-7xl mx-auto" },
-                 React.createElement("div", { className: "flex justify-between items-center mb-8" },
-                    React.createElement("div", null, React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "Weekly Vision"), React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 text-sm" }, "Zoom out. execute strategy.")),
-                    React.createElement("button", { onClick: () => { if(confirm("Clear this week's roadmap?")) onUpdate({ dailyTasks: {} }); }, className: "text-xs font-bold text-zinc-400 hover:text-red-500 flex items-center gap-1 transition-colors" }, React.createElement(Trash2, { size: 14 }), "Reset")
-                ),
-                React.createElement("div", null,
-                    React.createElement("h3", { className: "text-xl font-bold text-zinc-900 dark:text-white mb-4 flex items-center gap-2" }, React.createElement(Calendar, { size: 20 }), "The Week Ahead"),
-                    React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4" }, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => {
-                        const isToday = day === todayName;
-                        return React.createElement("div", { key: day, className: `p-4 rounded-2xl transition-all flex flex-col h-full min-h-[200px] ${isToday ? 'bg-indigo-50/50 dark:bg-indigo-900/20 border-2 border-indigo-500 shadow-md transform scale-[1.01]' : 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-zinc-300 dark:hover:border-zinc-700'}` },
-                            React.createElement("div", { className: `text-xs font-bold uppercase tracking-widest mb-3 border-b pb-2 flex justify-between items-center ${isToday ? 'text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800/50' : 'text-zinc-400 border-zinc-100 dark:border-zinc-800'}` }, 
-                                React.createElement("span", null, day),
-                                isToday && React.createElement("span", { className: "text-[9px] bg-indigo-500 text-white px-2 py-0.5 rounded-full shadow-sm" }, "TODAY")
-                            ),
-                            React.createElement(EditableList, { items: dailyTasks[day] || [], onAdd: (text) => addDailyTask(day, text), onToggle: (id) => toggleDailyTask(day, id), onDelete: (id) => deleteDailyTask(day, id), onEdit: (id, text) => editDailyTask(day, id, text), onReorder: (newItems) => reorderDailyTask(day, newItems), placeholder: "Add task..." })
                         );
                     }))
                 )
@@ -1680,7 +1643,6 @@
                 schedule: { label: "Schedule", icon: CalendarIcon },
                 goals2026: { label: "2026 Vision", icon: Flag }, 
                 monthlyPlan: { label: "Monthly Vision", icon: CalendarRange }, 
-                weeklyPlan: { label: "Weekly Vision", icon: Calendar }, 
                 ideaBoard: { label: "Idea Board", icon: Lightbulb }, 
                 braindump: { label: "Brain Dump", icon: Brain }, 
                 focus: { label: "Focus Timer", icon: Timer }, 
@@ -1710,7 +1672,6 @@
             const [books, setBooks] = useState([]);
             const [bookCategories, setBookCategories] = useState(DEFAULT_BOOK_CATEGORIES);
             const [dailyPlan, setDailyPlan] = useState({ priorities: ['', '', ''], schedule: {}, notes: '', minorTasks: [] });
-            const [weeklyPlan, setWeeklyPlan] = useState({ dailyTasks: {} });
             const [monthlyPlan, setMonthlyPlan] = useState({ weeks: { week1: [], week2: [], week3: [], week4: [] } });
             
             const [activeSound, setActiveSound] = useState(null);
@@ -1790,7 +1751,6 @@
                                 if(aRes.data.dashboard_config) setDashboardData(aRes.data.dashboard_config); 
                                 if(aRes.data.book_categories) setBookCategories(aRes.data.book_categories);
                                 if(aRes.data.daily_plan) setDailyPlan(aRes.data.daily_plan);
-                                if(aRes.data.weekly_plan) setWeeklyPlan(aRes.data.weekly_plan);
                                 if(aRes.data.monthly_plan) setMonthlyPlan(aRes.data.monthly_plan);
                                 if(aRes.data.countdowns) setCountdowns(aRes.data.countdowns);
                                 if(aRes.data.idea_notes) setIdeaNotes(aRes.data.idea_notes);
@@ -1819,7 +1779,6 @@
                     setBookCategories(JSON.parse(localStorage.getItem(`${prefix}book_categories`) || JSON.stringify(DEFAULT_BOOK_CATEGORIES)));
                     setDashboardData(JSON.parse(localStorage.getItem(`${prefix}dashboard`) || '{}'));
                     setDailyPlan(JSON.parse(localStorage.getItem(`${prefix}daily_plan`) || JSON.stringify({ priorities: ['', '', ''], schedule: {}, notes: '', minorTasks: [] })));
-                    setWeeklyPlan(JSON.parse(localStorage.getItem(`${prefix}weekly_plan`) || JSON.stringify({ dailyTasks: {} })));
                     setMonthlyPlan(JSON.parse(localStorage.getItem(`${prefix}monthly_plan`) || JSON.stringify({ weeks: { week1: [], week2: [], week3: [], week4: [] } })));
                     setCountdowns(JSON.parse(localStorage.getItem(`${prefix}countdowns`) || '[]'));
                     setIdeaNotes(JSON.parse(localStorage.getItem(`${prefix}idea_notes`) || '[]'));
@@ -1851,7 +1810,6 @@
                     localStorage.setItem(`${prefix}books`, JSON.stringify(books));
                     localStorage.setItem(`${prefix}book_categories`, JSON.stringify(bookCategories));
                     localStorage.setItem(`${prefix}daily_plan`, JSON.stringify(dailyPlan));
-                    localStorage.setItem(`${prefix}weekly_plan`, JSON.stringify(weeklyPlan));
                     localStorage.setItem(`${prefix}monthly_plan`, JSON.stringify(monthlyPlan));
                     localStorage.setItem(`${prefix}countdowns`, JSON.stringify(countdowns));
                     localStorage.setItem(`${prefix}idea_notes`, JSON.stringify(ideaNotes));
@@ -1866,7 +1824,6 @@
                                 dashboard_config: dashboardData,
                                 book_categories: bookCategories,
                                 daily_plan: dailyPlan,
-                                weekly_plan: weeklyPlan,
                                 monthly_plan: monthlyPlan,
                                 countdowns: countdowns,
                                 idea_notes: ideaNotes,
@@ -1878,7 +1835,7 @@
                     const timeoutId = setTimeout(syncAppData, 1500);
                     return () => clearTimeout(timeoutId);
                 }
-            }, [dumps, meals, goalsData, dashboardData, books, bookCategories, dailyPlan, weeklyPlan, monthlyPlan, countdowns, ideaNotes, tasks, events, user, isDataLoaded]);
+            }, [dumps, meals, goalsData, dashboardData, books, bookCategories, dailyPlan, monthlyPlan, countdowns, ideaNotes, tasks, events, user, isDataLoaded]);
 
             const generateAIMealPlan = async () => {
                 const apiKey = "";
@@ -1926,7 +1883,6 @@
             const handleUpdateDashboard = (newData) => setDashboardData(newData);
             const handleUpdateDailyPlan = (newData) => setDailyPlan(newData);
             const handleUpdateGoals2026 = (newData) => setGoalsData(newData);
-            const handleUpdateWeeklyPlan = (newData) => setWeeklyPlan(newData);
             const handleUpdateMonthlyPlan = (newData) => setMonthlyPlan(newData);
             const handleDeleteBookCategory = (cat) => setBookCategories(bookCategories.filter(c => c !== cat));
             const handleRenameBookCategory = (oldN, newN) => setBookCategories(bookCategories.map(c => c === oldN ? newN : c));
@@ -1987,10 +1943,9 @@
                 React.createElement("main", { className: "md:ml-64 p-4 md:p-8 pb-28 md:pb-8 pt-20 md:pt-8 min-h-screen box-border overflow-x-hidden" },
                     activeTab === 'dashboard' && React.createElement(DashboardView, { onNavigate: setActiveTab, dashboardData, onUpdateDashboard: handleUpdateDashboard, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset, meals, goalsData, dumps, books }),
                     activeTab === 'tasks' && React.createElement(TasksView, { tasks, onAdd: handleAddTask, onToggle: handleToggleTask, onDelete: handleDeleteTask, onEdit: handleEditTask, onReorder: handleReorderTasks, onClearCompleted: handleClearCompletedTasks }),
-                    activeTab === 'schedule' && React.createElement(ScheduleView, { events, onAddEvent: handleAddEvent, onUpdateEvent: handleUpdateEvent, onDeleteEvent: handleDeleteEvent, dailyPlan, onUpdateDailyPlan: handleUpdateDailyPlan, weeklyPlan }),
+                    activeTab === 'schedule' && React.createElement(ScheduleView, { events, onAddEvent: handleAddEvent, onUpdateEvent: handleUpdateEvent, onDeleteEvent: handleDeleteEvent, dailyPlan, onUpdateDailyPlan: handleUpdateDailyPlan }),
                     activeTab === 'goals2026' && React.createElement(Goals2026View, { goalsData, onUpdateGoals: handleUpdateGoals2026 }),
                     activeTab === 'monthlyPlan' && React.createElement(MonthlyPlanView, { plan: monthlyPlan, onUpdate: handleUpdateMonthlyPlan }),
-                    activeTab === 'weeklyPlan' && React.createElement(WeeklyPlanView, { plan: weeklyPlan, onUpdate: handleUpdateWeeklyPlan }),
                     activeTab === 'ideaBoard' && React.createElement(IdeaBoardView, { notes: ideaNotes, onAdd: handleAddIdeaNote, onUpdate: handleUpdateIdeaNote, onDelete: handleDeleteIdeaNote }),
                     activeTab === 'braindump' && React.createElement(BrainDumpView, { dumps, onAddDump: handleAddDump, onDeleteDump: handleDeleteDump, onUpdateDump: handleUpdateDump }),
                     activeTab === 'focus' && React.createElement(FocusView, { activeSound, isPlayingSound, toggleSound, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset }),
