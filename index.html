@@ -76,7 +76,7 @@
             ListTodo, ArrowUpRight, CheckSquare, Flower2, Dumbbell, Github, Bot, Newspaper, QrCode,
             Waves, Wind, Mountain, Footprints, Ban, ShieldCheck, Milestone, User, LogIn, ArrowLeft, Info,
             Eye, EyeOff, Hourglass, AlertTriangle, Check, Cpu, Scroll, Gift, ShoppingBag, Code2, Terminal, Library, Globe, Laptop, Smartphone, Wand2, Chrome,
-            Calendar, Loader2, CalendarRange, GripVertical, ArrowUp, ArrowDown
+            Calendar, Loader2, CalendarRange, GripVertical, ArrowUp, ArrowDown, Scale
         } from "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0";
         import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
@@ -1636,6 +1636,115 @@
             );
         };
 
+        const GodsWayView = ({ items, onUpdate, onAdd, onDelete }) => {
+            const [posInput, setPosInput] = useState("");
+            const [negInput, setNegInput] = useState("");
+
+            const toNegative = (text) => {
+                let t = text.trim();
+                if (/^not /i.test(t)) return t;
+                if (/^I'm /i.test(t)) return `Not ${t.charAt(4).toLowerCase() + t.slice(5)}`;
+                if (/^I am /i.test(t)) return `Not ${t.charAt(5).toLowerCase() + t.slice(6)}`;
+                return `Not ${t.charAt(0).toLowerCase() + t.slice(1)}`;
+            };
+
+            const toPositive = (text) => {
+                let t = text.trim();
+                if (/^Not /i.test(t)) return `I'm ${t.charAt(4).toLowerCase() + t.slice(5)}`;
+                return t;
+            };
+
+            const handleDragStart = (e, item) => {
+                e.dataTransfer.setData("application/json", JSON.stringify(item));
+            };
+
+            const handleDrop = (e, targetType) => {
+                e.preventDefault();
+                const itemData = e.dataTransfer.getData("application/json");
+                if (itemData) {
+                    const item = JSON.parse(itemData);
+                    if (item.type !== targetType) {
+                        const newText = targetType === 'negative' ? toNegative(item.text) : toPositive(item.text);
+                        onUpdate({ ...item, type: targetType, text: newText });
+                    }
+                }
+            };
+
+            const handleDragOver = (e) => {
+                e.preventDefault();
+            };
+
+            const posItems = items.filter(i => i.type === 'positive');
+            const negItems = items.filter(i => i.type === 'negative');
+
+            return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-full flex flex-col max-w-6xl mx-auto" },
+                React.createElement("div", { className: "mb-8" },
+                    React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(Scale, { className: "text-indigo-500" }), "God's Way"),
+                    React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 mt-1" }, "Balance your life. Drag items between columns to shift their perspective.")
+                ),
+                React.createElement("div", { className: "flex flex-col md:flex-row gap-6 h-full min-h-[500px]" },
+                    React.createElement("div", { 
+                        className: "flex-1 bg-emerald-50 dark:bg-emerald-950/10 border border-emerald-200 dark:border-emerald-900/30 rounded-[2rem] p-6 flex flex-col shadow-sm",
+                        onDrop: (e) => handleDrop(e, 'positive'),
+                        onDragOver: handleDragOver
+                    },
+                        React.createElement("h3", { className: "font-bold text-emerald-700 dark:text-emerald-400 mb-4 flex items-center gap-2 text-lg" }, React.createElement(CheckCircle2, { size: 20 }), "Things I'm doing well (+)"),
+                        React.createElement("div", { className: "flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar" },
+                            posItems.map(item => React.createElement("div", { 
+                                key: item.id, draggable: true, onDragStart: (e) => handleDragStart(e, item),
+                                className: "bg-white dark:bg-emerald-900/40 border border-emerald-100 dark:border-emerald-800/50 p-4 rounded-xl shadow-sm text-emerald-900 dark:text-emerald-100 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow group flex justify-between items-start gap-2"
+                            }, 
+                                React.createElement("span", { className: "font-medium leading-relaxed pt-0.5" }, item.text),
+                                React.createElement("button", { onClick: () => onDelete(item.id), className: "text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity p-1 -mr-1 -mt-1" }, React.createElement(X, { size: 16 }))
+                            )),
+                            posItems.length === 0 && React.createElement("div", { className: "text-emerald-400/50 dark:text-emerald-600/50 text-center py-8 font-medium border-2 border-dashed border-emerald-200 dark:border-emerald-800/30 rounded-xl" }, "Drag negative items here or add new ones")
+                        ),
+                        React.createElement("div", { className: "mt-4 pt-4 border-t border-emerald-200/50 dark:border-emerald-800/30 flex gap-2" },
+                            React.createElement("input", { 
+                                value: posInput, onChange: e => setPosInput(e.target.value),
+                                onKeyDown: e => { if(e.key==='Enter' && posInput.trim()) { onAdd({text: posInput.trim(), type: 'positive'}); setPosInput(''); }},
+                                placeholder: "I'm financially stable...",
+                                className: "flex-1 bg-white dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-2 outline-none focus:border-emerald-400 text-emerald-900 dark:text-emerald-100 placeholder:text-emerald-300 dark:placeholder:text-emerald-700 text-base"
+                            }),
+                            React.createElement("button", { 
+                                onClick: () => { if(posInput.trim()) { onAdd({text: posInput.trim(), type: 'positive'}); setPosInput(''); }},
+                                className: "bg-emerald-500 hover:bg-emerald-600 text-white p-2.5 rounded-xl transition-colors shadow-sm active:scale-95"
+                            }, React.createElement(Plus, { size: 20 }))
+                        )
+                    ),
+                    React.createElement("div", { 
+                        className: "flex-1 bg-rose-50 dark:bg-rose-950/10 border border-rose-200 dark:border-rose-900/30 rounded-[2rem] p-6 flex flex-col shadow-sm",
+                        onDrop: (e) => handleDrop(e, 'negative'),
+                        onDragOver: handleDragOver
+                    },
+                        React.createElement("h3", { className: "font-bold text-rose-700 dark:text-rose-400 mb-4 flex items-center gap-2 text-lg" }, React.createElement(AlertCircle, { size: 20 }), "Things I'm lacking in (-)"),
+                        React.createElement("div", { className: "flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar" },
+                            negItems.map(item => React.createElement("div", { 
+                                key: item.id, draggable: true, onDragStart: (e) => handleDragStart(e, item),
+                                className: "bg-white dark:bg-rose-900/40 border border-rose-100 dark:border-rose-800/50 p-4 rounded-xl shadow-sm text-rose-900 dark:text-rose-100 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow group flex justify-between items-start gap-2"
+                            }, 
+                                React.createElement("span", { className: "font-medium leading-relaxed pt-0.5" }, item.text),
+                                React.createElement("button", { onClick: () => onDelete(item.id), className: "text-rose-400 hover:text-rose-600 dark:hover:text-rose-300 opacity-0 group-hover:opacity-100 transition-opacity p-1 -mr-1 -mt-1" }, React.createElement(X, { size: 16 }))
+                            )),
+                            negItems.length === 0 && React.createElement("div", { className: "text-rose-400/50 dark:text-rose-600/50 text-center py-8 font-medium border-2 border-dashed border-rose-200 dark:border-rose-800/30 rounded-xl" }, "Drag positive items here or add new ones")
+                        ),
+                        React.createElement("div", { className: "mt-4 pt-4 border-t border-rose-200/50 dark:border-rose-800/30 flex gap-2" },
+                            React.createElement("input", { 
+                                value: negInput, onChange: e => setNegInput(e.target.value),
+                                onKeyDown: e => { if(e.key==='Enter' && negInput.trim()) { onAdd({text: negInput.trim(), type: 'negative'}); setNegInput(''); }},
+                                placeholder: "Not financially stable...",
+                                className: "flex-1 bg-white dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-xl px-4 py-2 outline-none focus:border-rose-400 text-rose-900 dark:text-rose-100 placeholder:text-rose-300 dark:placeholder:text-rose-700 text-base"
+                            }),
+                            React.createElement("button", { 
+                                onClick: () => { if(negInput.trim()) { onAdd({text: negInput.trim(), type: 'negative'}); setNegInput(''); }},
+                                className: "bg-rose-500 hover:bg-rose-600 text-white p-2.5 rounded-xl transition-colors shadow-sm active:scale-95"
+                            }, React.createElement(Plus, { size: 20 }))
+                        )
+                    )
+                )
+            );
+        };
+
         const App = () => {
             const tabConfig = { 
                 dashboard: { label: "Dashboard", icon: Layout }, 
@@ -1643,6 +1752,7 @@
                 schedule: { label: "Schedule", icon: CalendarIcon },
                 goals2026: { label: "2026 Vision", icon: Flag }, 
                 monthlyPlan: { label: "Monthly Vision", icon: CalendarRange }, 
+                godsWay: { label: "God's Way", icon: Scale },
                 ideaBoard: { label: "Idea Board", icon: Lightbulb }, 
                 braindump: { label: "Worries", icon: AlertCircle }, 
                 focus: { label: "Focus Timer", icon: Timer }, 
@@ -1669,6 +1779,7 @@
             const [meals, setMeals] = useState(DEFAULT_MEALS);
             const [goalsData, setGoalsData] = useState(DEFAULT_GOALS_DATA);
             const [dashboardData, setDashboardData] = useState({});
+            const [godsWayItems, setGodsWayItems] = useState([]);
             const [books, setBooks] = useState([]);
             const [bookCategories, setBookCategories] = useState(DEFAULT_BOOK_CATEGORIES);
             const [dailyPlan, setDailyPlan] = useState({ priorities: ['', '', ''], schedule: {}, notes: '', minorTasks: [] });
@@ -1748,7 +1859,10 @@
 
                             if(aRes.data) { 
                                 if(aRes.data.goals_2026) setGoalsData(aRes.data.goals_2026); 
-                                if(aRes.data.dashboard_config) setDashboardData(aRes.data.dashboard_config); 
+                                if(aRes.data.dashboard_config) {
+                                    setDashboardData(aRes.data.dashboard_config); 
+                                    if(aRes.data.dashboard_config.godsWayItems) setGodsWayItems(aRes.data.dashboard_config.godsWayItems);
+                                }
                                 if(aRes.data.book_categories) setBookCategories(aRes.data.book_categories);
                                 if(aRes.data.daily_plan) setDailyPlan(aRes.data.daily_plan);
                                 if(aRes.data.monthly_plan) setMonthlyPlan(aRes.data.monthly_plan);
@@ -1775,6 +1889,7 @@
                     setDumps(JSON.parse(localStorage.getItem(`${prefix}dumps`) || '[]'));
                     setMeals(JSON.parse(localStorage.getItem(`${prefix}meals`) || JSON.stringify(DEFAULT_MEALS)));
                     setGoalsData(JSON.parse(localStorage.getItem(`${prefix}goals_2026`) || JSON.stringify(DEFAULT_GOALS_DATA)));
+                    setGodsWayItems(JSON.parse(localStorage.getItem(`${prefix}gods_way`) || '[]'));
                     setBooks(JSON.parse(localStorage.getItem(`${prefix}books`) || '[]'));
                     setBookCategories(JSON.parse(localStorage.getItem(`${prefix}book_categories`) || JSON.stringify(DEFAULT_BOOK_CATEGORIES)));
                     setDashboardData(JSON.parse(localStorage.getItem(`${prefix}dashboard`) || '{}'));
@@ -1807,6 +1922,7 @@
                     localStorage.setItem(`${prefix}meals`, JSON.stringify(meals));
                     localStorage.setItem(`${prefix}goals_2026`, JSON.stringify(goalsData));
                     localStorage.setItem(`${prefix}dashboard`, JSON.stringify(dashboardData));
+                    localStorage.setItem(`${prefix}gods_way`, JSON.stringify(godsWayItems));
                     localStorage.setItem(`${prefix}books`, JSON.stringify(books));
                     localStorage.setItem(`${prefix}book_categories`, JSON.stringify(bookCategories));
                     localStorage.setItem(`${prefix}daily_plan`, JSON.stringify(dailyPlan));
@@ -1821,7 +1937,7 @@
                             await supabase.from('app_data').upsert({
                                 user_id: user.id,
                                 goals_2026: goalsData,
-                                dashboard_config: dashboardData,
+                                dashboard_config: { ...dashboardData, godsWayItems },
                                 book_categories: bookCategories,
                                 daily_plan: dailyPlan,
                                 monthly_plan: monthlyPlan,
@@ -1835,7 +1951,7 @@
                     const timeoutId = setTimeout(syncAppData, 1500);
                     return () => clearTimeout(timeoutId);
                 }
-            }, [dumps, meals, goalsData, dashboardData, books, bookCategories, dailyPlan, monthlyPlan, countdowns, ideaNotes, tasks, events, user, isDataLoaded]);
+            }, [dumps, meals, goalsData, dashboardData, godsWayItems, books, bookCategories, dailyPlan, monthlyPlan, countdowns, ideaNotes, tasks, events, user, isDataLoaded]);
 
             const generateAIMealPlan = async () => {
                 const apiKey = "";
@@ -1884,6 +2000,11 @@
             const handleUpdateDailyPlan = (newData) => setDailyPlan(newData);
             const handleUpdateGoals2026 = (newData) => setGoalsData(newData);
             const handleUpdateMonthlyPlan = (newData) => setMonthlyPlan(newData);
+            
+            const handleAddGodsWay = (item) => setGodsWayItems(prev => [...prev, { ...item, id: generateUUID() }]);
+            const handleUpdateGodsWay = (item) => setGodsWayItems(prev => prev.map(i => i.id === item.id ? item : i));
+            const handleDeleteGodsWay = (id) => setGodsWayItems(prev => prev.filter(i => i.id !== id));
+
             const handleDeleteBookCategory = (cat) => setBookCategories(bookCategories.filter(c => c !== cat));
             const handleRenameBookCategory = (oldN, newN) => setBookCategories(bookCategories.map(c => c === oldN ? newN : c));
             const handleUpdateProfile = (name) => setUser({ ...user, displayName: name });
@@ -1946,6 +2067,7 @@
                     activeTab === 'schedule' && React.createElement(ScheduleView, { events, onAddEvent: handleAddEvent, onUpdateEvent: handleUpdateEvent, onDeleteEvent: handleDeleteEvent, dailyPlan, onUpdateDailyPlan: handleUpdateDailyPlan }),
                     activeTab === 'goals2026' && React.createElement(Goals2026View, { goalsData, onUpdateGoals: handleUpdateGoals2026 }),
                     activeTab === 'monthlyPlan' && React.createElement(MonthlyPlanView, { plan: monthlyPlan, onUpdate: handleUpdateMonthlyPlan }),
+                    activeTab === 'godsWay' && React.createElement(GodsWayView, { items: godsWayItems, onAdd: handleAddGodsWay, onUpdate: handleUpdateGodsWay, onDelete: handleDeleteGodsWay }),
                     activeTab === 'ideaBoard' && React.createElement(IdeaBoardView, { notes: ideaNotes, onAdd: handleAddIdeaNote, onUpdate: handleUpdateIdeaNote, onDelete: handleDeleteIdeaNote }),
                     activeTab === 'braindump' && React.createElement(BrainDumpView, { dumps, onAddDump: handleAddDump, onDeleteDump: handleDeleteDump, onUpdateDump: handleUpdateDump }),
                     activeTab === 'focus' && React.createElement(FocusView, { activeSound, isPlayingSound, toggleSound, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset }),
