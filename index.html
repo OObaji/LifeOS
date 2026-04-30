@@ -76,7 +76,7 @@
             ListTodo, ArrowUpRight, CheckSquare, Flower2, Dumbbell, Github, Bot, Newspaper, QrCode,
             Waves, Wind, Mountain, Footprints, Ban, ShieldCheck, Milestone, User, LogIn, ArrowLeft, Info,
             Eye, EyeOff, Hourglass, AlertTriangle, Check, Cpu, Scroll, Gift, ShoppingBag, Code2, Terminal, Library, Globe, Laptop, Smartphone, Wand2, Chrome,
-            Calendar, Loader2, CalendarRange, GripVertical, ArrowUp, ArrowDown, Scale
+            Calendar, Loader2, CalendarRange, GripVertical, GripHorizontal, ArrowUp, ArrowDown, Scale
         } from "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0";
         import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
@@ -1354,14 +1354,8 @@
                 return () => observer.disconnect();
             }, []);
 
-            const handleMouseDown = (e, note) => { 
-                if(e.target.tagName === "TEXTAREA" || e.target.tagName === "BUTTON" || e.target.closest('button')) return; 
-                
+            const handleDragHandleDown = (e, note) => { 
                 const pos = getPointerPos(e);
-                const rect = e.currentTarget.getBoundingClientRect();
-                const isResizeClick = (pos.x > rect.right - 20) && (pos.y > rect.bottom - 20);
-                if (isResizeClick) return;
-
                 setDraggingId(note.id); 
                 const boardRect = boardRef.current.getBoundingClientRect();
                 setOffset({ x: pos.x - boardRect.left - note.x, y: pos.y - boardRect.top - note.y }); 
@@ -1467,8 +1461,6 @@
                     return React.createElement("div", { 
                         id: note.id, 
                         key: note.id, 
-                        onMouseDown: (e) => handleMouseDown(e, note), 
-                        onTouchStart: (e) => handleMouseDown(e, note),
                         onMouseUp: (e) => handleNoteMouseUp(e, note),
                         onTouchEnd: (e) => handleNoteMouseUp(e, note),
                         style: { 
@@ -1477,14 +1469,22 @@
                             width: `${noteW}px`, 
                             height: `${noteH}px`,
                             maxWidth: `calc(100% - ${safeX}px)`,
-                            maxHeight: `calc(100% - ${safeY}px)`
+                            maxHeight: `calc(100% - ${safeY}px)`,
+                            resize: 'both'
                         }, 
-                        className: `sticky-note absolute p-4 flex flex-col ${note.color} ${draggingId === note.id ? 'dragging' : ''}` 
+                        className: `sticky-note absolute flex flex-col ${note.color} ${draggingId === note.id ? 'dragging' : ''}` 
                     }, 
-                        React.createElement("div", { className: "flex-grow overflow-auto no-scrollbar" },
+                        React.createElement("div", {
+                            onMouseDown: (e) => handleDragHandleDown(e, note),
+                            onTouchStart: (e) => handleDragHandleDown(e, note),
+                            className: "w-full h-8 flex items-center justify-center cursor-move shrink-0 bg-black/5 hover:bg-black/10 transition-colors border-b border-black/5"
+                        },
+                            React.createElement(GripHorizontal, { size: 16, className: "opacity-40 text-black" })
+                        ),
+                        React.createElement("div", { className: "flex-grow overflow-auto no-scrollbar p-4 pt-3" },
                             React.createElement("textarea", { value: note.text, onChange: (e) => onUpdate({ ...note, text: e.target.value }, true), placeholder: "Write idea...", className: `w-full h-full bg-transparent resize-none outline-none ${note.font || 'font-sans'} text-base md:text-lg placeholder-black/30 dark:placeholder-black/30 leading-relaxed text-gray-800 dark:text-gray-900` })
                         ),
-                        React.createElement("div", { className: "flex justify-end items-center mt-2 space-x-2 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" },
+                        React.createElement("div", { className: "flex justify-end items-center px-4 pb-4 space-x-2 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" },
                             React.createElement("button", { onClick: (e) => handleCycleFont(e, note), className: "text-gray-600 hover:text-black dark:text-gray-700 dark:hover:text-black font-serif font-bold text-xs p-2 md:px-2 md:py-1 bg-white/40 hover:bg-white/60 rounded transition-colors active:scale-95" }, "Aa"),
                             React.createElement("button", { onClick: (e) => handleCopy(e, note.text), className: "copy-note-btn text-gray-600 hover:text-black dark:text-gray-700 dark:hover:text-black p-2 md:p-1 bg-white/40 hover:bg-white/60 rounded transition-colors active:scale-95" }, 
                                 React.createElement("svg", { className: "w-5 h-5 md:w-4 md:h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" }))
