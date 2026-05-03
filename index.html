@@ -1345,13 +1345,34 @@
             const colors = ["bg-yellow-200 text-yellow-900 dark:bg-yellow-400 dark:text-yellow-950", "bg-green-200 text-green-900 dark:bg-green-400 dark:text-green-950", "bg-pink-200 text-pink-900 dark:bg-pink-400 dark:text-pink-950", "bg-blue-200 text-blue-900 dark:bg-blue-400 dark:text-blue-950", "bg-purple-200 text-purple-900 dark:bg-purple-400 dark:text-purple-950"];
             const fonts = ["font-hand", "font-sans", "font-mono"];
 
-            // Center initial scroll on load
-            useEffect(() => {
-                if (boardRef.current) {
-                    boardRef.current.scrollLeft = (boardSize.w / 2) - (boardRef.current.clientWidth / 2);
-                    boardRef.current.scrollTop = (boardSize.h / 2) - (boardRef.current.clientHeight / 2);
+            const centerOnNotes = (smooth = true) => {
+                if (!boardRef.current) return;
+                const currentNotes = notes.filter(n => (n.tabId || tabs[0] || 'Main') === activeTab);
+                let targetX = boardSize.w / 2;
+                let targetY = boardSize.h / 2;
+
+                if (currentNotes.length > 0) {
+                    const minX = Math.min(...currentNotes.map(n => n.x));
+                    const maxX = Math.max(...currentNotes.map(n => n.x + (n.width || 240)));
+                    const minY = Math.min(...currentNotes.map(n => n.y));
+                    const maxY = Math.max(...currentNotes.map(n => n.y + (n.height || 240)));
+                    
+                    targetX = minX + (maxX - minX) / 2;
+                    targetY = minY + (maxY - minY) / 2;
                 }
-            }, [boardSize, activeTab]);
+
+                boardRef.current.scrollTo({
+                    left: targetX - (boardRef.current.clientWidth / 2),
+                    top: targetY - (boardRef.current.clientHeight / 2),
+                    behavior: smooth ? 'smooth' : 'auto'
+                });
+            };
+
+            // Center initial scroll on load or tab switch
+            useEffect(() => {
+                const timeoutId = setTimeout(() => centerOnNotes(false), 50);
+                return () => clearTimeout(timeoutId);
+            }, [boardSize.w, boardSize.h, activeTab]);
 
             const currentNotes = notes.filter(n => (n.tabId || tabs[0] || 'Main') === activeTab);
 
@@ -1483,6 +1504,9 @@
 
                 React.createElement("div", { ref: boardRef, className: `relative flex-1 w-full rounded-3xl overflow-auto shadow-inner group idea-board-bg border border-zinc-200 dark:border-zinc-800 ${draggingId ? 'touch-none' : ''}` },
                     React.createElement("div", { style: { width: `${boardSize.w}px`, height: `${boardSize.h}px` }, className: "relative" },
+                        React.createElement("div", { className: "absolute w-6 h-6 text-zinc-300 dark:text-zinc-700/60 pointer-events-none -translate-x-1/2 -translate-y-1/2 flex items-center justify-center", style: { left: boardSize.w / 2, top: boardSize.h / 2 } },
+                            React.createElement(Plus, { size: 24 })
+                        ),
                         currentNotes.length === 0 && React.createElement("div", { className: "sticky left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-600 pointer-events-none p-4 w-fit" }, 
                             React.createElement("div", { className: "text-center bg-white/80 dark:bg-zinc-900/80 p-8 rounded-3xl backdrop-blur-md border border-zinc-200 dark:border-zinc-800 shadow-sm" }, 
                                 React.createElement(Lightbulb, { size: 48, className: "mx-auto mb-3 opacity-50" }), 
@@ -1535,8 +1559,13 @@
                         })
                     )
                 ),
-                React.createElement("button", { onClick: handleAddNote, className: "absolute bottom-10 right-10 md:bottom-12 md:right-12 px-6 py-4 md:px-8 md:py-4 bg-yellow-400 text-yellow-900 font-bold rounded-full shadow-[0_10px_25px_rgba(250,204,21,0.5)] hover:bg-yellow-300 hover:scale-110 active:scale-95 transition-all z-[60] flex items-center gap-2 border-2 border-yellow-500/20" }, 
-                    React.createElement("svg", { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M12 4v16m8-8H4" })), React.createElement("span", { className: "hidden md:inline" }, "Add Note")
+                React.createElement("div", { className: "absolute bottom-10 right-10 md:bottom-12 md:right-12 flex gap-4 z-[60]" },
+                    React.createElement("button", { onClick: () => centerOnNotes(true), className: "w-14 h-14 md:w-16 md:h-16 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold rounded-full shadow-[0_10px_25px_rgba(0,0,0,0.1)] hover:bg-zinc-50 dark:hover:bg-zinc-700 active:scale-95 transition-all flex items-center justify-center border border-zinc-200 dark:border-zinc-700 group", title: "Recenter on Notes" }, 
+                        React.createElement(Crosshair, { size: 24, className: "group-hover:text-indigo-500 transition-colors" })
+                    ),
+                    React.createElement("button", { onClick: handleAddNote, className: "px-6 py-4 md:px-8 md:py-4 bg-yellow-400 text-yellow-900 font-bold rounded-full shadow-[0_10px_25px_rgba(250,204,21,0.5)] hover:bg-yellow-300 hover:scale-110 active:scale-95 transition-all flex items-center gap-2 border-2 border-yellow-500/20" }, 
+                        React.createElement("svg", { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M12 4v16m8-8H4" })), React.createElement("span", { className: "hidden md:inline" }, "Add Note")
+                    )
                 )
             );
         };
