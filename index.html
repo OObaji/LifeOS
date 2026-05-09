@@ -1134,15 +1134,35 @@
             const monthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
             const getWeekInfo = (index) => {
-                let endDay; let isCurrent = false; const currentDay = now.getDate();
-                if (index === 0) { endDay = 7; isCurrent = currentDay <= 7; } 
-                else if (index === 1) { endDay = 14; isCurrent = currentDay > 7 && currentDay <= 14; } 
-                else if (index === 2) { endDay = 21; isCurrent = currentDay > 14 && currentDay <= 21; } 
-                else { endDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(); isCurrent = currentDay > 21; }
-                const endDate = new Date(now.getFullYear(), now.getMonth(), endDay);
-                const dayNum = endDate.getDate();
+                const year = now.getFullYear();
+                const month = now.getMonth();
+                
+                // Find the first Sunday of the current month
+                let firstSunday = new Date(year, month, 1);
+                if (firstSunday.getDay() !== 0) {
+                    firstSunday.setDate(firstSunday.getDate() + (7 - firstSunday.getDay()));
+                }
+
+                // Calculate the start date of the given week index
+                let startDate = new Date(firstSunday);
+                startDate.setDate(firstSunday.getDate() + (index * 7));
+
+                // Check if current date falls within this week
+                const endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 6);
+                endDate.setHours(23, 59, 59, 999);
+                
+                let isCurrent = now >= startDate && now <= endDate;
+                
+                // Catch edge cases for days before the first Sunday or after the last sprint
+                if (index === 0 && now < startDate) isCurrent = true;
+                if (index === 3 && now > endDate) isCurrent = true;
+
+                const dayNum = startDate.getDate();
                 const suffix = (dayNum === 1 || dayNum === 21 || dayNum === 31) ? 'st' : (dayNum === 2 || dayNum === 22) ? 'nd' : (dayNum === 3 || dayNum === 23) ? 'rd' : 'th';
-                return { isCurrent, label: `Ends ${dayNum}${suffix} ${endDate.toLocaleDateString('en-US', { month: 'short' })}` };
+                const formattedDate = `${dayNum}${suffix} ${startDate.toLocaleDateString('en-US', { month: 'short' })} ${startDate.getFullYear()}`;
+                
+                return { isCurrent, label: `Starts ${formattedDate}` };
             };
 
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-full flex flex-col overflow-y-auto max-w-7xl mx-auto" },
