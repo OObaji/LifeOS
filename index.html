@@ -1133,46 +1133,54 @@
             const now = new Date();
             const monthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-            const getWeekInfo = (index) => {
+            const getCurrentWeekIndex = () => {
+                const currentDay = now.getDate();
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                const firstSundayDay = 1 + (7 - firstDay.getDay()) % 7;
+
+                if (currentDay < firstSundayDay + 7) return 0;
+                if (currentDay < firstSundayDay + 14) return 1;
+                if (currentDay < firstSundayDay + 21) return 2;
+                return 3;
+            };
+
+            const getWeekLabel = (index) => {
                 const year = now.getFullYear();
                 const month = now.getMonth();
+                const firstDay = new Date(year, month, 1);
+                const firstSundayDay = 1 + (7 - firstDay.getDay()) % 7;
                 
-                // Find the first Sunday of the current month
-                let firstSunday = new Date(year, month, 1);
-                if (firstSunday.getDay() !== 0) {
-                    firstSunday.setDate(firstSunday.getDate() + (7 - firstSunday.getDay()));
-                }
-
-                // Calculate the start date of the given week index
-                let startDate = new Date(firstSunday);
-                startDate.setDate(firstSunday.getDate() + (index * 7));
-
-                // Check if current date falls within this week
-                const endDate = new Date(startDate);
-                endDate.setDate(startDate.getDate() + 6);
-                endDate.setHours(23, 59, 59, 999);
+                const sprintStartDay = firstSundayDay + (index * 7);
+                const sprintStartDate = new Date(year, month, sprintStartDay);
                 
-                let isCurrent = now >= startDate && now <= endDate;
+                const dNum = sprintStartDate.getDate();
+                const suffix = (dNum === 1 || dNum === 21 || dNum === 31) ? 'st' : (dNum === 2 || dNum === 22) ? 'nd' : (dNum === 3 || dNum === 23) ? 'rd' : 'th';
+                const sprintMonthName = sprintStartDate.toLocaleDateString('en-US', { month: 'long' });
+                const sprintYearNum = sprintStartDate.getFullYear();
                 
-                // Catch edge cases for days before the first Sunday or after the last sprint
-                if (index === 0 && now < startDate) isCurrent = true;
-                if (index === 3 && now > endDate) isCurrent = true;
-
-                const dayNum = startDate.getDate();
-                const suffix = (dayNum === 1 || dayNum === 21 || dayNum === 31) ? 'st' : (dayNum === 2 || dayNum === 22) ? 'nd' : (dayNum === 3 || dayNum === 23) ? 'rd' : 'th';
-                const formattedDate = `${dayNum}${suffix} ${startDate.toLocaleDateString('en-US', { month: 'short' })} ${startDate.getFullYear()}`;
-                
-                return { isCurrent, label: `Starts ${formattedDate}` };
+                return `Starts ${dNum}${suffix} ${sprintMonthName} ${sprintYearNum}`;
             };
+
+            const activeIndex = plan.activeWeek !== undefined ? plan.activeWeek : getCurrentWeekIndex();
 
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-full flex flex-col overflow-y-auto max-w-7xl mx-auto" },
                 React.createElement("div", { className: "mb-8 flex flex-col items-center text-center" }, React.createElement("div", { className: "text-indigo-500 dark:text-indigo-400 font-bold uppercase tracking-widest text-xs mb-2" }, monthName), React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "Monthly Vision"), React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 text-sm" }, "The big picture. One month at a time.")),
                 React.createElement("div", { className: "mb-8" },
                     React.createElement("h3", { className: "text-xl font-bold text-zinc-900 dark:text-white mb-4 flex items-center gap-2" }, React.createElement(CalendarRange, { size: 20 }), "Weekly Sprints"),
                     React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-6" }, ['week1', 'week2', 'week3', 'week4'].map((wKey, i) => {
-                        const { isCurrent, label } = getWeekInfo(i);
-                        return React.createElement("div", { key: wKey, className: `p-6 border rounded-3xl shadow-sm flex flex-col h-full min-h-[450px] transition-all duration-300 ${isCurrent ? 'bg-indigo-50/30 dark:bg-indigo-900/10 border-indigo-500 ring-1 ring-indigo-500 transform scale-[1.01]' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'}` },
-                            React.createElement("div", { className: "flex justify-between items-center mb-4 border-b border-zinc-100 dark:border-zinc-800 pb-3" }, React.createElement("div", null, React.createElement("span", { className: `text-sm font-bold uppercase tracking-widest block ${isCurrent ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400'}` }, `Sprint 0${i + 1}`), React.createElement("span", { className: "text-[11px] text-zinc-400 font-medium" }, label)), isCurrent && React.createElement("span", { className: "text-[10px] font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-500/30" }, "ACTIVE")),
+                        const isActive = i === activeIndex;
+                        const label = getWeekLabel(i);
+                        return React.createElement("div", { key: wKey, className: `group p-6 border rounded-3xl shadow-sm flex flex-col h-full min-h-[450px] transition-all duration-300 ${isActive ? 'bg-indigo-50/30 dark:bg-indigo-900/10 border-indigo-500 ring-1 ring-indigo-500 transform scale-[1.01]' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'}` },
+                            React.createElement("div", { className: "flex justify-between items-center mb-4 border-b border-zinc-100 dark:border-zinc-800 pb-3" }, 
+                                React.createElement("div", null, 
+                                    React.createElement("span", { className: `text-sm font-bold uppercase tracking-widest block ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400'}` }, `Sprint 0${i + 1}`), 
+                                    React.createElement("span", { className: "text-[11px] text-zinc-400 font-medium" }, label)
+                                ), 
+                                isActive ? 
+                                    React.createElement("button", { onClick: () => onUpdate({ ...plan, activeWeek: undefined }), title: "Click to reset to auto", className: "text-[10px] font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-500/30 cursor-pointer hover:bg-indigo-200 dark:hover:bg-indigo-500/30 transition-colors" }, "ACTIVE") 
+                                : 
+                                    React.createElement("button", { onClick: () => onUpdate({ ...plan, activeWeek: i }), className: "text-[10px] font-bold text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-300 px-3 py-1 rounded-full border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors opacity-0 group-hover:opacity-100 active:scale-95" }, "Set Active")
+                            ),
                             React.createElement(EditableList, { items: weeks[wKey] || [], onAdd: (text) => addSprintItem(wKey, text), onToggle: (id) => toggleSprintItem(wKey, id), onDelete: (id) => deleteSprintItem(wKey, id), onEdit: (id, text) => editSprintItem(wKey, id, text), onReorder: (newItems) => reorderSprintItem(wKey, newItems), placeholder: "Add sprint task..." })
                         );
                     }))
