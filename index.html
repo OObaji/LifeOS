@@ -1619,43 +1619,82 @@
         const LibraryView = ({ books, categories, onAddBook, onDeleteBook, onUpdateBook }) => {
             const [isAdding, setIsAdding] = useState(false);
             const [filter, setFilter] = useState('All');
-            const [newBook, setNewBook] = useState({ title: '', author: '', category: categories[0] || 'General', status: 'To Read' });
+            const [mode, setMode] = useState('Library');
+            const currentYear = new Date().getFullYear();
+            const [newBook, setNewBook] = useState({ title: '', author: '', category: categories[0] || 'General', status: 'To Read', isYearlyGoal: false });
 
-            const handleAdd = () => { if(newBook.title) { onAddBook(newBook); setIsAdding(false); setNewBook({ title: '', author: '', category: categories[0] || 'General', status: 'To Read' }); } };
+            const handleAdd = () => { 
+                if(newBook.title) { 
+                    onAddBook(newBook); 
+                    setIsAdding(false); 
+                    setNewBook({ title: '', author: '', category: categories[0] || 'General', status: 'To Read', isYearlyGoal: mode === 'Yearly' }); 
+                } 
+            };
 
-            const displayedBooks = filter === 'All' ? books : books.filter(b => b.status === filter || b.category === filter);
+            const yearlyBooks = books.filter(b => b.isYearlyGoal);
+            const completedYearly = yearlyBooks.filter(b => b.status === 'Completed').length;
+            const yearlyProgress = yearlyBooks.length > 0 ? (completedYearly / yearlyBooks.length) * 100 : 0;
+
+            const displayedBooks = mode === 'Yearly' 
+                ? yearlyBooks 
+                : (filter === 'All' ? books : books.filter(b => b.status === filter || b.category === filter));
 
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-full flex flex-col max-w-7xl mx-auto overflow-y-auto no-scrollbar" },
-                React.createElement("div", { className: "flex justify-between items-center mb-8" },
+                React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4" },
                     React.createElement("div", null,
                         React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "Library"),
                         React.createElement("p", { className: "text-zinc-500 text-sm mt-1" }, "Your personal knowledge base.")
                     ),
-                    React.createElement("button", { onClick: () => setIsAdding(!isAdding), className: "bg-indigo-600 text-white p-3 rounded-xl hover:bg-indigo-500 shadow-glow-sm transition-all active:scale-95" }, React.createElement(Plus, { size: 20 }))
+                    React.createElement("div", { className: "flex bg-zinc-200/50 dark:bg-zinc-800/50 p-1 rounded-xl w-full md:w-auto shrink-0" },
+                        React.createElement("button", { onClick: () => setMode('Library'), className: `flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'Library' ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}` }, "All Books"),
+                        React.createElement("button", { onClick: () => setMode('Yearly'), className: `flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'Yearly' ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}` }, `${currentYear} Goals`)
+                    ),
+                    React.createElement("button", { onClick: () => setIsAdding(!isAdding), className: "hidden md:flex bg-indigo-600 text-white p-3 rounded-xl hover:bg-indigo-500 shadow-glow-sm transition-all active:scale-95 shrink-0" }, React.createElement(Plus, { size: 20 }))
                 ),
-                isAdding && React.createElement("div", { className: "mb-8 bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm animate-in slide-in-from-top-4 duration-300" },
+                
+                mode === 'Yearly' && React.createElement("div", { className: "mb-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-6 md:p-8 text-white shadow-lg relative overflow-hidden shrink-0" },
+                    React.createElement("div", { className: "relative z-10" },
+                        React.createElement("h3", { className: "text-2xl font-bold mb-2" }, `${currentYear} Reading Challenge`),
+                        React.createElement("p", { className: "text-indigo-100 mb-6" }, `You've read ${completedYearly} out of ${yearlyBooks.length} books targeted for this year.`),
+                        React.createElement("div", { className: "h-3 w-full bg-black/20 rounded-full overflow-hidden" },
+                            React.createElement("div", { className: "h-full bg-white rounded-full transition-all duration-1000", style: { width: `${yearlyProgress}%` } })
+                        )
+                    ),
+                    React.createElement(Target, { className: "absolute -right-10 -bottom-10 w-48 h-48 text-white opacity-10 pointer-events-none" })
+                ),
+
+                isAdding && React.createElement("div", { className: "mb-8 bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm animate-in slide-in-from-top-4 duration-300 shrink-0" },
                     React.createElement("h3", { className: "font-bold text-lg mb-4 text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(BookOpen, { size: 18, className: "text-indigo-500" }), "Add New Book"),
                     React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" },
                         React.createElement("input", { value: newBook.title, onChange: e => setNewBook({...newBook, title: e.target.value}), placeholder: "Book Title", className: "p-3 bg-zinc-50 dark:bg-black/50 rounded-xl border border-zinc-200 dark:border-zinc-700 outline-none text-zinc-900 dark:text-white focus:border-indigo-500 transition-colors" }),
                         React.createElement("input", { value: newBook.author, onChange: e => setNewBook({...newBook, author: e.target.value}), placeholder: "Author", className: "p-3 bg-zinc-50 dark:bg-black/50 rounded-xl border border-zinc-200 dark:border-zinc-700 outline-none text-zinc-900 dark:text-white focus:border-indigo-500 transition-colors" }),
                         React.createElement("select", { value: newBook.category, onChange: e => setNewBook({...newBook, category: e.target.value}), className: "p-3 bg-zinc-50 dark:bg-black/50 rounded-xl border border-zinc-200 dark:border-zinc-700 outline-none text-zinc-900 dark:text-white focus:border-indigo-500 transition-colors" }, categories.map(c => React.createElement("option", { key: c, value: c }, c))),
-                        React.createElement("select", { value: newBook.status, onChange: e => setNewBook({...newBook, status: e.target.value}), className: "p-3 bg-zinc-50 dark:bg-black/50 rounded-xl border border-zinc-200 dark:border-zinc-700 outline-none text-zinc-900 dark:text-white focus:border-indigo-500 transition-colors" }, ['To Read', 'Reading', 'Completed'].map(s => React.createElement("option", { key: s, value: s }, s)))
+                        React.createElement("select", { value: newBook.status, onChange: e => setNewBook({...newBook, status: e.target.value}), className: "p-3 bg-zinc-50 dark:bg-black/50 rounded-xl border border-zinc-200 dark:border-zinc-700 outline-none text-zinc-900 dark:text-white focus:border-indigo-500 transition-colors" }, ['To Read', 'Reading', 'Completed'].map(s => React.createElement("option", { key: s, value: s }, s))),
+                        React.createElement("label", { className: "md:col-span-2 flex items-center gap-3 p-3 bg-zinc-50 dark:bg-black/50 rounded-xl border border-zinc-200 dark:border-zinc-700 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" },
+                            React.createElement("input", { type: "checkbox", checked: newBook.isYearlyGoal || false, onChange: e => setNewBook({...newBook, isYearlyGoal: e.target.checked}), className: "w-5 h-5 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-zinc-900 cursor-pointer" }),
+                            React.createElement("span", { className: "text-sm font-medium text-zinc-700 dark:text-zinc-300" }, `Set as a ${currentYear} Reading Goal`)
+                        )
                     ),
                     React.createElement("div", { className: "flex justify-end gap-3" },
                         React.createElement("button", { onClick: () => setIsAdding(false), className: "px-5 py-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-white font-bold transition-colors active:scale-95" }, "Cancel"),
                         React.createElement("button", { onClick: handleAdd, className: "px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold shadow-glow-sm hover:bg-indigo-500 transition-colors active:scale-95" }, "Save Book")
                     )
                 ),
-                React.createElement("div", { className: "flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-2" },
+                
+                mode === 'Library' && React.createElement("div", { className: "flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-2 shrink-0" },
                     ['All', 'Reading', 'To Read', 'Completed', ...categories].map(f => React.createElement("button", { key: f, onClick: () => setFilter(f), className: `px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors border active:scale-95 ${filter === f ? 'bg-indigo-600 border-indigo-600 text-white shadow-glow-sm' : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'}` }, f))
                 ),
+                
                 React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" },
-                    displayedBooks.map(b => React.createElement("div", { key: b.id, className: "bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col h-full hover:shadow-md transition-all group" },
+                    displayedBooks.map(b => React.createElement("div", { key: b.id, className: "bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col h-full hover:shadow-md transition-all group relative" },
                         React.createElement("div", { className: "flex justify-between items-start mb-3" },
                             React.createElement("span", { className: `text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider ${b.status === 'Reading' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400' : b.status === 'Completed' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'}` }, b.status),
-                            React.createElement("button", { onClick: () => { if(confirm("Remove this book?")) onDeleteBook(b.id); }, className: "text-zinc-400 hover:text-red-500 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity p-1" }, React.createElement(Trash2, { size: 16 }))
+                            React.createElement("div", { className: "flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity" },
+                                React.createElement("button", { onClick: () => onUpdateBook({...b, isYearlyGoal: !b.isYearlyGoal}), title: b.isYearlyGoal ? "Remove from Goals" : "Add to Yearly Goals", className: `p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${b.isYearlyGoal ? 'text-yellow-500' : 'text-zinc-400 hover:text-yellow-500'}` }, React.createElement(Star, { size: 16, fill: b.isYearlyGoal ? "currentColor" : "none" })),
+                                React.createElement("button", { onClick: () => { if(confirm("Remove this book?")) onDeleteBook(b.id); }, className: "text-zinc-400 hover:text-red-500 p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" }, React.createElement(Trash2, { size: 16 }))
+                            )
                         ),
-                        React.createElement("h3", { className: "font-bold text-lg text-zinc-900 dark:text-white leading-tight mb-1" }, b.title),
+                        React.createElement("h3", { className: "font-bold text-lg text-zinc-900 dark:text-white leading-tight mb-1 pr-6" }, b.title),
                         React.createElement("p", { className: "text-sm text-zinc-500 mb-6 flex-1" }, b.author),
                         React.createElement("div", { className: "mt-auto pt-4 border-t border-zinc-100 dark:border-zinc-800 flex justify-between items-center" },
                             React.createElement("span", { className: "text-xs font-bold text-zinc-400 flex items-center gap-1.5" }, React.createElement(Bookmark, { size: 12 }), b.category),
@@ -1663,10 +1702,11 @@
                         )
                     ))
                 ),
-                displayedBooks.length === 0 && React.createElement("div", { className: "text-center py-20 text-zinc-400" },
-                    React.createElement(BookOpen, { size: 48, className: "mx-auto mb-4 opacity-20" }),
-                    React.createElement("p", { className: "font-medium" }, "No books found for this filter.")
-                )
+                displayedBooks.length === 0 && React.createElement("div", { className: "text-center py-20 text-zinc-400 flex flex-col items-center" },
+                    mode === 'Yearly' ? React.createElement(Target, { size: 48, className: "mx-auto mb-4 opacity-20" }) : React.createElement(BookOpen, { size: 48, className: "mx-auto mb-4 opacity-20" }),
+                    React.createElement("p", { className: "font-medium mt-2 max-w-sm text-center" }, mode === 'Yearly' ? `No books targeted for ${currentYear} yet. Click the star icon on a book to track it here.` : "No books found for this filter.")
+                ),
+                React.createElement("button", { onClick: () => setIsAdding(true), className: "md:hidden fixed bottom-24 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg z-50 hover:bg-indigo-500 active:scale-95 transition-transform" }, React.createElement(Plus, { size: 24 }))
             );
         };
 
