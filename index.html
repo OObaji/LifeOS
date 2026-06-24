@@ -60,23 +60,12 @@
         import React, { useState, useEffect, useRef, useMemo } from "https://esm.sh/react@18.2.0";
         import { createRoot } from "https://esm.sh/react-dom@18.2.0/client";
         import { 
-            Layout, Home, BookOpen, Target, PenTool, Settings, Search, Bell, Plus, 
-            MoreHorizontal, CheckCircle2, Clock, ArrowRight, Brain, Layers, 
-            Calendar as CalendarIcon, ChevronRight, Sun, Moon, Filter, Zap, Coffee, 
-            Video, MapPin, RefreshCw, MoreVertical, Lightbulb, Sparkles, Trash2, 
-            Sprout, Briefcase, DollarSign, Move, Eraser, Palette, MousePointer2, 
-            Trophy, Flag, TrendingUp, Award, Crosshair, Star, Bookmark, Book, 
-            GraduationCap, Wallet, Building, Users, ExternalLink, Link as LinkIcon, 
-            PlayCircle, Film, Music, Gamepad2, MonitorPlay, Headphones, Tv, 
-            MessageSquare, AlertCircle, Folder, Minus, CalendarDays, LogOut, Lock, 
-            Fingerprint, Delete, KeyRound, ShieldQuestion, RotateCcw, Menu, X, Save, Edit3, Wifi, WifiOff, Database,
-            Timer, Play, Pause, Wrench, File, CreditCard, Coins, Heart, Activity, Scissors, Share2, Mail, Archive, Image,
-            Cloud, CloudRain, CloudSun, CloudSnow, CloudLightning, Thermometer,
-            List, Grid, Columns, Utensils, FileText, Trash, ShieldAlert, Flame, Volume2, ChevronLeft,
-            ListTodo, ArrowUpRight, CheckSquare, Flower2, Dumbbell, Github, Bot, Newspaper, QrCode,
-            Waves, Wind, Mountain, Footprints, Ban, ShieldCheck, Milestone, User, LogIn, ArrowLeft, Info,
-            Eye, EyeOff, Hourglass, AlertTriangle, Check, Cpu, Scroll, Gift, ShoppingBag, Code2, Terminal, Library, Globe, Laptop, Smartphone, Wand2, Chrome,
-            Calendar, Loader2, CalendarRange, GripVertical, GripHorizontal, ArrowUp, ArrowDown, Scale
+            Layout, BookOpen, Target, Settings, Plus, CheckCircle2, ArrowRight, Brain, 
+            Calendar as CalendarIcon, ChevronRight, ChevronLeft, Sun, Moon, Music, Trash2, 
+            Edit3, Timer, Play, Pause, RotateCcw, X, CloudRain, Utensils, Trash, 
+            ListTodo, CheckSquare, AlertCircle, Book, Hourglass, Check, Gift, 
+            Chrome, Calendar, Loader2, CalendarRange, GripVertical, GripHorizontal, ArrowUp, ArrowDown, Scale,
+            Lightbulb, Crosshair, Flag, Activity, Ban, Bookmark, Eye, EyeOff, User, LogOut, LinkIcon, Globe, ExternalLink, Search, Star
         } from "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0";
         import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
@@ -98,21 +87,16 @@
             { id: 'hol-ny', title: "New Year's Day", start: "2026-01-01T00:00", end: "2026-01-01T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
             { id: 'hol-val', title: "Valentine's Day", start: "2026-02-14T00:00", end: "2026-02-14T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
             { id: 'hol-stp', title: "St. Patrick's Day", start: "2026-03-17T00:00", end: "2026-03-17T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
-            { id: 'bday-dad', title: "Dad's Birthday", start: "2026-03-20T00:00", end: "2026-03-20T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
-            { id: 'bday-nathan', title: "Nathan's Birthday", start: "2026-03-26T00:00", end: "2026-03-26T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
-            { id: 'bday-mum-alimah', title: "Mum Alimah's Birthday", start: "2026-03-27T00:00", end: "2026-03-27T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
-            { id: 'bday-my', title: "My Birthday", start: "2026-04-09T00:00", end: "2026-04-09T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
-            { id: 'bday-mom', title: "Mom's Birthday", start: "2026-04-15T00:00", end: "2026-04-15T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
-            { id: 'bday-mike', title: "Mike's Birthday", start: "2026-06-30T00:00", end: "2026-06-30T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
-            { id: 'bday-eniola', title: "Eniola's Birthday", start: "2026-09-09T00:00", end: "2026-09-09T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
-            { id: 'bday-mariam', title: "Mariam's Birthday", start: "2026-09-27T00:00", end: "2026-09-27T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
-            { id: 'hol-hal', title: "Halloween", start: "2026-10-31T00:00", end: "2026-10-31T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
-            { id: 'bday-uncle-shams', title: "Uncle Shams' Birthday", start: "2026-12-12T00:00", end: "2026-12-12T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
-            { id: 'hol-xmas', title: "Christmas Day", start: "2026-12-25T00:00", end: "2026-12-25T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
-            { id: 'hol-box', title: "Boxing Day", start: "2026-12-26T00:00", end: "2026-12-26T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true },
-            { id: 'hol-nye', title: "New Year's Eve", start: "2026-12-31T00:00", end: "2026-12-31T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true }
+            { id: 'hol-xmas', title: "Christmas Day", start: "2026-12-25T00:00", end: "2026-12-25T23:59", color: "bg-pink-500", recurrence: "yearly", recurrenceDays: [], recurrenceEndDate: "", isAllDay: true }
         ];
         const FOCUS_SOUNDS = [ { id: 'rain', label: 'Rain', icon: CloudRain, url: 'https://cdn.pixabay.com/audio/2021/09/06/audio_2e22c07659.mp3' }, { id: 'lofi', label: 'Lofi', icon: Music, url: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3' } ];
+
+        const getPointerPos = (e) => {
+            if (e.touches && e.touches.length > 0) {
+                return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+            return { x: e.clientX, y: e.clientY };
+        };
 
         const Card = ({ children, className = "", title, action }) => ( React.createElement("div", { className: `bg-white/80 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-200 dark:border-white/5 rounded-2xl p-5 flex flex-col transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/50 shadow-sm dark:shadow-none ${className}` }, (title || action) && ( React.createElement("div", { className: "flex justify-between items-center mb-4 border-b border-zinc-100 dark:border-white/5 pb-2" }, title && React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest flex items-center gap-2" }, React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block" }), title), action) ), children) );
         
@@ -315,13 +299,6 @@
             );
         };
 
-        const getPointerPos = (e) => {
-            if (e.touches && e.touches.length > 0) {
-                return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-            }
-            return { x: e.clientX, y: e.clientY };
-        };
-        
         const ScheduleView = ({ events, onAddEvent, onUpdateEvent, onDeleteEvent, dailyPlan = {}, onUpdateDailyPlan }) => {
             const [view, setView] = useState('week');
             const [selectedDate, setSelectedDate] = useState(new Date());
@@ -347,7 +324,6 @@
 
             const minorTasks = dailyPlan.minorTasks || [];
             const note = dailyPlan.notes || '';
-            const dayName = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
 
             const addMinorTask = (text) => { onUpdateDailyPlan({ ...dailyPlan, minorTasks: [...minorTasks, { id: generateUUID(), text, completed: false }] }); };
             const toggleMinorTask = (id) => { onUpdateDailyPlan({ ...dailyPlan, minorTasks: minorTasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t) }); };
@@ -1081,7 +1057,7 @@
                             )
                         )
                     ),
-                    React.createElement("button", { onClick: () => openNewEvent(), className: "md:hidden fixed bottom-24 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg z-50 hover:bg-indigo-500 active:scale-95 transition-transform" }, React.createElement(Plus, { size: 24 }))
+                    React.createElement("button", { onClick: () => openNewEvent(), className: "md:hidden fixed bottom-24 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg z-50 hover:bg-indigo-50 active:scale-95 transition-transform" }, React.createElement(Plus, { size: 24 }))
                 ),
                 React.createElement("div", { className: "w-full xl:w-80 flex flex-col gap-6 shrink-0 h-full overflow-y-auto no-scrollbar pb-24 xl:pb-0" },
                     React.createElement("div", { className: "bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-900/10 dark:to-rose-900/10 border border-pink-200 dark:border-pink-800/30 rounded-[1.5rem] p-5 shadow-sm flex flex-col relative overflow-hidden shrink-0" },
@@ -1112,53 +1088,40 @@
         };
 
         const MonthlyPlanView = ({ plan, onUpdate }) => {
-            const theme = plan.theme || "";
-            const goals = plan.goals || []; 
-            const rawWeeks = plan.weeks || {};
-            const safeWeeks = (raw) => { if (!raw) return []; if (Array.isArray(raw)) return raw; if (typeof raw === 'string') return [{ id: generateUUID(), text: raw, completed: false }]; return []; }
-            const weeks = { week1: safeWeeks(rawWeeks.week1), week2: safeWeeks(rawWeeks.week2), week3: safeWeeks(rawWeeks.week3), week4: safeWeeks(rawWeeks.week4) };
+            const now = new Date();
+            const monthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            const weeks = { 
+                week1: plan.weeks?.week1 || [], 
+                week2: plan.weeks?.week2 || [], 
+                week3: plan.weeks?.week3 || [], 
+                week4: plan.weeks?.week4 || [] 
+            };
 
-            const updateField = (field, value) => onUpdate({ ...plan, [field]: value });
-            const addGoal = (text) => updateField('goals', [...goals, { id: generateUUID(), text, completed: false }]);
-            const toggleGoal = (id) => updateField('goals', goals.map(g => g.id === id ? { ...g, completed: !g.completed } : g));
-            const deleteGoal = (id) => updateField('goals', goals.filter(g => g.id !== id));
-            const editGoal = (id, text) => updateField('goals', goals.map(g => g.id === id ? { ...g, text } : g));
-            
             const addSprintItem = (weekKey, text) => onUpdate({ ...plan, weeks: { ...weeks, [weekKey]: [...weeks[weekKey], { id: generateUUID(), text, completed: false }] } });
             const toggleSprintItem = (weekKey, id) => onUpdate({ ...plan, weeks: { ...weeks, [weekKey]: weeks[weekKey].map(i => i.id === id ? { ...i, completed: !i.completed } : i) } });
             const deleteSprintItem = (weekKey, id) => onUpdate({ ...plan, weeks: { ...weeks, [weekKey]: weeks[weekKey].filter(i => i.id !== id) } });
             const editSprintItem = (weekKey, id, text) => onUpdate({ ...plan, weeks: { ...weeks, [weekKey]: weeks[weekKey].map(i => i.id === id ? { ...i, text } : i) } });
             const reorderSprintItem = (weekKey, newItems) => onUpdate({ ...plan, weeks: { ...weeks, [weekKey]: newItems } });
 
-            const now = new Date();
-            const monthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-            const getCurrentWeekIndex = () => {
-                const currentDay = now.getDate();
-                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-                const firstSundayDay = 1 + (7 - firstDay.getDay()) % 7;
-
-                if (currentDay < firstSundayDay + 7) return 0;
-                if (currentDay < firstSundayDay + 14) return 1;
-                if (currentDay < firstSundayDay + 21) return 2;
-                return 3;
+            const getFirstSunday = () => {
+                const date = new Date(now.getFullYear(), now.getMonth(), 1);
+                while (date.getDay() !== 0) date.setDate(date.getDate() + 1);
+                return date;
             };
 
-            const getWeekLabel = (index) => {
-                const year = now.getFullYear();
-                const month = now.getMonth();
-                const firstDay = new Date(year, month, 1);
-                const firstSundayDay = 1 + (7 - firstDay.getDay()) % 7;
-                
-                const sprintStartDay = firstSundayDay + (index * 7);
-                const sprintStartDate = new Date(year, month, sprintStartDay);
-                
-                const dNum = sprintStartDate.getDate();
-                const suffix = (dNum === 1 || dNum === 21 || dNum === 31) ? 'st' : (dNum === 2 || dNum === 22) ? 'nd' : (dNum === 3 || dNum === 23) ? 'rd' : 'th';
-                const sprintMonthName = sprintStartDate.toLocaleDateString('en-US', { month: 'long' });
-                const sprintYearNum = sprintStartDate.getFullYear();
-                
-                return `Starts ${dNum}${suffix} ${sprintMonthName} ${sprintYearNum}`;
+            const getSprintStart = (index) => {
+                const sunday = getFirstSunday();
+                const sprintDate = new Date(sunday);
+                sprintDate.setDate(sunday.getDate() + (index * 7));
+                return sprintDate;
+            };
+
+            const getCurrentWeekIndex = () => {
+                const sunday = getFirstSunday();
+                const diffTime = Math.abs(now - sunday);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (now < sunday) return 0;
+                return Math.min(3, Math.floor(diffDays / 7));
             };
 
             const activeIndex = plan.activeWeek !== undefined ? plan.activeWeek : getCurrentWeekIndex();
@@ -1169,18 +1132,11 @@
                     React.createElement("h3", { className: "text-xl font-bold text-zinc-900 dark:text-white mb-4 flex items-center gap-2" }, React.createElement(CalendarRange, { size: 20 }), "Weekly Sprints"),
                     React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-6" }, ['week1', 'week2', 'week3', 'week4'].map((wKey, i) => {
                         const isActive = i === activeIndex;
-                        const label = getWeekLabel(i);
-                        return React.createElement("div", { key: wKey, className: `group p-6 border rounded-3xl shadow-sm flex flex-col h-full min-h-[450px] transition-all duration-300 ${isActive ? 'bg-indigo-50/30 dark:bg-indigo-900/10 border-indigo-500 ring-1 ring-indigo-500 transform scale-[1.01]' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'}` },
-                            React.createElement("div", { className: "flex justify-between items-center mb-4 border-b border-zinc-100 dark:border-zinc-800 pb-3" }, 
-                                React.createElement("div", null, 
-                                    React.createElement("span", { className: `text-sm font-bold uppercase tracking-widest block ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400'}` }, `Sprint 0${i + 1}`), 
-                                    React.createElement("span", { className: "text-[11px] text-zinc-400 font-medium" }, label)
-                                ), 
-                                isActive ? 
-                                    React.createElement("button", { onClick: () => onUpdate({ ...plan, activeWeek: undefined }), title: "Click to reset to auto", className: "text-[10px] font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-500/30 cursor-pointer hover:bg-indigo-200 dark:hover:bg-indigo-500/30 transition-colors" }, "ACTIVE") 
-                                : 
-                                    React.createElement("button", { onClick: () => onUpdate({ ...plan, activeWeek: i }), className: "text-[10px] font-bold text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-300 px-3 py-1 rounded-full border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors opacity-0 group-hover:opacity-100 active:scale-95" }, "Set Active")
-                            ),
+                        const startDate = getSprintStart(i);
+                        const label = `Starts ${startDate.getDate()}${(startDate.getDate() === 1 || startDate.getDate() === 21 || startDate.getDate() === 31) ? 'st' : (startDate.getDate() === 2 || startDate.getDate() === 22) ? 'nd' : (startDate.getDate() === 3 || startDate.getDate() === 23) ? 'rd' : 'th'} ${startDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+                        
+                        return React.createElement("div", { key: wKey, className: `p-6 border rounded-3xl shadow-sm flex flex-col h-full min-h-[450px] transition-all duration-300 ${isActive ? 'bg-indigo-50/30 dark:bg-indigo-900/10 border-indigo-500 ring-1 ring-indigo-500 transform scale-[1.01]' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'}` },
+                            React.createElement("div", { className: "flex justify-between items-center mb-4 border-b border-zinc-100 dark:border-zinc-800 pb-3" }, React.createElement("div", null, React.createElement("span", { className: `text-sm font-bold uppercase tracking-widest block ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400'}` }, `Sprint 0${i + 1}`), React.createElement("span", { className: "text-[11px] text-zinc-400 font-medium" }, label)), isActive ? React.createElement("span", { onClick: () => onUpdate({ ...plan, activeWeek: undefined }), className: "text-[10px] font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-500/30 cursor-pointer hover:bg-indigo-200 dark:hover:bg-indigo-500/30 transition-colors" }, "ACTIVE") : React.createElement("button", { onClick: () => onUpdate({ ...plan, activeWeek: i }), className: "text-[10px] font-bold text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-300 px-3 py-1 rounded-full border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors opacity-0 group-hover:opacity-100 active:scale-95" }, "Set Active")),
                             React.createElement(EditableList, { items: weeks[wKey] || [], onAdd: (text) => addSprintItem(wKey, text), onToggle: (id) => toggleSprintItem(wKey, id), onDelete: (id) => deleteSprintItem(wKey, id), onEdit: (id, text) => editSprintItem(wKey, id, text), onReorder: (newItems) => reorderSprintItem(wKey, newItems), placeholder: "Add sprint task..." })
                         );
                     }))
@@ -1256,119 +1212,15 @@
             );
         };
 
-        const DeadlinesView = ({ deadlines, onAddDeadline, onDeleteDeadline, onUpdateDeadline }) => {
-            const [newTitle, setNewTitle] = useState("");
-            const [newDate, setNewDate] = useState("");
-            const handleAdd = () => { if(newTitle && newDate) { onAddDeadline({ title: newTitle, date: newDate }); setNewTitle(""); setNewDate(""); } };
-            return React.createElement("div", { className: "p-4 md:p-8 pb-32 max-w-4xl mx-auto" },
-                React.createElement("h2", { className: "text-3xl font-bold mb-8 text-zinc-900 dark:text-white" }, "Deadlines"),
-                React.createElement("div", { className: "flex flex-col md:flex-row gap-4 mb-8 bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800" },
-                    React.createElement("input", { value: newTitle, onChange: e => setNewTitle(e.target.value), onKeyDown: e => e.key === 'Enter' && handleAdd(), placeholder: "Task Name", className: "flex-1 bg-transparent outline-none text-zinc-900 dark:text-white py-2 md:py-0" }),
-                    React.createElement("input", { type: "date", value: newDate, onChange: e => setNewDate(e.target.value), onKeyDown: e => e.key === 'Enter' && handleAdd(), className: "bg-transparent outline-none text-zinc-500 dark:text-zinc-400 py-2 md:py-0 [color-scheme:light] dark:[color-scheme:dark]" }),
-                    React.createElement("button", { onClick: handleAdd, className: "bg-indigo-600 text-white px-6 py-3 md:py-2 rounded-xl font-bold" }, "Add")
-                ),
-                React.createElement("div", { className: "space-y-4" },
-                    deadlines.sort((a,b) => new Date(a.date) - new Date(b.date)).map(d => {
-                        const days = Math.ceil((new Date(d.date) - new Date()) / (1000 * 60 * 60 * 24));
-                        const urgent = days <= 3 && days >= 0;
-                        return React.createElement("div", { key: d.id, className: `flex items-center justify-between p-6 rounded-2xl border ${urgent ? 'bg-red-50/50 dark:bg-red-900/10 border-red-200 dark:border-red-900/30' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800'}` },
-                            React.createElement("div", null, React.createElement("h3", { className: "font-bold text-lg text-zinc-900 dark:text-white" }, d.title), React.createElement("p", { className: "text-sm text-zinc-500" }, new Date(d.date).toLocaleDateString())),
-                            React.createElement("div", { className: "flex items-center gap-4 md:gap-6" },
-                                React.createElement("div", { className: "text-right" }, React.createElement("div", { className: `text-xl md:text-2xl font-bold ${urgent ? 'text-red-600' : 'text-zinc-900 dark:text-white'}` }, days < 0 ? "Overdue" : days), React.createElement("div", { className: "text-[10px] md:text-xs font-bold uppercase tracking-wider text-zinc-400" }, "Days Left")),
-                                React.createElement("button", { onClick: () => onDeleteDeadline(d.id), className: "text-zinc-400 hover:text-red-500 p-2 -mr-2" }, React.createElement(Trash2, { size: 18 }))
-                            )
-                        );
-                    })
-                )
-            );
-        };
-
-        const FocusView = ({ activeSound, isPlayingSound, toggleSound, timerState, toggleTimer, resetTimer }) => {
-            const formatTime = (seconds) => { const m = Math.floor(seconds / 60); const s = seconds % 60; return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`; };
-            const progress = ((timerState.initialTime - timerState.timeLeft) / timerState.initialTime) * 100;
-            return React.createElement("div", { className: "p-4 md:p-8 pb-32 max-w-4xl mx-auto flex flex-col items-center justify-center min-h-[70vh]" },
-                React.createElement("div", { className: "relative w-64 h-64 md:w-80 md:h-80 flex items-center justify-center mb-12 mt-8 md:mt-0" },
-                    React.createElement("svg", { className: "absolute inset-0 w-full h-full -rotate-90", viewBox: "0 0 100 100" }, React.createElement("circle", { cx: "50", cy: "50", r: "45", fill: "none", stroke: "currentColor", className: "text-zinc-200 dark:text-zinc-800", strokeWidth: "3" }), React.createElement("circle", { cx: "50", cy: "50", r: "45", fill: "none", stroke: "currentColor", className: "text-indigo-500 transition-all duration-1000", strokeWidth: "3", strokeDasharray: "283", strokeDashoffset: 283 - (283 * progress) / 100, strokeLinecap: "round" })),
-                    React.createElement("div", { className: "text-center z-10" }, React.createElement("div", { className: "text-5xl md:text-6xl font-mono font-bold text-zinc-900 dark:text-white mb-2" }, formatTime(timerState.timeLeft)), React.createElement("div", { className: "text-indigo-500 font-bold uppercase tracking-widest text-xs md:text-sm" }, timerState.mode))
-                ),
-                React.createElement("div", { className: "flex gap-6 mb-12" },
-                    React.createElement("button", { onClick: toggleTimer, className: "w-20 h-20 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-black flex items-center justify-center hover:scale-105 transition-transform shadow-xl" }, timerState.isActive ? React.createElement(Pause, { size: 32, className: "fill-current" }) : React.createElement(Play, { size: 32, className: "fill-current ml-1" })),
-                    React.createElement("button", { onClick: () => resetTimer(), className: "w-16 h-16 my-auto rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors shadow-sm" }, React.createElement(RotateCcw, { size: 24 }))
-                ),
-                React.createElement("div", { className: "grid grid-cols-2 gap-4 w-full max-w-md mb-12" },
-                    React.createElement("button", { onClick: () => resetTimer(1500, 'FOCUS'), className: `p-4 rounded-xl font-bold border transition-all active:scale-95 ${timerState.mode === 'FOCUS' ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-indigo-600' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-indigo-300'}` }, "Focus (25m)"),
-                    React.createElement("button", { onClick: () => resetTimer(300, 'BREAK'), className: `p-4 rounded-xl font-bold border transition-all active:scale-95 ${timerState.mode === 'BREAK' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 text-emerald-600' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-emerald-300'}` }, "Break (5m)")
-                ),
-                React.createElement("div", { className: "w-full max-w-md" }, 
-                    React.createElement("h3", { className: "text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4 text-center" }, "Soundscapes"), 
-                    React.createElement("div", { className: "grid grid-cols-2 gap-4" }, 
-                        FOCUS_SOUNDS.map(sound => React.createElement("button", { key: sound.id, onClick: () => toggleSound(sound), className: `flex items-center justify-center md:justify-start gap-3 p-4 rounded-xl border transition-all active:scale-95 ${activeSound === sound.id && isPlayingSound ? 'bg-indigo-600 text-white border-indigo-600 shadow-glow-sm' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-indigo-300'}` }, React.createElement(sound.icon, { size: 20 }), React.createElement("span", { className: "font-bold" }, sound.label)))
-                    )
-                )
-            );
-        };
-
-        const BrainDumpView = ({ dumps, onAddDump, onDeleteDump, onUpdateDump }) => {
-            const [input, setInput] = useState("");
-            const [editingId, setEditingId] = useState(null);
-            const [editValue, setEditValue] = useState("");
-            
-            useEffect(() => { const handleEsc = (e) => { if (e.key === 'Escape') setEditingId(null); }; window.addEventListener('keydown', handleEsc); return () => window.removeEventListener('keydown', handleEsc); }, []);
-            const saveEdit = () => { if(editingId && editValue.trim()) onUpdateDump({...dumps.find(d => d.id === editingId), text: editValue.trim()}); setEditingId(null); setEditValue(""); };
-
-            return React.createElement("div", { className: "h-[85vh] w-full relative overflow-hidden flex flex-col" }, 
-                React.createElement("div", { className: "absolute top-4 left-4 z-20 pointer-events-none" }, React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white shadow-white dark:shadow-black drop-shadow-sm" }, "Worries"), React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 text-sm mt-1" }, "Visualize and release your worries.")), 
-                React.createElement("div", { className: "flex-1 relative w-full h-full" }, 
-                    React.createElement("svg", { className: "absolute inset-0 w-full h-full pointer-events-none z-0" }, dumps.map((dump, i) => { const angle = (i / dumps.length) * 2 * Math.PI - (Math.PI / 2); const pos = { x: 50 + 35 * Math.cos(angle), y: 50 + 35 * Math.sin(angle) }; return React.createElement("line", { key: `line-${dump.id}`, x1: "50%", y1: "50%", x2: `${pos.x}%`, y2: `${pos.y}%`, className: "stroke-indigo-300 dark:stroke-indigo-500/20 stroke-2", strokeDasharray: "5,5" }); })), 
-                    React.createElement("div", { className: "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10" }, React.createElement("div", { className: "w-24 h-24 bg-indigo-600 rounded-full flex items-center justify-center shadow-glow animate-brain relative z-20" }, React.createElement(Brain, { size: 48, className: "text-white" })), React.createElement("div", { className: "absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-20" })), 
-                    dumps.map((dump, i) => { const angle = (i / dumps.length) * 2 * Math.PI - (Math.PI / 2); const pos = { x: 50 + 35 * Math.cos(angle), y: 50 + 35 * Math.sin(angle) }; return React.createElement("div", { key: dump.id, style: { left: `${pos.x}%`, top: `${pos.y}%` }, className: "absolute -translate-x-1/2 -translate-y-1/2 w-40 md:w-48 z-20 transition-all duration-500" }, React.createElement("div", { onClick: () => { setEditingId(dump.id); setEditValue(dump.text); }, className: "glass-panel p-4 rounded-xl text-xs md:text-sm text-zinc-700 dark:text-zinc-200 border-zinc-200 dark:border-zinc-700/50 bg-white/80 dark:bg-zinc-900/60 hover:border-indigo-500/50 transition-all group relative cursor-pointer hover:scale-105 hover:z-30 shadow-lg" }, React.createElement("p", { className: "line-clamp-4 text-center leading-relaxed font-medium" }, dump.text), React.createElement("button", { onClick: (e) => { e.stopPropagation(); onDeleteDump(dump.id); }, className: "absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shadow-sm hover:scale-110" }, React.createElement(Trash, { size: 12 })))); })
-                ), 
-                React.createElement("div", { className: "absolute bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-30 w-full max-w-xl px-4" }, React.createElement("div", { className: "relative w-full" }, React.createElement("div", { className: "absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full opacity-30 blur" }), React.createElement("input", { value: input, onChange: e => setInput(e.target.value), onKeyDown: e => { if (e.key === 'Enter' && input.trim()) { onAddDump(input); setInput(""); } }, placeholder: "Add a worry...", className: "relative w-full p-4 md:p-5 pl-6 pr-14 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-base md:text-lg text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-xl backdrop-blur-md transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-500" }), React.createElement("button", { onClick: () => { if(input.trim()) { onAddDump(input); setInput(""); }}, className: "absolute right-2.5 top-1/2 -translate-y-1/2 p-3 md:p-2 bg-indigo-600 rounded-full hover:bg-indigo-500 transition-colors shadow-lg z-40 active:scale-90" }, React.createElement(Plus, { size: 24, className: "text-white" })))),
-                editingId && React.createElement("div", { className: "fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm overflow-y-auto flex flex-col p-4" }, 
-                    React.createElement("div", { className: "m-auto bg-white dark:bg-zinc-900 p-8 rounded-[32px] w-full max-w-sm relative shadow-xl border border-zinc-200 dark:border-zinc-700 shrink-0" }, 
-                        React.createElement("button", { onClick: () => setEditingId(null), className: "absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-white p-2" }, React.createElement(X, { size: 24 })), React.createElement("h3", { className: "text-2xl font-bold mb-6 text-zinc-900 dark:text-white" }, "Edit Worry"), React.createElement("textarea", { value: editValue, onChange: e => setEditValue(e.target.value), className: "w-full h-40 p-4 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl resize-none outline-none focus:border-indigo-500 text-base text-zinc-900 dark:text-white mb-6" }), React.createElement("button", { onClick: saveEdit, className: "w-full py-4 bg-indigo-600 text-white rounded-xl font-bold text-lg active:scale-[0.98] transition-transform" }, "Save Update")
-                    )
-                )
-            );
-        };
-
-        const CountdownView = ({ countdowns, onAdd, onToggle, onDelete, onUpdate }) => {
-            const [title, setTitle] = useState(""); const [date, setDate] = useState(""); const [editingId, setEditingId] = useState(null); const [editTitle, setEditTitle] = useState(""); const [editDate, setEditDate] = useState("");
-
-            const handleAdd = () => { if(title && date) { onAdd({ title, date, completed: false }); setTitle(""); setDate(""); } };
-            const saveEdit = () => { if(editingId && editTitle && editDate) { onUpdate({ id: editingId, title: editTitle, date: editDate }); setEditingId(null); } };
-
-            return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-full flex flex-col max-w-7xl mx-auto" },
-                React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4" },
-                    React.createElement("div", null, React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "Countdown"), React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 text-sm mt-1" }, "Visualize your deadlines.")),
-                    React.createElement("div", { className: "flex gap-2 w-full md:w-auto" },
-                        React.createElement("input", { value: title, onChange: e => setTitle(e.target.value), onKeyDown: e => e.key === 'Enter' && handleAdd(), placeholder: "Project Title", className: "flex-1 md:w-64 p-4 md:p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-base md:text-sm focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white" }),
-                        React.createElement("input", { type: "date", value: date, onChange: e => setDate(e.target.value), onKeyDown: e => e.key === 'Enter' && handleAdd(), className: "p-4 md:p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-base md:text-sm focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white [color-scheme:light] dark:[color-scheme:dark]" }),
-                        React.createElement("button", { onClick: handleAdd, className: "p-4 md:p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition-colors shadow-glow-sm" }, React.createElement(Plus, { size: 20 }))
-                    )
-                ),
-                React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" },
-                    [...countdowns].sort((a, b) => a.completed !== b.completed ? (a.completed ? 1 : -1) : new Date(a.date) - new Date(b.date)).map(c => {
-                        const days = Math.ceil((new Date(c.date) - new Date()) / 86400000);
-                        const isPast = days < 0; const isToday = days === 0; const isUrgent = days > 0 && days <= 3;
-                        let borderColor = isPast ? "border-red-500" : isUrgent ? "border-orange-500" : isToday ? "border-green-500" : "border-indigo-500";
-
-                        return React.createElement("div", { key: c.id, className: `flex flex-col items-center group relative transition-all duration-300 ${c.completed ? 'opacity-40 grayscale scale-95' : 'hover:scale-105'}` },
-                            React.createElement("div", { onClick: () => onToggle && onToggle(c.id), className: `w-32 h-32 rounded-full border-4 ${c.completed ? 'border-zinc-300 dark:border-zinc-700' : borderColor} flex flex-col items-center justify-center bg-white dark:bg-zinc-900 shadow-lg cursor-pointer relative overflow-hidden` }, c.completed ? React.createElement(Check, { size: 40, className: "text-zinc-400" }) : React.createElement(React.Fragment, null, React.createElement("span", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, isPast ? Math.abs(days) : days), React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider text-zinc-500" }, isPast ? "Days Ago" : isToday ? "Today" : "Days Left"))),
-                            editingId === c.id ? React.createElement("div", { className: "mt-4 flex flex-col gap-2 w-full px-2" }, React.createElement("input", { value: editTitle, onChange: e => setEditTitle(e.target.value), onKeyDown: e => { if(e.key === 'Enter') saveEdit(); if(e.key === 'Escape') setEditingId(null); }, className: "text-center text-base md:text-sm font-bold bg-zinc-100 dark:bg-zinc-800 rounded p-2 w-full text-zinc-900 dark:text-white outline-none border border-indigo-500" }), React.createElement("input", { type: "date", value: editDate, onChange: e => setEditDate(e.target.value), onKeyDown: e => { if(e.key === 'Enter') saveEdit(); if(e.key === 'Escape') setEditingId(null); }, className: "text-base md:text-xs bg-zinc-100 dark:bg-zinc-800 rounded p-2 w-full text-zinc-900 dark:text-white outline-none border border-indigo-500 [color-scheme:light] dark:[color-scheme:dark]" }), React.createElement("div", { className: "flex justify-center gap-2 mt-1" }, React.createElement("button", { onClick: saveEdit, className: "p-2 bg-indigo-500 text-white rounded-full hover:bg-indigo-600 active:scale-90" }, React.createElement(Check, { size: 16 })), React.createElement("button", { onClick: () => setEditingId(null), className: "p-2 bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400 rounded-full hover:bg-zinc-300 dark:hover:bg-zinc-600 active:scale-90" }, React.createElement(X, { size: 16 })))) : React.createElement(React.Fragment, null, React.createElement("h4", { className: "mt-4 font-bold text-zinc-900 dark:text-white text-center max-w-[150px] truncate" }, c.title), React.createElement("p", { className: "text-xs text-zinc-500" }, new Date(c.date).toLocaleDateString('en-GB')), React.createElement("div", { className: "absolute -top-2 -right-2 flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" }, React.createElement("button", { onClick: (e) => { e.stopPropagation(); onToggle && onToggle(c.id); }, className: `bg-white dark:bg-zinc-800 p-2 rounded-full shadow-md border border-zinc-200 dark:border-zinc-700 active:scale-90 ${c.completed ? 'text-emerald-500' : 'text-zinc-400 hover:text-emerald-500'}` }, React.createElement(CheckCircle2, { size: 14 })), React.createElement("button", { onClick: (e) => { e.stopPropagation(); setEditingId(c.id); setEditTitle(c.title); setEditDate(c.date); }, className: "bg-white dark:bg-zinc-800 text-zinc-400 hover:text-indigo-500 p-2 rounded-full shadow-md border border-zinc-200 dark:border-zinc-700 active:scale-90" }, React.createElement(Edit3, { size: 14 })), React.createElement("button", { onClick: (e) => { e.stopPropagation(); onDelete(c.id); }, className: "bg-white dark:bg-zinc-800 text-zinc-400 hover:text-red-500 p-2 rounded-full shadow-md border border-zinc-200 dark:border-zinc-700 active:scale-90" }, React.createElement(Trash2, { size: 14 }))))
-                        );
-                    })
-                )
-            );
-        };
-
-        const IdeaBoardView = ({ notes, onAdd, onUpdate, onDelete, tabs, activeTab, setActiveTab, onAddTab, onDeleteTab }) => {
+        const IdeaBoardView = ({ notes, onAdd, onUpdate, onDelete, tabs, activeTab, setActiveTab, onAddTab, onDeleteTab, onRenameTab }) => {
             const boardRef = useRef(null); 
             const [draggingId, setDraggingId] = useState(null); 
             const [offset, setOffset] = useState({ x: 0, y: 0 });
             const [boardSize] = useState({ w: window.innerWidth < 768 ? 2000 : 4000, h: window.innerWidth < 768 ? 2000 : 4000 });
             const [isAddingTab, setIsAddingTab] = useState(false);
             const [newTabName, setNewTabName] = useState("");
+            const [editingTab, setEditingTab] = useState(null);
+            const [editTabValue, setEditTabValue] = useState("");
             
             const colors = ["bg-yellow-200 text-yellow-900 dark:bg-yellow-400 dark:text-yellow-950", "bg-green-200 text-green-900 dark:bg-green-400 dark:text-green-950", "bg-pink-200 text-pink-900 dark:bg-pink-400 dark:text-pink-950", "bg-blue-200 text-blue-900 dark:bg-blue-400 dark:text-blue-950", "bg-purple-200 text-purple-900 dark:bg-purple-400 dark:text-purple-950"];
             const fonts = ["font-hand", "font-sans", "font-mono"];
@@ -1396,7 +1248,6 @@
                 });
             };
 
-            // Center initial scroll on load or tab switch
             useEffect(() => {
                 const timeoutId = setTimeout(() => centerOnNotes(false), 50);
                 return () => clearTimeout(timeoutId);
@@ -1486,6 +1337,13 @@
                 onAdd({ text: "", x, y, color: randomColor, width: startW, height: startH, font: 'font-sans', tabId: activeTab });
             };
 
+            const submitRename = () => {
+                if (editingTab && editTabValue.trim() && editTabValue.trim() !== editingTab) {
+                    onRenameTab(editingTab, editTabValue.trim());
+                }
+                setEditingTab(null);
+            };
+
             useEffect(() => { 
                 if(draggingId) { 
                     window.addEventListener('mousemove', handleMouseMove, { passive: false }); 
@@ -1516,9 +1374,16 @@
 
                 React.createElement("div", { className: "flex gap-2 mb-4 items-center overflow-x-auto no-scrollbar pb-2 shrink-0 w-full border-b border-zinc-200 dark:border-zinc-800" },
                     tabs.map(tab => (
-                        React.createElement("div", { key: tab, onClick: () => setActiveTab(tab), className: `flex items-center gap-2 px-4 py-2 rounded-t-xl text-sm font-bold whitespace-nowrap transition-colors border-x border-t cursor-pointer border-b-0 -mb-[1px] ${activeTab === tab ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400' : 'bg-transparent text-zinc-500 dark:text-zinc-500 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900'}` }, 
-                            tab,
-                            tabs.length > 1 && activeTab === tab && React.createElement("button", { onClick: (e) => { e.stopPropagation(); if(confirm('Delete this board and all its notes?')) onDeleteTab(tab); }, className: "hover:text-red-500 ml-1 opacity-70 hover:opacity-100 transition-colors" }, React.createElement(X, { size: 14 }))
+                        React.createElement("div", { key: tab, onClick: () => { if(editingTab !== tab) setActiveTab(tab); }, className: `flex items-center gap-2 px-4 py-2 rounded-t-xl text-sm font-bold whitespace-nowrap transition-colors border-x border-t cursor-pointer border-b-0 -mb-[1px] ${activeTab === tab ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400' : 'bg-transparent text-zinc-500 dark:text-zinc-500 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900'}` }, 
+                            editingTab === tab ?
+                                React.createElement("input", { autoFocus: true, value: editTabValue, onChange: e => setEditTabValue(e.target.value), onBlur: submitRename, onKeyDown: e => { if(e.key === 'Enter') submitRename(); if(e.key === 'Escape') setEditingTab(null); }, className: "px-2 py-0.5 rounded bg-white dark:bg-zinc-900 border border-indigo-500 outline-none text-zinc-900 dark:text-white min-w-[100px]" })
+                            :
+                                React.createElement("span", { onDoubleClick: (e) => { e.stopPropagation(); setEditingTab(tab); setEditTabValue(tab); } }, tab),
+                            
+                            activeTab === tab && editingTab !== tab && React.createElement("div", { className: "flex items-center gap-1 ml-1" },
+                                React.createElement("button", { onClick: (e) => { e.stopPropagation(); setEditingTab(tab); setEditTabValue(tab); }, className: "hover:text-indigo-500 opacity-50 hover:opacity-100 transition-colors", title: "Rename Board" }, React.createElement(Edit3, { size: 12 })),
+                                tabs.length > 1 && React.createElement("button", { onClick: (e) => { e.stopPropagation(); if(confirm('Delete this board and all its notes?')) onDeleteTab(tab); }, className: "hover:text-red-500 opacity-50 hover:opacity-100 transition-colors", title: "Delete Board" }, React.createElement(X, { size: 14 }))
+                            )
                         )
                     )),
                     isAddingTab ? React.createElement("div", { className: "flex items-center gap-1 mb-[1px]" },
@@ -1600,6 +1465,9 @@
 
         const TasksView = ({ tasks, onAdd, onToggle, onDelete, onEdit, onReorder, onClearCompleted }) => {
             const completedCount = tasks.filter(t => t.completed).length;
+            const incompleteCount = tasks.filter(t => !t.completed).length;
+            const MAX_TASKS = 3;
+
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-full flex flex-col max-w-4xl mx-auto" },
                 React.createElement("div", { className: "flex justify-between items-start mb-6" },
                     React.createElement("div", null,
@@ -1610,51 +1478,79 @@
                         React.createElement(Trash2, { size: 14 }), "Clear Done"
                     )
                 ),
-                React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-4 md:p-6 shadow-sm flex-1 flex flex-col h-full min-h-[400px]" },
-                    React.createElement(EditableList, { items: tasks, onAdd: onAdd, onToggle: onToggle, onDelete: onDelete, onEdit: onEdit, onReorder: onReorder, placeholder: "Add a new task for today..." })
+                React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-4 md:p-6 shadow-sm flex-1 flex flex-col h-full min-h-[400px] relative" },
+                    React.createElement("h3", { className: "font-bold text-lg text-indigo-600 dark:text-indigo-400 mb-6 text-center" }, "What problem are you trying to solve today?"),
+                    
+                    React.createElement("div", { className: "flex flex-col w-full h-full" }, 
+                        React.createElement("div", { className: "space-y-1 w-full overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar flex-1" },
+                            tasks.map((item, index) => !item.completed ? React.createElement(TaskItem, { key: item.id, item, index, onToggle, onDelete, onEdit, onReorder, isCompletedSection: false }) : null),
+                            
+                            completedCount > 0 && React.createElement("div", { className: "mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800/50" },
+                                React.createElement("h4", { className: "text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 px-2" }, `Completed (${completedCount})`),
+                                React.createElement("div", { className: "space-y-1 mt-2" },
+                                    tasks.map((item, index) => item.completed ? React.createElement(TaskItem, { key: item.id, item, index, onToggle, onDelete, onEdit, onReorder, isCompletedSection: true }) : null)
+                                )
+                            )
+                        ),
+                        
+                        incompleteCount < MAX_TASKS ? React.createElement(TaskInput, { onAdd }) : React.createElement("div", { className: "mt-4 text-center text-sm font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700" }, `Maximum limit of ${MAX_TASKS} daily tasks reached.`)
+                    )
                 )
             );
         };
 
-        const LibraryView = ({ books, categories, onAddBook, onDeleteBook, onUpdateBook, dashboardData = {}, onUpdateDashboard }) => {
+        const TaskItem = ({ item, index, onToggle, onDelete, onEdit, onReorder, isCompletedSection }) => {
+            const [editingId, setEditingId] = useState(null);
+            const [editValue, setEditValue] = useState("");
+            const dragItem = useRef(null);
+
+            const startEdit = () => { setEditingId(item.id); setEditValue(item.text); };
+            const saveEdit = () => { if (editingId && editValue.trim() && onEdit) { onEdit(editingId, editValue.trim()); } setEditingId(null); setEditValue(""); };
+            const cancelEdit = () => { setEditingId(null); setEditValue(""); };
+
+            return React.createElement("div", { 
+                key: item.id,
+                className: `flex items-start gap-3 md:gap-4 w-full group transition-all py-3 px-2 md:p-2.5 rounded-xl border border-transparent ${isCompletedSection ? 'opacity-60' : 'hover:border-zinc-200 dark:hover:border-zinc-700/50'}` 
+            }, 
+                React.createElement("button", { onClick: () => onToggle(item.id), className: `mt-0.5 w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-all active:scale-90 ${item.completed ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900'}` }, React.createElement(CheckCircle2, { size: 16, className: item.completed ? "opacity-100" : "opacity-0" })), 
+                
+                editingId === item.id ? 
+                    React.createElement("div", { className: "flex-1 flex gap-2 items-center" },
+                        React.createElement("input", { 
+                            value: editValue, onChange: (e) => setEditValue(e.target.value),
+                            onKeyDown: (e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') cancelEdit(); },
+                            autoFocus: true, className: "flex-1 bg-white dark:bg-zinc-800 border border-indigo-500 rounded-lg px-3 py-2 text-base md:text-sm text-zinc-900 dark:text-white outline-none"
+                        }),
+                        React.createElement("button", { onClick: saveEdit, className: "text-indigo-500 hover:text-indigo-600 p-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg active:scale-95" }, React.createElement(Check, { size: 18 })),
+                        React.createElement("button", { onClick: cancelEdit, className: "text-zinc-400 hover:text-zinc-500 p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg active:scale-95" }, React.createElement(X, { size: 18 }))
+                    )
+                :
+                    React.createElement("span", { className: `text-base md:text-[15px] pt-0.5 leading-relaxed flex-1 break-words font-medium ${item.completed ? 'text-zinc-400 dark:text-zinc-500 line-through' : 'text-zinc-800 dark:text-zinc-100'}` }, item.text),
+
+                !editingId && React.createElement("div", { className: "flex items-center gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" },
+                    onEdit && !isCompletedSection && React.createElement("button", { onClick: startEdit, className: "text-zinc-400 hover:text-indigo-500 p-1" }, React.createElement(Edit3, { size: 14 })),
+                    React.createElement("button", { onClick: () => onDelete(item.id), className: "text-zinc-400 hover:text-red-500 p-1" }, React.createElement(Trash, { size: 14 }))
+                )
+            );
+        };
+
+        const TaskInput = ({ onAdd }) => {
+            const [newItem, setNewItem] = useState("");
+            return React.createElement("div", { className: "flex gap-2 mt-2 pt-4 border-t border-zinc-100 dark:border-zinc-800 shrink-0 items-center" }, 
+                React.createElement("input", { type: "text", value: newItem, onChange: (e) => setNewItem(e.target.value), onKeyDown: (e) => { if (e.key === 'Enter' && newItem.trim()) { onAdd(newItem); setNewItem(""); } }, placeholder: "Add new task...", className: "flex-1 bg-transparent text-base md:text-[15px] focus:outline-none text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 pl-1 py-2" }), 
+                React.createElement("button", { onClick: () => { if (newItem.trim()) { onAdd(newItem); setNewItem(""); } }, className: "text-indigo-500 hover:text-indigo-400 p-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl active:scale-95" }, React.createElement(Plus, { size: 20 }))
+            );
+        };
+
+        const LibraryView = ({ books, categories, onAddBook, onDeleteBook, onUpdateBook }) => {
             const [isAdding, setIsAdding] = useState(false);
-            const [isSelecting, setIsSelecting] = useState(false);
             const [filter, setFilter] = useState('All');
-            const [mode, setMode] = useState('Library');
-            const currentYearFallback = new Date().getFullYear();
-            const [targetYear, setTargetYear] = useState(currentYearFallback);
-            
-            const yearlyTargets = dashboardData?.yearlyBookTargets || {};
-            const currentTarget = yearlyTargets[targetYear] || 12;
-            const [isEditingTarget, setIsEditingTarget] = useState(false);
-            const [targetInputValue, setTargetInputValue] = useState(currentTarget.toString());
+            const [searchQuery, setSearchQuery] = useState('');
+            const [newBook, setNewBook] = useState({ title: '', author: '', category: categories[0] || 'General', status: 'To Read' });
 
-            const [newBook, setNewBook] = useState({ title: '', author: '', category: categories[0] || 'General', status: 'To Read', goalYear: null });
+            const handleAdd = () => { if(newBook.title) { onAddBook(newBook); setIsAdding(false); setNewBook({ title: '', author: '', category: categories[0] || 'General', status: 'To Read' }); } };
 
-            const handleAdd = () => { 
-                if(newBook.title) { 
-                    onAddBook(newBook); 
-                    setIsAdding(false); 
-                    setNewBook({ title: '', author: '', category: categories[0] || 'General', status: 'To Read', goalYear: null }); 
-                } 
-            };
-
-            const handleSaveTarget = () => {
-                const num = parseInt(targetInputValue, 10);
-                if (!isNaN(num) && num > 0 && onUpdateDashboard) {
-                    onUpdateDashboard({ ...dashboardData, yearlyBookTargets: { ...yearlyTargets, [targetYear]: num } });
-                }
-                setIsEditingTarget(false);
-            };
-
-            const isBookInYear = (b, year) => b.goalYear === year || (b.isYearlyGoal === true && year === currentYearFallback);
-            const yearlyBooks = books.filter(b => isBookInYear(b, targetYear));
-            const completedYearly = yearlyBooks.filter(b => b.status === 'Completed').length;
-            const progressPercent = currentTarget > 0 ? Math.min(100, (completedYearly / currentTarget) * 100) : 0;
-
-            const displayedBooks = mode === 'Yearly' 
-                ? yearlyBooks 
-                : (filter === 'All' ? books : books.filter(b => b.status === filter || b.category === filter));
+            const displayedBooks = (filter === 'All' ? books : books.filter(b => b.status === filter || b.category === filter)).filter(b => b.title.toLowerCase().includes(searchQuery.toLowerCase()) || (b.author || '').toLowerCase().includes(searchQuery.toLowerCase()));
 
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-full flex flex-col max-w-7xl mx-auto overflow-y-auto no-scrollbar" },
                 React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4" },
@@ -1662,56 +1558,15 @@
                         React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, "Library"),
                         React.createElement("p", { className: "text-zinc-500 text-sm mt-1" }, "Your personal knowledge base.")
                     ),
-                    React.createElement("div", { className: "flex bg-zinc-200/50 dark:bg-zinc-800/50 p-1 rounded-xl w-full md:w-auto shrink-0" },
-                        React.createElement("button", { onClick: () => { setMode('Library'); setIsSelecting(false); }, className: `flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'Library' ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}` }, "All Books"),
-                        React.createElement("button", { onClick: () => { setMode('Yearly'); setIsAdding(false); }, className: `flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'Yearly' ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}` }, "Reading Goals")
-                    ),
-                    React.createElement("button", { onClick: () => { if (mode === 'Library') { setIsAdding(!isAdding); setIsSelecting(false); } else { setIsSelecting(!isSelecting); setIsAdding(false); } }, className: "hidden md:flex bg-indigo-600 text-white p-3 rounded-xl hover:bg-indigo-500 shadow-glow-sm transition-all active:scale-95 shrink-0" }, React.createElement(Plus, { size: 20 }))
-                ),
-                
-                mode === 'Yearly' && React.createElement("div", { className: "mb-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-6 md:p-8 text-white shadow-lg relative overflow-hidden shrink-0" },
-                    React.createElement("div", { className: "relative z-10" },
-                        React.createElement("div", { className: "flex items-center gap-4 mb-2" },
-                            React.createElement("button", { onClick: () => setTargetYear(y => y - 1), className: "p-1.5 hover:bg-white/20 rounded-full transition-colors active:scale-90" }, React.createElement(ChevronLeft, { size: 20 })),
-                            React.createElement("h3", { className: "text-2xl font-bold" }, `${targetYear} Challenge`),
-                            React.createElement("button", { onClick: () => setTargetYear(y => y + 1), className: "p-1.5 hover:bg-white/20 rounded-full transition-colors active:scale-90" }, React.createElement(ChevronRight, { size: 20 }))
+                    React.createElement("div", { className: "flex gap-2 w-full md:w-auto" },
+                        React.createElement("div", { className: "relative w-full md:w-64" },
+                            React.createElement(Search, { size: 16, className: "absolute left-3 top-3 text-zinc-400" }),
+                            React.createElement("input", { placeholder: "Search...", value: searchQuery, onChange: e => setSearchQuery(e.target.value), className: "w-full pl-9 pr-4 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500" })
                         ),
-                        React.createElement("div", { className: "text-indigo-100 mb-6 flex items-center gap-2 flex-wrap" },
-                            `You've read ${completedYearly} out of`,
-                            isEditingTarget ? 
-                                React.createElement("input", { autoFocus: true, value: targetInputValue, onChange: e => setTargetInputValue(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSaveTarget(), onBlur: handleSaveTarget, className: "w-16 bg-white/20 border border-white/40 rounded px-2 py-1 text-white outline-none text-center font-bold" })
-                            : 
-                                React.createElement("span", { onClick: () => { setIsEditingTarget(true); setTargetInputValue(currentTarget.toString()); }, title: "Click to edit target", className: "font-bold text-white cursor-pointer border-b-2 border-dashed border-indigo-200 hover:border-white transition-colors px-1" }, currentTarget),
-                            "books targeted for this year."
-                        ),
-                        React.createElement("div", { className: "h-3 w-full bg-black/20 rounded-full overflow-hidden" },
-                            React.createElement("div", { className: "h-full bg-white rounded-full transition-all duration-1000", style: { width: `${progressPercent}%` } })
-                        )
-                    ),
-                    React.createElement(Target, { className: "absolute -right-10 -bottom-10 w-48 h-48 text-white opacity-10 pointer-events-none" })
-                ),
-
-                isSelecting && mode === 'Yearly' && React.createElement("div", { className: "mb-8 bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm animate-in slide-in-from-top-4 duration-300 shrink-0" },
-                    React.createElement("div", { className: "flex justify-between items-center mb-4" },
-                        React.createElement("h3", { className: "font-bold text-lg text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(BookOpen, { size: 18, className: "text-indigo-500" }), `Select Books for ${targetYear}`),
-                        React.createElement("button", { onClick: () => setIsSelecting(false), className: "text-zinc-400 hover:text-zinc-600 dark:hover:text-white p-1" }, React.createElement(X, { size: 20 }))
-                    ),
-                    React.createElement("div", { className: "max-h-[300px] overflow-y-auto pr-2 space-y-2 custom-scrollbar" },
-                        books.filter(b => !isBookInYear(b, targetYear)).length === 0 ? 
-                            React.createElement("div", { className: "text-center text-sm text-zinc-500 py-4" }, "All your books are already in this year's goal, or your library is empty.") :
-                            books.filter(b => !isBookInYear(b, targetYear)).map(b => 
-                                React.createElement("div", { key: b.id, className: "flex justify-between items-center p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-800 rounded-xl" },
-                                    React.createElement("div", null, 
-                                        React.createElement("div", { className: "font-bold text-sm text-zinc-900 dark:text-white" }, b.title),
-                                        React.createElement("div", { className: "text-xs text-zinc-500" }, b.author || 'Unknown Author')
-                                    ),
-                                    React.createElement("button", { onClick: () => onUpdateBook({...b, goalYear: targetYear, isYearlyGoal: false}), className: "text-xs font-bold bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 px-3 py-1.5 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-500/30 transition-colors active:scale-95 flex items-center gap-1" }, React.createElement(Plus, { size: 14 }), "Add")
-                                )
-                            )
+                        React.createElement("button", { onClick: () => setIsAdding(!isAdding), className: "bg-indigo-600 text-white p-3 rounded-xl hover:bg-indigo-500 shadow-glow-sm transition-all active:scale-95 shrink-0" }, React.createElement(Plus, { size: 20 }))
                     )
                 ),
-
-                isAdding && mode === 'Library' && React.createElement("div", { className: "mb-8 bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm animate-in slide-in-from-top-4 duration-300 shrink-0" },
+                isAdding && React.createElement("div", { className: "mb-8 bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm animate-in slide-in-from-top-4 duration-300" },
                     React.createElement("h3", { className: "font-bold text-lg mb-4 text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(BookOpen, { size: 18, className: "text-indigo-500" }), "Add New Book"),
                     React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" },
                         React.createElement("input", { value: newBook.title, onChange: e => setNewBook({...newBook, title: e.target.value}), placeholder: "Book Title", className: "p-3 bg-zinc-50 dark:bg-black/50 rounded-xl border border-zinc-200 dark:border-zinc-700 outline-none text-zinc-900 dark:text-white focus:border-indigo-500 transition-colors" }),
@@ -1724,21 +1579,16 @@
                         React.createElement("button", { onClick: handleAdd, className: "px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold shadow-glow-sm hover:bg-indigo-500 transition-colors active:scale-95" }, "Save Book")
                     )
                 ),
-                
-                mode === 'Library' && React.createElement("div", { className: "flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-2 shrink-0" },
+                React.createElement("div", { className: "flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-2" },
                     ['All', 'Reading', 'To Read', 'Completed', ...categories].map(f => React.createElement("button", { key: f, onClick: () => setFilter(f), className: `px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors border active:scale-95 ${filter === f ? 'bg-indigo-600 border-indigo-600 text-white shadow-glow-sm' : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'}` }, f))
                 ),
-                
                 React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" },
-                    displayedBooks.map(b => React.createElement("div", { key: b.id, className: "bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col h-full hover:shadow-md transition-all group relative" },
+                    displayedBooks.map(b => React.createElement("div", { key: b.id, className: "bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col h-full hover:shadow-md transition-all group" },
                         React.createElement("div", { className: "flex justify-between items-start mb-3" },
                             React.createElement("span", { className: `text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider ${b.status === 'Reading' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400' : b.status === 'Completed' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'}` }, b.status),
-                            React.createElement("div", { className: "flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity" },
-                                React.createElement("button", { onClick: () => { const inCurrentYear = isBookInYear(b, targetYear); onUpdateBook({...b, goalYear: inCurrentYear ? null : targetYear, isYearlyGoal: false}); }, title: isBookInYear(b, targetYear) ? `Remove from ${targetYear} Goals` : `Add to ${targetYear} Goals`, className: `p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${isBookInYear(b, targetYear) ? 'text-yellow-500' : 'text-zinc-400 hover:text-yellow-500'}` }, React.createElement(Star, { size: 16, fill: isBookInYear(b, targetYear) ? "currentColor" : "none" })),
-                                React.createElement("button", { onClick: () => { if(confirm("Remove this book?")) onDeleteBook(b.id); }, className: "text-zinc-400 hover:text-red-500 p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" }, React.createElement(Trash2, { size: 16 }))
-                            )
+                            React.createElement("button", { onClick: () => { if(confirm("Remove this book?")) onDeleteBook(b.id); }, className: "text-zinc-400 hover:text-red-500 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity p-1" }, React.createElement(Trash2, { size: 16 }))
                         ),
-                        React.createElement("h3", { className: "font-bold text-lg text-zinc-900 dark:text-white leading-tight mb-1 pr-6" }, b.title),
+                        React.createElement("h3", { className: "font-bold text-lg text-zinc-900 dark:text-white leading-tight mb-1" }, b.title),
                         React.createElement("p", { className: "text-sm text-zinc-500 mb-6 flex-1" }, b.author),
                         React.createElement("div", { className: "mt-auto pt-4 border-t border-zinc-100 dark:border-zinc-800 flex justify-between items-center" },
                             React.createElement("span", { className: "text-xs font-bold text-zinc-400 flex items-center gap-1.5" }, React.createElement(Bookmark, { size: 12 }), b.category),
@@ -1746,11 +1596,10 @@
                         )
                     ))
                 ),
-                displayedBooks.length === 0 && React.createElement("div", { className: "text-center py-20 text-zinc-400 flex flex-col items-center" },
-                    mode === 'Yearly' ? React.createElement(Target, { size: 48, className: "mx-auto mb-4 opacity-20" }) : React.createElement(BookOpen, { size: 48, className: "mx-auto mb-4 opacity-20" }),
-                    React.createElement("p", { className: "font-medium mt-2 max-w-sm text-center" }, mode === 'Yearly' ? `No books targeted for ${targetYear} yet. Click the + button to select books from your library.` : "No books found for this filter.")
-                ),
-                React.createElement("button", { onClick: () => { if (mode === 'Library') { setIsAdding(!isAdding); setIsSelecting(false); } else { setIsSelecting(!isSelecting); setIsAdding(false); } }, className: "md:hidden fixed bottom-24 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg z-50 hover:bg-indigo-500 active:scale-95 transition-transform" }, React.createElement(Plus, { size: 24 }))
+                displayedBooks.length === 0 && React.createElement("div", { className: "text-center py-20 text-zinc-400" },
+                    React.createElement(BookOpen, { size: 48, className: "mx-auto mb-4 opacity-20" }),
+                    React.createElement("p", { className: "font-medium" }, "No books found for this filter.")
+                )
             );
         };
 
@@ -1811,115 +1660,6 @@
             );
         };
 
-        const GodsWayView = ({ items, onUpdate, onAdd, onDelete }) => {
-            const [posInput, setPosInput] = useState("");
-            const [negInput, setNegInput] = useState("");
-
-            const toNegative = (text) => {
-                let t = text.trim();
-                if (/^not /i.test(t)) return t;
-                if (/^I'm /i.test(t)) return `Not ${t.charAt(4).toLowerCase() + t.slice(5)}`;
-                if (/^I am /i.test(t)) return `Not ${t.charAt(5).toLowerCase() + t.slice(6)}`;
-                return `Not ${t.charAt(0).toLowerCase() + t.slice(1)}`;
-            };
-
-            const toPositive = (text) => {
-                let t = text.trim();
-                if (/^Not /i.test(t)) return `I'm ${t.charAt(4).toLowerCase() + t.slice(5)}`;
-                return t;
-            };
-
-            const handleDragStart = (e, item) => {
-                e.dataTransfer.setData("application/json", JSON.stringify(item));
-            };
-
-            const handleDrop = (e, targetType) => {
-                e.preventDefault();
-                const itemData = e.dataTransfer.getData("application/json");
-                if (itemData) {
-                    const item = JSON.parse(itemData);
-                    if (item.type !== targetType) {
-                        const newText = targetType === 'negative' ? toNegative(item.text) : toPositive(item.text);
-                        onUpdate({ ...item, type: targetType, text: newText });
-                    }
-                }
-            };
-
-            const handleDragOver = (e) => {
-                e.preventDefault();
-            };
-
-            const posItems = items.filter(i => i.type === 'positive');
-            const negItems = items.filter(i => i.type === 'negative');
-
-            return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-full flex flex-col max-w-6xl mx-auto" },
-                React.createElement("div", { className: "mb-8" },
-                    React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(Scale, { className: "text-indigo-500" }), "God's Way"),
-                    React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 mt-1" }, "Balance your life. Drag items between columns to shift their perspective.")
-                ),
-                React.createElement("div", { className: "flex flex-col md:flex-row gap-6 h-full min-h-[500px]" },
-                    React.createElement("div", { 
-                        className: "flex-1 bg-emerald-50 dark:bg-emerald-950/10 border border-emerald-200 dark:border-emerald-900/30 rounded-[2rem] p-6 flex flex-col shadow-sm",
-                        onDrop: (e) => handleDrop(e, 'positive'),
-                        onDragOver: handleDragOver
-                    },
-                        React.createElement("h3", { className: "font-bold text-emerald-700 dark:text-emerald-400 mb-4 flex items-center gap-2 text-lg" }, React.createElement(CheckCircle2, { size: 20 }), "Things I'm doing well (+)"),
-                        React.createElement("div", { className: "flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar" },
-                            posItems.map(item => React.createElement("div", { 
-                                key: item.id, draggable: true, onDragStart: (e) => handleDragStart(e, item),
-                                className: "bg-white dark:bg-emerald-900/40 border border-emerald-100 dark:border-emerald-800/50 p-4 rounded-xl shadow-sm text-emerald-900 dark:text-emerald-100 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow group flex justify-between items-start gap-2"
-                            }, 
-                                React.createElement("span", { className: "font-medium leading-relaxed pt-0.5" }, item.text),
-                                React.createElement("button", { onClick: () => onDelete(item.id), className: "text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity p-1 -mr-1 -mt-1" }, React.createElement(X, { size: 16 }))
-                            )),
-                            posItems.length === 0 && React.createElement("div", { className: "text-emerald-400/50 dark:text-emerald-600/50 text-center py-8 font-medium border-2 border-dashed border-emerald-200 dark:border-emerald-800/30 rounded-xl" }, "Drag negative items here or add new ones")
-                        ),
-                        React.createElement("div", { className: "mt-4 pt-4 border-t border-emerald-200/50 dark:border-emerald-800/30 flex gap-2" },
-                            React.createElement("input", { 
-                                value: posInput, onChange: e => setPosInput(e.target.value),
-                                onKeyDown: e => { if(e.key==='Enter' && posInput.trim()) { onAdd({text: posInput.trim(), type: 'positive'}); setPosInput(''); }},
-                                placeholder: "I'm financially stable...",
-                                className: "flex-1 bg-white dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-2 outline-none focus:border-emerald-400 text-emerald-900 dark:text-emerald-100 placeholder:text-emerald-300 dark:placeholder:text-emerald-700 text-base"
-                            }),
-                            React.createElement("button", { 
-                                onClick: () => { if(posInput.trim()) { onAdd({text: posInput.trim(), type: 'positive'}); setPosInput(''); }},
-                                className: "bg-emerald-500 hover:bg-emerald-600 text-white p-2.5 rounded-xl transition-colors shadow-sm active:scale-95"
-                            }, React.createElement(Plus, { size: 20 }))
-                        )
-                    ),
-                    React.createElement("div", { 
-                        className: "flex-1 bg-rose-50 dark:bg-rose-950/10 border border-rose-200 dark:border-rose-900/30 rounded-[2rem] p-6 flex flex-col shadow-sm",
-                        onDrop: (e) => handleDrop(e, 'negative'),
-                        onDragOver: handleDragOver
-                    },
-                        React.createElement("h3", { className: "font-bold text-rose-700 dark:text-rose-400 mb-4 flex items-center gap-2 text-lg" }, React.createElement(AlertCircle, { size: 20 }), "Things I'm lacking in (-)"),
-                        React.createElement("div", { className: "flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar" },
-                            negItems.map(item => React.createElement("div", { 
-                                key: item.id, draggable: true, onDragStart: (e) => handleDragStart(e, item),
-                                className: "bg-white dark:bg-rose-900/40 border border-rose-100 dark:border-rose-800/50 p-4 rounded-xl shadow-sm text-rose-900 dark:text-rose-100 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow group flex justify-between items-start gap-2"
-                            }, 
-                                React.createElement("span", { className: "font-medium leading-relaxed pt-0.5" }, item.text),
-                                React.createElement("button", { onClick: () => onDelete(item.id), className: "text-rose-400 hover:text-rose-600 dark:hover:text-rose-300 opacity-0 group-hover:opacity-100 transition-opacity p-1 -mr-1 -mt-1" }, React.createElement(X, { size: 16 }))
-                            )),
-                            negItems.length === 0 && React.createElement("div", { className: "text-rose-400/50 dark:text-rose-600/50 text-center py-8 font-medium border-2 border-dashed border-rose-200 dark:border-rose-800/30 rounded-xl" }, "Drag positive items here or add new ones")
-                        ),
-                        React.createElement("div", { className: "mt-4 pt-4 border-t border-rose-200/50 dark:border-rose-800/30 flex gap-2" },
-                            React.createElement("input", { 
-                                value: negInput, onChange: e => setNegInput(e.target.value),
-                                onKeyDown: e => { if(e.key==='Enter' && negInput.trim()) { onAdd({text: negInput.trim(), type: 'negative'}); setNegInput(''); }},
-                                placeholder: "Not financially stable...",
-                                className: "flex-1 bg-white dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-xl px-4 py-2 outline-none focus:border-rose-400 text-rose-900 dark:text-rose-100 placeholder:text-rose-300 dark:placeholder:text-rose-700 text-base"
-                            }),
-                            React.createElement("button", { 
-                                onClick: () => { if(negInput.trim()) { onAdd({text: negInput.trim(), type: 'negative'}); setNegInput(''); }},
-                                className: "bg-rose-500 hover:bg-rose-600 text-white p-2.5 rounded-xl transition-colors shadow-sm active:scale-95"
-                            }, React.createElement(Plus, { size: 20 }))
-                        )
-                    )
-                )
-            );
-        };
-
         const App = () => {
             const tabConfig = { 
                 dashboard: { label: "Dashboard", icon: Layout }, 
@@ -1927,7 +1667,6 @@
                 schedule: { label: "Schedule", icon: CalendarIcon },
                 goals2026: { label: "2026 Vision", icon: Flag }, 
                 monthlyPlan: { label: "Monthly Vision", icon: CalendarRange }, 
-                godsWay: { label: "God's Way", icon: Scale },
                 ideaBoard: { label: "Idea Board", icon: Lightbulb }, 
                 braindump: { label: "Worries", icon: AlertCircle }, 
                 focus: { label: "Focus Timer", icon: Timer }, 
@@ -1954,7 +1693,6 @@
             const [meals, setMeals] = useState(DEFAULT_MEALS);
             const [goalsData, setGoalsData] = useState(DEFAULT_GOALS_DATA);
             const [dashboardData, setDashboardData] = useState({});
-            const [godsWayItems, setGodsWayItems] = useState([]);
             const [books, setBooks] = useState([]);
             const [bookCategories, setBookCategories] = useState(DEFAULT_BOOK_CATEGORIES);
             const [dailyPlan, setDailyPlan] = useState({ priorities: ['', '', ''], schedule: {}, notes: '', minorTasks: [] });
@@ -2045,7 +1783,6 @@
                                 if(aRes.data.goals_2026) setGoalsData(aRes.data.goals_2026); 
                                 if(aRes.data.dashboard_config) {
                                     setDashboardData(aRes.data.dashboard_config); 
-                                    if(aRes.data.dashboard_config.godsWayItems) setGodsWayItems(aRes.data.dashboard_config.godsWayItems);
                                 }
                                 if(aRes.data.book_categories) setBookCategories(aRes.data.book_categories);
                                 if(aRes.data.daily_plan) setDailyPlan(aRes.data.daily_plan);
@@ -2073,7 +1810,6 @@
                     setDumps(JSON.parse(localStorage.getItem(`${prefix}dumps`) || '[]'));
                     setMeals(JSON.parse(localStorage.getItem(`${prefix}meals`) || JSON.stringify(DEFAULT_MEALS)));
                     setGoalsData(JSON.parse(localStorage.getItem(`${prefix}goals_2026`) || JSON.stringify(DEFAULT_GOALS_DATA)));
-                    setGodsWayItems(JSON.parse(localStorage.getItem(`${prefix}gods_way`) || '[]'));
                     setBooks(JSON.parse(localStorage.getItem(`${prefix}books`) || '[]'));
                     setBookCategories(JSON.parse(localStorage.getItem(`${prefix}book_categories`) || JSON.stringify(DEFAULT_BOOK_CATEGORIES)));
                     setDashboardData(JSON.parse(localStorage.getItem(`${prefix}dashboard`) || '{}'));
@@ -2106,7 +1842,6 @@
                     localStorage.setItem(`${prefix}meals`, JSON.stringify(meals));
                     localStorage.setItem(`${prefix}goals_2026`, JSON.stringify(goalsData));
                     localStorage.setItem(`${prefix}dashboard`, JSON.stringify(dashboardData));
-                    localStorage.setItem(`${prefix}gods_way`, JSON.stringify(godsWayItems));
                     localStorage.setItem(`${prefix}books`, JSON.stringify(books));
                     localStorage.setItem(`${prefix}book_categories`, JSON.stringify(bookCategories));
                     localStorage.setItem(`${prefix}daily_plan`, JSON.stringify(dailyPlan));
@@ -2121,7 +1856,7 @@
                             await supabase.from('app_data').upsert({
                                 user_id: user.id,
                                 goals_2026: goalsData,
-                                dashboard_config: { ...dashboardData, godsWayItems },
+                                dashboard_config: { ...dashboardData },
                                 book_categories: bookCategories,
                                 daily_plan: dailyPlan,
                                 monthly_plan: monthlyPlan,
@@ -2135,7 +1870,7 @@
                     const timeoutId = setTimeout(syncAppData, 1500);
                     return () => clearTimeout(timeoutId);
                 }
-            }, [dumps, meals, goalsData, dashboardData, godsWayItems, books, bookCategories, dailyPlan, monthlyPlan, countdowns, ideaNotes, tasks, events, user, isDataLoaded]);
+            }, [dumps, meals, goalsData, dashboardData, books, bookCategories, dailyPlan, monthlyPlan, countdowns, ideaNotes, tasks, events, user, isDataLoaded]);
 
             const generateAIMealPlan = async () => {
                 const apiKey = "";
@@ -2185,14 +1920,31 @@
             const handleUpdateGoals2026 = (newData) => setGoalsData(newData);
             const handleUpdateMonthlyPlan = (newData) => setMonthlyPlan(newData);
             
-            const handleAddGodsWay = (item) => setGodsWayItems(prev => [...prev, { ...item, id: generateUUID() }]);
-            const handleUpdateGodsWay = (item) => setGodsWayItems(prev => prev.map(i => i.id === item.id ? item : i));
-            const handleDeleteGodsWay = (id) => setGodsWayItems(prev => prev.filter(i => i.id !== id));
-
             const handleAddIdeaTab = (name) => {
                 if (name && !ideaTabs.includes(name)) {
                     handleUpdateDashboard({ ...dashboardData, ideaTabs: [...ideaTabs, name] });
                     setActiveIdeaTab(name);
+                }
+            };
+            const handleRenameIdeaTab = (oldName, newName) => {
+                if (!newName || newName === oldName || ideaTabs.includes(newName)) return;
+                const newTabs = ideaTabs.map(t => t === oldName ? newName : t);
+                handleUpdateDashboard({ ...dashboardData, ideaTabs: newTabs });
+                if (activeIdeaTab === oldName) setActiveIdeaTab(newName);
+                
+                const updatedNotes = ideaNotes.map(n => (n.tabId || 'Main Board') === oldName ? { ...n, tabId: newName } : n);
+                setIdeaNotes(updatedNotes);
+                
+                if (!user.isLocal && isSupabaseConfigured) {
+                    const notesToUpdate = updatedNotes.filter(n => n.tabId === newName);
+                    if (notesToUpdate.length > 0) {
+                        supabase.from('app_data').upsert({
+                            user_id: user.id,
+                            idea_notes: updatedNotes,
+                            dashboard_config: { ...dashboardData, ideaTabs: newTabs },
+                            updated_at: new Date().toISOString()
+                        }, { onConflict: 'user_id' }).then();
+                    }
                 }
             };
             const handleDeleteIdeaTab = (name) => {
@@ -2268,11 +2020,10 @@
                     activeTab === 'schedule' && React.createElement(ScheduleView, { events, onAddEvent: handleAddEvent, onUpdateEvent: handleUpdateEvent, onDeleteEvent: handleDeleteEvent, dailyPlan, onUpdateDailyPlan: handleUpdateDailyPlan }),
                     activeTab === 'goals2026' && React.createElement(Goals2026View, { goalsData, onUpdateGoals: handleUpdateGoals2026 }),
                     activeTab === 'monthlyPlan' && React.createElement(MonthlyPlanView, { plan: monthlyPlan, onUpdate: handleUpdateMonthlyPlan }),
-                    activeTab === 'godsWay' && React.createElement(GodsWayView, { items: godsWayItems, onAdd: handleAddGodsWay, onUpdate: handleUpdateGodsWay, onDelete: handleDeleteGodsWay }),
                     activeTab === 'ideaBoard' && React.createElement(IdeaBoardView, { notes: ideaNotes, onAdd: handleAddIdeaNote, onUpdate: handleUpdateIdeaNote, onDelete: handleDeleteIdeaNote, tabs: ideaTabs, activeTab: activeIdeaTab, setActiveTab: setActiveIdeaTab, onAddTab: handleAddIdeaTab, onDeleteTab: handleDeleteIdeaTab, onRenameTab: handleRenameIdeaTab }),
                     activeTab === 'braindump' && React.createElement(BrainDumpView, { dumps, onAddDump: handleAddDump, onDeleteDump: handleDeleteDump, onUpdateDump: handleUpdateDump }),
                     activeTab === 'focus' && React.createElement(FocusView, { activeSound, isPlayingSound, toggleSound, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset }),
-                    activeTab === 'library' && React.createElement(LibraryView, { books, categories: bookCategories, onAddBook: handleAddBook, onDeleteBook: handleDeleteBook, onUpdateBook: handleUpdateBook, dashboardData, onUpdateDashboard: handleUpdateDashboard, onAddCategory: handleAddBookCategory, onDeleteCategory: handleDeleteBookCategory, onRenameCategory: handleRenameBookCategory }),
+                    activeTab === 'library' && React.createElement(LibraryView, { books, categories: bookCategories, onAddBook: handleAddBook, onDeleteBook: handleDeleteBook, onUpdateBook: handleUpdateBook, onAddCategory: handleAddBookCategory, onDeleteCategory: handleDeleteBookCategory, onRenameCategory: handleRenameBookCategory, dashboardData, onUpdateDashboard: handleUpdateDashboard }),
                     activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal, onAIGenerate: generateAIMealPlan }),
                     activeTab === 'countdown' && React.createElement(CountdownView, { countdowns, onAdd: handleAddCountdown, onDelete: handleDeleteCountdown, onToggle: handleToggleCountdown, onUpdate: handleUpdateCountdown }),
                     activeTab === 'profile' && React.createElement(ProfileView, { user, onLogout: handleLogout, onUpdateProfile: handleUpdateProfile })
