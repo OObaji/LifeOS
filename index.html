@@ -1734,7 +1734,7 @@
             
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 min-h-[calc(100vh-6rem)] flex flex-col max-w-full w-full relative overflow-hidden" },
                 React.createElement("div", { className: "mb-6 text-center shrink-0 relative z-30" },
-                    React.createElement("h2", { className: "text-4xl md:text-5xl font-black text-zinc-900 dark:text-white flex items-center justify-center gap-4" }, React.createElement(Brain, { className: "text-rose-500", size: 48 }), "Brain Dump"),
+                    React.createElement("h2", { className: "text-4xl md:text-5xl font-black text-zinc-900 dark:text-white flex items-center justify-center gap-4" }, React.createElement(Brain, { className: "text-rose-500", size: 40 }), "Brain Dump"),
                     React.createElement("p", { className: "text-zinc-500 text-lg mt-3 font-medium" }, "Extract worries from your mind.")
                 ),
                 
@@ -1750,8 +1750,8 @@
                         })
                     ),
                     
-                    React.createElement("div", { className: "absolute z-10 w-20 h-20 md:w-32 md:h-32 bg-gradient-to-br from-rose-400 to-pink-600 rounded-full flex items-center justify-center shadow-[0_0_80px_rgba(244,63,94,0.4)] animate-brain pointer-events-auto" },
-                        React.createElement(Brain, { size: window.innerWidth < 768 ? 40 : 64, className: "text-white" })
+                    React.createElement("div", { className: "absolute z-10 w-16 h-16 md:w-24 md:h-24 bg-gradient-to-br from-rose-400 to-pink-600 rounded-full flex items-center justify-center shadow-[0_0_80px_rgba(244,63,94,0.4)] animate-brain pointer-events-auto" },
+                        React.createElement(Brain, { size: window.innerWidth < 768 ? 32 : 48, className: "text-white" })
                     ),
                     
                     dumps.map((d, i) => {
