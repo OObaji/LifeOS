@@ -65,7 +65,7 @@
             Edit3, Timer, Play, Pause, RotateCcw, X, CloudRain, Utensils, Trash, 
             ListTodo, CheckSquare, AlertCircle, Book, Hourglass, Check, Gift, 
             Chrome, Calendar, Loader2, CalendarRange, GripVertical, GripHorizontal, ArrowUp, ArrowDown, Scale,
-            Lightbulb, Crosshair, Flag, Activity, Ban, Bookmark, Eye, EyeOff, User, LogOut, LinkIcon, Globe, ExternalLink, Search, Star, Sparkles
+            Lightbulb, Crosshair, Flag, Activity, Ban, Bookmark, Eye, EyeOff, User, LogOut, LinkIcon, Globe, ExternalLink, Search, Star, Sparkles, Clock
         } from "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0";
         import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
@@ -1091,6 +1091,93 @@
             );
         };
 
+        const OvertimeView = ({ target, entries, onAddEntry, onDeleteEntry, onUpdateTarget }) => {
+            const [currentMonth, setCurrentMonth] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; });
+            const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+            const [startTime, setStartTime] = useState('');
+            const [endTime, setEndTime] = useState('');
+            const [isEditingTarget, setIsEditingTarget] = useState(false);
+
+            const calculateHours = (start, end) => {
+                if (!start || !end) return 0;
+                const [startH, startM] = start.split(':').map(Number);
+                const [endH, endM] = end.split(':').map(Number);
+                let diff = (endH + endM / 60) - (startH + startM / 60);
+                if (diff < 0) diff += 24; 
+                return Math.round(diff * 100) / 100;
+            };
+
+            const entriesThisMonth = (entries || []).filter(e => e.date.startsWith(currentMonth));
+            const totalHours = entriesThisMonth.reduce((sum, e) => sum + e.hours, 0);
+            const progress = Math.min(100, (totalHours / (target || 1)) * 100) || 0;
+
+            const handleAdd = () => {
+                const hours = calculateHours(startTime, endTime);
+                if (date && startTime && endTime && hours > 0) {
+                    onAddEntry({ date, startTime, endTime, hours });
+                    setStartTime(''); setEndTime('');
+                }
+            };
+
+            return React.createElement("div", { className: "p-4 md:p-8 pb-32 max-w-4xl mx-auto h-full overflow-y-auto no-scrollbar" },
+                React.createElement("div", { className: "mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4" },
+                    React.createElement("div", null,
+                        React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(Clock, { className: "text-indigo-500" }), "Overtime Tracker"),
+                        React.createElement("p", { className: "text-zinc-500 text-sm mt-1" }, "Log your extra hours and hit your targets.")
+                    ),
+                    React.createElement("input", { type: "month", value: currentMonth, onChange: (e) => setCurrentMonth(e.target.value), className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2 text-sm font-bold text-zinc-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:dark]" })
+                ),
+                
+                React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-8 shadow-sm mb-8 flex flex-col md:flex-row items-center justify-around gap-8" },
+                    React.createElement("div", { className: "relative w-48 h-48 flex items-center justify-center shrink-0" },
+                        React.createElement("svg", { className: "absolute inset-0 w-full h-full -rotate-90", viewBox: "0 0 100 100" },
+                            React.createElement("circle", { cx: "50", cy: "50", r: "45", fill: "none", stroke: "currentColor", strokeWidth: "8", className: "text-zinc-100 dark:text-zinc-800" }),
+                            React.createElement("circle", { cx: "50", cy: "50", r: "45", fill: "none", stroke: "currentColor", strokeWidth: "8", strokeDasharray: "282.74", strokeDashoffset: 282.74 - (282.74 * progress) / 100, strokeLinecap: "round", className: "text-indigo-500 transition-all duration-1000 ease-out" })
+                        ),
+                        React.createElement("div", { className: "absolute flex flex-col items-center justify-center text-center" },
+                            React.createElement("span", { className: "text-4xl font-black text-indigo-600 dark:text-indigo-400 leading-none" }, totalHours.toFixed(1)),
+                            React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-widest text-zinc-400 mt-1" }, "Hours Done")
+                        )
+                    ),
+                    React.createElement("div", { className: "flex flex-col items-center md:items-start text-center md:text-left space-y-4" },
+                        React.createElement("div", null,
+                            React.createElement("div", { className: "text-sm text-zinc-500 font-bold uppercase tracking-widest mb-1" }, "Monthly Target"),
+                            isEditingTarget ?
+                                React.createElement("input", { type: "number", autoFocus: true, defaultValue: target, onKeyDown: (e) => { if(e.key === 'Enter') { onUpdateTarget(parseFloat(e.target.value) || 0); setIsEditingTarget(false); } if(e.key === 'Escape') setIsEditingTarget(false); }, onBlur: (e) => { onUpdateTarget(parseFloat(e.target.value) || 0); setIsEditingTarget(false); }, className: "w-24 bg-zinc-50 dark:bg-black/50 border border-indigo-500 rounded-lg p-2 text-2xl font-black text-zinc-900 dark:text-white outline-none" })
+                                :
+                                React.createElement("div", { onClick: () => setIsEditingTarget(true), className: "text-4xl font-black text-zinc-900 dark:text-white cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" }, target, React.createElement("span", { className: "text-lg text-zinc-400 ml-1" }, "hrs"))
+                        ),
+                        React.createElement("p", { className: "text-sm font-medium text-zinc-500" }, progress >= 100 ? "🎉 Monthly target reached!" : `${(Math.max(0, target - totalHours)).toFixed(1)} hours left to reach target.`)
+                    )
+                ),
+                
+                React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-6 shadow-sm mb-8 flex flex-col sm:flex-row gap-4 items-end" },
+                    React.createElement("div", { className: "flex-1 w-full" }, React.createElement("label", { className: "block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2" }, "Date"), React.createElement("input", { type: "date", value: date, onChange: e => setDate(e.target.value), className: "w-full bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 text-sm font-bold text-zinc-900 dark:text-white outline-none focus:border-indigo-500 [color-scheme:dark]" })),
+                    React.createElement("div", { className: "flex-1 w-full" }, React.createElement("label", { className: "block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2" }, "Start Time"), React.createElement("input", { type: "time", value: startTime, onChange: e => setStartTime(e.target.value), className: "w-full bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 text-sm font-bold text-zinc-900 dark:text-white outline-none focus:border-indigo-500 [color-scheme:dark]" })),
+                    React.createElement("div", { className: "flex-1 w-full" }, React.createElement("label", { className: "block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2" }, "End Time"), React.createElement("input", { type: "time", value: endTime, onChange: e => setEndTime(e.target.value), className: "w-full bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 text-sm font-bold text-zinc-900 dark:text-white outline-none focus:border-indigo-500 [color-scheme:dark]" })),
+                    React.createElement("div", { className: "w-full sm:w-auto" }, React.createElement("button", { onClick: handleAdd, disabled: !date || !startTime || !endTime || calculateHours(startTime, endTime) <= 0, className: "w-full sm:w-auto bg-indigo-600 disabled:bg-zinc-300 dark:disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed text-white font-bold px-6 py-3 rounded-xl hover:bg-indigo-500 transition-colors active:scale-95 flex items-center justify-center gap-2 shadow-sm" }, React.createElement(Plus, { size: 18 }), "Add Entry"))
+                ),
+                
+                React.createElement("div", { className: "space-y-3" },
+                    entriesThisMonth.length === 0 ?
+                        React.createElement("div", { className: "text-center py-12 text-zinc-500 bg-white/50 dark:bg-zinc-900/50 rounded-[2rem] border border-dashed border-zinc-200 dark:border-zinc-800" }, "No overtime logged this month.")
+                    :
+                        [...entriesThisMonth].sort((a,b) => new Date(b.date) - new Date(a.date)).map(entry =>
+                            React.createElement("div", { key: entry.id, className: "flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm hover:border-indigo-500/50 transition-colors group" },
+                                React.createElement("div", { className: "flex items-center gap-4" },
+                                    React.createElement("div", { className: "w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black text-lg" }, entry.hours),
+                                    React.createElement("div", null,
+                                        React.createElement("div", { className: "font-bold text-zinc-900 dark:text-white text-sm" }, new Date(entry.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })),
+                                        React.createElement("div", { className: "text-xs font-medium text-zinc-500 flex items-center gap-1 mt-1" }, React.createElement(Clock, { size: 12 }), `${entry.startTime} - ${entry.endTime}`)
+                                    )
+                                ),
+                                React.createElement("button", { onClick: () => onDeleteEntry(entry.id), className: "p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100" }, React.createElement(Trash2, { size: 18 }))
+                            )
+                        )
+                )
+            );
+        };
+
         const App = () => {
             const tabConfig = { 
                 dashboard: { label: "Dashboard", icon: Layout }, 
@@ -1103,6 +1190,7 @@
                 library: { label: "Library", icon: Book }, 
                 food: { label: "Nutrition", icon: Utensils }, 
                 countdown: { label: "Countdown", icon: Hourglass },
+                overtime: { label: "Overtime", icon: Clock },
                 profile: { label: "Profile", icon: User } 
             };
             const VALID_TABS = Object.keys(tabConfig);
@@ -1126,6 +1214,9 @@
             const [bookCategories, setBookCategories] = useState(DEFAULT_BOOK_CATEGORIES);
             const [dailyPlan, setDailyPlan] = useState({ priorities: ['', '', ''], schedule: {}, notes: '', minorTasks: [] });
             const [monthlyPlan, setMonthlyPlan] = useState({ weeks: { week1: [], week2: [], week3: [], week4: [] } });
+            
+            const [overtimeEntries, setOvertimeEntries] = useState([]);
+            const [overtimeTarget, setOvertimeTarget] = useState(20);
             
             const ideaTabs = dashboardData.ideaTabs || ['Main Board'];
             const [activeIdeaTab, setActiveIdeaTab] = useState(ideaTabs[0] || 'Main Board');
@@ -1193,12 +1284,13 @@
                 if (!user.isLocal && isSupabaseConfigured) {
                     const fetchData = async () => {
                         try {
-                            const [bRes, mRes, aRes, lRes, tRes] = await Promise.all([
+                            const [bRes, mRes, aRes, lRes, tRes, oRes] = await Promise.all([
                                 supabase.from('brain_dumps').select('*').eq('user_id', user.id),
                                 supabase.from('meals').select('*').eq('user_id', user.id),
                                 supabase.from('app_data').select('*').eq('user_id', user.id).maybeSingle(),
                                 supabase.from('library').select('*').eq('user_id', user.id),
-                                supabase.from('tasks').select('*').eq('user_id', user.id).order('order_index', { ascending: true, nullsFirst: false })
+                                supabase.from('tasks').select('*').eq('user_id', user.id).order('order_index', { ascending: true, nullsFirst: false }),
+                                supabase.from('overtime_logs').select('*').eq('user_id', user.id)
                             ]);
                             
                             if (!mounted) return;
@@ -1207,6 +1299,7 @@
                             if(mRes.data && mRes.data.length > 0) setMeals(mRes.data);
                             if(lRes.data && lRes.data.length > 0) setBooks(lRes.data);
                             if(tRes.data) setTasks(tRes.data.sort((a,b) => (a.order_index || 0) - (b.order_index || 0)));
+                            if(oRes.data) setOvertimeEntries(oRes.data);
 
                             if(aRes.data) { 
                                 if(aRes.data.goals_2026) {
@@ -1225,6 +1318,7 @@
                                 if(aRes.data.monthly_plan) setMonthlyPlan(aRes.data.monthly_plan);
                                 if(aRes.data.countdowns) setCountdowns(aRes.data.countdowns);
                                 if(aRes.data.idea_notes) setIdeaNotes(aRes.data.idea_notes);
+                                if(aRes.data.overtime_target) setOvertimeTarget(aRes.data.overtime_target);
                             }
                             setIsDataLoaded(true);
                         } catch (err) {
@@ -1256,6 +1350,8 @@
                     setCountdowns(JSON.parse(localStorage.getItem(`${prefix}countdowns`) || '[]'));
                     setIdeaNotes(JSON.parse(localStorage.getItem(`${prefix}idea_notes`) || '[]'));
                     setTasks(JSON.parse(localStorage.getItem(`${prefix}tasks`) || '[]'));
+                    setOvertimeEntries(JSON.parse(localStorage.getItem(`${prefix}overtime_entries`) || '[]'));
+                    setOvertimeTarget(JSON.parse(localStorage.getItem(`${prefix}overtime_target`) || '20'));
                     
                     setIsDataLoaded(true);
                 }
@@ -1278,6 +1374,8 @@
                     localStorage.setItem(`${prefix}countdowns`, JSON.stringify(countdowns));
                     localStorage.setItem(`${prefix}idea_notes`, JSON.stringify(ideaNotes));
                     localStorage.setItem(`${prefix}tasks`, JSON.stringify(tasks));
+                    localStorage.setItem(`${prefix}overtime_entries`, JSON.stringify(overtimeEntries));
+                    localStorage.setItem(`${prefix}overtime_target`, JSON.stringify(overtimeTarget));
                 } else if (isSupabaseConfigured) {
                     const syncAppData = async () => {
                         try {
@@ -1290,6 +1388,7 @@
                                 monthly_plan: monthlyPlan,
                                 countdowns: countdowns,
                                 idea_notes: ideaNotes,
+                                overtime_target: overtimeTarget,
                                 updated_at: new Date().toISOString()
                             }, { onConflict: 'user_id' });
                         } catch(e) { console.error("Cloud sync failed:", e); }
@@ -1297,7 +1396,7 @@
                     const timeoutId = setTimeout(syncAppData, 1500);
                     return () => clearTimeout(timeoutId);
                 }
-            }, [dumps, meals, goalsData, dashboardData, books, bookCategories, dailyPlan, monthlyPlan, countdowns, ideaNotes, tasks, user, isDataLoaded]);
+            }, [dumps, meals, goalsData, dashboardData, books, bookCategories, dailyPlan, monthlyPlan, countdowns, ideaNotes, overtimeTarget, overtimeEntries, tasks, user, isDataLoaded]);
 
             const generateAIMealPlan = async () => {
                 const apiKey = "";
@@ -1431,6 +1530,21 @@
                 if (!user.isLocal && isSupabaseConfigured && toDelete.length > 0) supabase.from('tasks').delete().in('id', toDelete).then(); 
             };
 
+            const handleAddOvertimeEntry = (entry) => {
+                const newEntry = { ...entry, id: generateUUID(), user_id: user?.id };
+                setOvertimeEntries(prev => [...prev, newEntry]);
+                if (!user.isLocal && isSupabaseConfigured) supabase.from('overtime_logs').insert(newEntry).then();
+            };
+            
+            const handleDeleteOvertimeEntry = (id) => {
+                setOvertimeEntries(prev => prev.filter(e => e.id !== id));
+                if (!user.isLocal && isSupabaseConfigured) supabase.from('overtime_logs').delete().eq('id', id).then();
+            };
+
+            const handleUpdateOvertimeTarget = (target) => {
+                setOvertimeTarget(target);
+            };
+
             if (!user) return React.createElement(LandingPage, { onLoginSuccess: handleLoginSuccess, onGuestLogin: handleLoginSuccess });
 
             return React.createElement("div", { className: "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300" },
@@ -1448,6 +1562,7 @@
                     activeTab === 'library' && React.createElement(LibraryView, { books, categories: bookCategories, onAddBook: handleAddBook, onDeleteBook: handleDeleteBook, onUpdateBook: handleUpdateBook, onAddCategory: handleAddBookCategory, onDeleteCategory: handleDeleteBookCategory, onRenameCategory: handleRenameBookCategory }),
                     activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal, onAIGenerate: generateAIMealPlan }),
                     activeTab === 'countdown' && React.createElement(CountdownView, { countdowns, onAdd: handleAddCountdown, onDelete: handleDeleteCountdown, onToggle: handleToggleCountdown, onUpdate: handleUpdateCountdown }),
+                    activeTab === 'overtime' && React.createElement(OvertimeView, { target: overtimeTarget, entries: overtimeEntries, onAddEntry: handleAddOvertimeEntry, onDeleteEntry: handleDeleteOvertimeEntry, onUpdateTarget: handleUpdateOvertimeTarget }),
                     activeTab === 'profile' && React.createElement(ProfileView, { user, onLogout: handleLogout, onUpdateProfile: handleUpdateProfile })
                 ),
                 showSettings && React.createElement(SettingsView, { onClose: () => setShowSettings(false), onSave: () => window.location.reload() })
