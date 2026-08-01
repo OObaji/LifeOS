@@ -65,7 +65,7 @@
             Edit3, Timer, Play, Pause, RotateCcw, X, CloudRain, Utensils, Trash, 
             ListTodo, CheckSquare, AlertCircle, Book, Hourglass, Check, Gift, 
             Chrome, Calendar, Loader2, CalendarRange, GripVertical, GripHorizontal, ArrowUp, ArrowDown, Scale,
-            Lightbulb, Crosshair, Flag, Activity, Ban, Bookmark, Eye, EyeOff, User, LogOut, LinkIcon, Globe, ExternalLink, Search, Star, Sparkles, Clock
+            Lightbulb, Crosshair, Flag, Activity, Ban, Bookmark, Eye, EyeOff, User, LogOut, LinkIcon, Globe, ExternalLink, Search, Star, Sparkles, Clock, Coffee, Wind
         } from "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0";
         import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
@@ -83,7 +83,12 @@
         const DEFAULT_SINGLE_YEAR_GOALS = { mission: "Reshape my life by achieving financial stability, building iron discipline, and gaining clear direction for my future.", mainFocus: [{id: '1', text: 'Financial Freedom'}, {id: '2', text: 'Improved Fitness'}, {id: '3', text: 'Skill Mastery'}], dos: [], donts: [], milestones: [], quarters: { q1: [], q2: [], q3: [], q4: [] }, phases: { phase1: [], phase2: [], phase3: [] } };
         const DEFAULT_MEALS = [{ day: 'Monday', type: 'Breakfast', text: 'Oats + milk\n1 banana\n1 scoop protein powder' }];
         const DEFAULT_BOOK_CATEGORIES = ['General', 'Fiction', 'Non-Fiction', 'Self-Help', 'Technical'];
-        const FOCUS_SOUNDS = [ { id: 'rain', label: 'Rain', icon: CloudRain, url: 'https://cdn.pixabay.com/audio/2021/09/06/audio_2e22c07659.mp3' }, { id: 'lofi', label: 'Lofi', icon: Music, url: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3' } ];
+        const FOCUS_SOUNDS = [ 
+            { id: 'rain', label: 'Heavy Rain', icon: CloudRain, url: 'https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg' }, 
+            { id: 'waves', label: 'Ocean Waves', icon: Wind, url: 'https://actions.google.com/sounds/v1/water/waves_crashing_on_rock_beach.ogg' },
+            { id: 'coffee', label: 'Cafe', icon: Coffee, url: 'https://actions.google.com/sounds/v1/crowds/cafe_restaurant_chatter.ogg' },
+            { id: 'drone', label: 'Deep Focus', icon: Music, url: 'https://actions.google.com/sounds/v1/science_fiction/space_engine.ogg' }
+        ];
 
         const getPointerPos = (e) => {
             if (e.touches && e.touches.length > 0) {
@@ -980,6 +985,12 @@
         };
 
         const FocusView = ({ activeSound, isPlayingSound, toggleSound, timerState, toggleTimer, resetTimer }) => {
+            const [objective, setObjective] = useState(() => localStorage.getItem('lifeos_focus_objective') || "");
+            
+            useEffect(() => {
+                localStorage.setItem('lifeos_focus_objective', objective);
+            }, [objective]);
+
             const formatTime = (seconds) => {
                 const m = Math.floor(seconds / 60);
                 const s = seconds % 60;
@@ -987,10 +998,19 @@
             };
             const progress = 100 - (timerState.timeLeft / timerState.initialTime) * 100;
 
-            return React.createElement("div", { className: "p-4 md:p-8 h-[calc(100vh-6rem)] flex flex-col items-center justify-center max-w-4xl mx-auto w-full" },
+            return React.createElement("div", { className: "p-4 md:p-8 h-[calc(100vh-6rem)] flex flex-col items-center justify-center max-w-4xl mx-auto w-full overflow-y-auto no-scrollbar" },
+                React.createElement("div", { className: "w-full max-w-xl mb-8 text-center relative group shrink-0" },
+                    React.createElement("div", { className: "absolute -inset-2 bg-indigo-500/10 dark:bg-indigo-500/5 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" }),
+                    React.createElement("input", { 
+                        value: objective, 
+                        onChange: (e) => setObjective(e.target.value),
+                        placeholder: "What is your main objective for this session?",
+                        className: "relative w-full bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md px-6 py-4 text-center text-lg md:text-xl font-bold text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800/80 rounded-2xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600 transition-all shadow-sm"
+                    })
+                ),
                 React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[3rem] p-8 md:p-16 w-full shadow-sm flex flex-col items-center relative overflow-hidden" },
-                    React.createElement("div", { className: "flex gap-2 bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-full mb-12 z-10" },
-                        [{l: 'Pomodoro', t: 1500, m: 'FOCUS'}, {l: 'Short Break', t: 300, m: 'SHORT_BREAK'}, {l: 'Long Break', t: 900, m: 'LONG_BREAK'}].map(mode => 
+                    React.createElement("div", { className: "flex gap-2 bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-full mb-12 z-10 flex-wrap justify-center" },
+                        [{l: 'Pomodoro', t: 1500, m: 'FOCUS'}, {l: 'Short Break', t: 300, m: 'SHORT_BREAK'}, {l: 'Long Break', t: 900, m: 'LONG_BREAK'}, {l: '1 Hour', t: 3600, m: 'ONE_HOUR'}].map(mode => 
                             React.createElement("button", { key: mode.m, onClick: () => resetTimer(mode.t, mode.m), className: `px-6 py-2 rounded-full text-sm font-bold transition-colors ${timerState.mode === mode.m ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}` }, mode.l)
                         )
                     ),
@@ -1007,8 +1027,8 @@
                         ),
                         React.createElement("button", { onClick: () => resetTimer(), className: "w-20 h-20 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors active:scale-95" }, React.createElement(RotateCcw, { size: 28 }))
                     ),
-                    React.createElement("div", { className: "flex gap-3 z-10 bg-zinc-50 dark:bg-zinc-950 p-2 rounded-2xl border border-zinc-200 dark:border-zinc-800" },
-                        FOCUS_SOUNDS.map(sound => React.createElement("button", { key: sound.id, onClick: () => toggleSound(sound), className: `flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeSound === sound.id && isPlayingSound ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'}` }, React.createElement(sound.icon, { size: 16 }), sound.label))
+                    React.createElement("div", { className: "flex flex-wrap justify-center gap-3 z-10 bg-zinc-50 dark:bg-zinc-950 p-2 rounded-2xl border border-zinc-200 dark:border-zinc-800 w-full max-w-lg" },
+                        FOCUS_SOUNDS.map(sound => React.createElement("button", { key: sound.id, onClick: () => toggleSound(sound), className: `flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeSound === sound.id && isPlayingSound ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 shadow-sm' : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'}` }, React.createElement(sound.icon, { size: 16 }), sound.label))
                     )
                 )
             );
@@ -1231,10 +1251,28 @@
             const [isPlayingSound, setIsPlayingSound] = useState(false);
             const audioRef = useRef(new Audio());
             const [focusState, setFocusState] = useState({ timeLeft: 1500, isActive: false, initialTime: 1500, mode: 'FOCUS' });
+            const [showTimerAlert, setShowTimerAlert] = useState(false);
             
-            useEffect(() => { let interval = null; if (focusState.isActive && focusState.timeLeft > 0) { interval = setInterval(() => { setFocusState(prev => ({ ...prev, timeLeft: prev.timeLeft - 1 })); }, 1000); } else if (focusState.timeLeft === 0) { setFocusState(prev => ({ ...prev, isActive: false })); } return () => clearInterval(interval); }, [focusState.isActive, focusState.timeLeft]);
+            useEffect(() => { 
+                let interval = null; 
+                if (focusState.isActive && focusState.timeLeft > 0) { 
+                    interval = setInterval(() => { setFocusState(prev => ({ ...prev, timeLeft: prev.timeLeft - 1 })); }, 1000); 
+                } else if (focusState.isActive && focusState.timeLeft === 0) { 
+                    setFocusState(prev => ({ ...prev, isActive: false })); 
+                    setShowTimerAlert(true);
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        new Notification("Time's up!", { body: "Your focus session is complete." });
+                    }
+                } 
+                return () => clearInterval(interval); 
+            }, [focusState.isActive, focusState.timeLeft]);
             
-            const handleTimerToggle = () => setFocusState(prev => ({ ...prev, isActive: !prev.isActive }));
+            const handleTimerToggle = () => {
+                if (!focusState.isActive && 'Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+                setFocusState(prev => ({ ...prev, isActive: !prev.isActive }));
+            };
             const handleTimerReset = (newTime, newMode) => { const time = newTime || focusState.initialTime; setFocusState({ timeLeft: time, isActive: false, initialTime: time, mode: newMode || 'FOCUS' }); };
             const toggleSound = async (sound) => { try { if (activeSound === sound.id && isPlayingSound) { audioRef.current.pause(); setIsPlayingSound(false); } else { if (isPlayingSound) { audioRef.current.pause(); } audioRef.current.src = sound.url; audioRef.current.loop = true; await audioRef.current.play(); setIsPlayingSound(true); setActiveSound(sound.id); } } catch (err) { console.error("Audio playback error:", err); setIsPlayingSound(false); } };
 
@@ -1565,7 +1603,15 @@
                     activeTab === 'overtime' && React.createElement(OvertimeView, { target: overtimeTarget, entries: overtimeEntries, onAddEntry: handleAddOvertimeEntry, onDeleteEntry: handleDeleteOvertimeEntry, onUpdateTarget: handleUpdateOvertimeTarget }),
                     activeTab === 'profile' && React.createElement(ProfileView, { user, onLogout: handleLogout, onUpdateProfile: handleUpdateProfile })
                 ),
-                showSettings && React.createElement(SettingsView, { onClose: () => setShowSettings(false), onSave: () => window.location.reload() })
+                showSettings && React.createElement(SettingsView, { onClose: () => setShowSettings(false), onSave: () => window.location.reload() }),
+                showTimerAlert && React.createElement("div", { className: "fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" },
+                    React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-300" },
+                        React.createElement("div", { className: "w-20 h-20 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-6" }, React.createElement(Timer, { size: 40 })),
+                        React.createElement("h2", { className: "text-2xl font-black text-zinc-900 dark:text-white mb-2" }, "Time's Up!"),
+                        React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 mb-8" }, "Your timer is complete. Time to take a breather."),
+                        React.createElement("button", { onClick: () => setShowTimerAlert(false), className: "w-full py-4 bg-indigo-600 text-white rounded-xl font-bold text-lg hover:bg-indigo-500 active:scale-95 transition-all shadow-glow-sm" }, "Got it")
+                    )
+                )
             );
         };
 
