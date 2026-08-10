@@ -1471,6 +1471,7 @@
                             if(oRes.data) setOvertimeEntries(oRes.data);
 
                             if(aRes.data) { 
+                                if(aRes.data.meals) setMeals(aRes.data.meals);
                                 if(aRes.data.goals_2026) {
                                     const gData = aRes.data.goals_2026;
                                     if (gData.mission !== undefined || gData.mainFocus !== undefined) {
@@ -1530,26 +1531,6 @@
             }, [user]);
 
             useEffect(() => {
-                if (!user || !user.isLocal || !isSupabaseConfigured) return;
-                let mounted = true;
-                const fetchCloudLibraryAndMeals = async () => {
-                    try {
-                        const [mRes, lRes] = await Promise.all([
-                            supabase.from('meals').select('*').eq('user_id', user.id),
-                            supabase.from('library').select('*').eq('user_id', user.id)
-                        ]);
-                        if (!mounted) return;
-                        if (mRes.data && mRes.data.length > 0) setMeals(mRes.data);
-                        if (lRes.data && lRes.data.length > 0) setBooks(lRes.data);
-                    } catch (err) {
-                        console.error("Cloud meals/library fetch failed.", err);
-                    }
-                };
-                fetchCloudLibraryAndMeals();
-                return () => { mounted = false; };
-            }, [user, isSupabaseConfigured]);
-
-            useEffect(() => {
                 if (!user || !isDataLoaded) return;
 
                 if (user.isLocal) {
@@ -1582,6 +1563,7 @@
                                 countdowns: countdowns,
                                 idea_notes: ideaNotes,
                                 overtime_target: overtimeTarget,
+                                meals: meals,
                                 updated_at: new Date().toISOString()
                             }, { onConflict: 'user_id' });
                         } catch(e) { console.error("Cloud sync failed:", e); }
@@ -1610,10 +1592,6 @@
                 const plan = JSON.parse(jsonMatch[0]);
                 const planWithUser = plan.map(item => ({ ...item, id: generateUUID(), user_id: user.id }));
                 setMeals(planWithUser);
-                if (isSupabaseConfigured) {
-                    await supabase.from('meals').delete().eq('user_id', user.id);
-                    await supabase.from('meals').insert(planWithUser);
-                }
             };
 
             const generateBookRecommendations = async (goals) => {
@@ -1649,7 +1627,6 @@
                     const exists = prev.find(m => m.day === day && m.type === type);
                     const id = exists ? exists.id : generateUUID();
                     const newItem = { id, day, type, text, user_id: user?.id };
-                    if (isSupabaseConfigured) supabase.from('meals').upsert(newItem).then();
                     if(exists) return prev.map(m => m.id === id ? newItem : m);
                     return [...prev, newItem];
                 });
