@@ -308,7 +308,22 @@
             const [key, setKey] = useState(localStorage.getItem('lifeos_sb_key') || "");
             const [geminiKey, setGeminiKey] = useState(localStorage.getItem('lifeos_gemini_key') || "");
             const [googleClientId, setGoogleClientId] = useState(localStorage.getItem('lifeos_google_client_id') || "");
+            const [testStatus, setTestStatus] = useState(null);
+            const [testing, setTesting] = useState(false);
             const handleSave = () => { localStorage.setItem('lifeos_sb_url', url.trim()); localStorage.setItem('lifeos_sb_key', key.trim()); localStorage.setItem('lifeos_gemini_key', geminiKey.trim()); localStorage.setItem('lifeos_google_client_id', googleClientId.trim()); onSave(); };
+            const handleTestConnection = async () => {
+                setTesting(true); setTestStatus(null);
+                try {
+                    const testClient = createClient(url.trim(), key.trim());
+                    const { error } = await testClient.from('app_data').select('user_id', { count: 'exact', head: true });
+                    if (error) throw error;
+                    setTestStatus({ ok: true, message: "Connected — the app_data table is reachable." });
+                } catch (e) {
+                    setTestStatus({ ok: false, message: e.message || "Connection failed." });
+                } finally {
+                    setTesting(false);
+                }
+            };
 
             useEffect(() => { const handleEsc = (e) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', handleEsc); return () => window.removeEventListener('keydown', handleEsc); }, [onClose]);
 
@@ -322,10 +337,12 @@
                         React.createElement("p", { className: "text-sm text-zinc-500 mb-4" }, "Needed for AI meal plans and the Book Planner. Get a free key at ", React.createElement("a", { href: "https://aistudio.google.com/apikey", target: "_blank", rel: "noopener noreferrer", className: "text-indigo-500 hover:underline" }, "aistudio.google.com/apikey"), "."),
                         React.createElement("input", { value: geminiKey, onChange: e => setGeminiKey(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), type: "password", placeholder: "Gemini API Key", className: "w-full mb-6 p-4 rounded-xl bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-base md:text-sm focus:outline-none focus:border-indigo-500" }),
                         React.createElement("h2", { className: "text-2xl font-bold mb-2 text-zinc-900 dark:text-white" }, "Cloud Sync (optional)"),
-                        React.createElement("p", { className: "text-sm text-zinc-500 mb-4" }, "Only needed if you want your data synced across devices via your own ", React.createElement("a", { href: "https://supabase.com", target: "_blank", rel: "noopener noreferrer", className: "text-indigo-500 hover:underline" }, "Supabase"), " project. Leave blank to use Local Mode."),
+                        React.createElement("p", { className: "text-sm text-zinc-500 mb-4" }, "Only needed if you want your data synced across devices via your own ", React.createElement("a", { href: "https://supabase.com", target: "_blank", rel: "noopener noreferrer", className: "text-indigo-500 hover:underline" }, "Supabase"), " project. Leave blank to use Local Mode. Cloud Sync only works when you're signed in with a real email/password account here — Guest and Google Sign-In stay device-local, since they have no server-verified session for Supabase's security rules to check."),
                         React.createElement("input", { value: url, onChange: e => setUrl(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), placeholder: "Supabase URL", className: "w-full mb-4 p-4 rounded-xl bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-base md:text-sm focus:outline-none focus:border-indigo-500" }),
-                        React.createElement("input", { value: key, onChange: e => setKey(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), type: "password", placeholder: "Anon Key", className: "w-full mb-6 p-4 rounded-xl bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-base md:text-sm focus:outline-none focus:border-indigo-500" }),
-                        React.createElement("div", { className: "flex justify-end gap-3" }, React.createElement("button", { onClick: onClose, className: "px-6 py-3 md:py-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-white font-bold rounded-xl active:scale-95" }, "Cancel"), React.createElement("button", { onClick: handleSave, className: "px-8 py-3 md:py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 shadow-glow-sm active:scale-95" }, "Save"))
+                        React.createElement("input", { value: key, onChange: e => setKey(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), type: "password", placeholder: "Anon Key", className: "w-full mb-4 p-4 rounded-xl bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-base md:text-sm focus:outline-none focus:border-indigo-500" }),
+                        React.createElement("button", { onClick: handleTestConnection, disabled: !url.trim() || !key.trim() || testing, type: "button", className: "mb-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-xl font-bold text-sm hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed" }, testing ? "Testing..." : "Test Connection"),
+                        testStatus && React.createElement("p", { className: `text-sm mb-4 ${testStatus.ok ? 'text-emerald-500' : 'text-red-500'}` }, testStatus.message),
+                        React.createElement("div", { className: "flex justify-end gap-3 mt-2" }, React.createElement("button", { onClick: onClose, className: "px-6 py-3 md:py-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-white font-bold rounded-xl active:scale-95" }, "Cancel"), React.createElement("button", { onClick: handleSave, className: "px-8 py-3 md:py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 shadow-glow-sm active:scale-95" }, "Save"))
                     )
                 )
             );
@@ -1465,7 +1482,7 @@
                             if (!mounted) return;
 
                             if(bRes.data) setDumps(bRes.data);
-                            if(mRes.data && mRes.data.length > 0) { setMeals(mRes.data); } else { setMeals(DEFAULT_MEALS); }
+                            if(mRes.data && mRes.data.length > 0) setMeals(mRes.data);
                             if(lRes.data && lRes.data.length > 0) setBooks(lRes.data);
                             if(tRes.data) setTasks(tRes.data.sort((a,b) => (a.order_index || 0) - (b.order_index || 0)));
                             if(oRes.data) setOvertimeEntries(oRes.data);
@@ -1590,11 +1607,9 @@
                 const plan = JSON.parse(jsonMatch[0]);
                 const planWithUser = plan.map(item => ({ ...item, id: generateUUID(), user_id: user.id }));
                 setMeals(planWithUser);
-                
                 if (!user.isLocal && isSupabaseConfigured) {
-                    supabase.from('meals').delete().eq('user_id', user.id).then(() => {
-                        supabase.from('meals').insert(planWithUser).then();
-                    });
+                    await supabase.from('meals').delete().eq('user_id', user.id);
+                    await supabase.from('meals').insert(planWithUser);
                 }
             };
 
@@ -1631,19 +1646,15 @@
                     const exists = prev.find(m => m.day === day && m.type === type);
                     const id = exists ? exists.id : generateUUID();
                     const newItem = { id, day, type, text, user_id: user?.id };
-                    
-                    if (!user?.isLocal && isSupabaseConfigured) {
-                        supabase.from('meals').upsert(newItem).then();
-                    }
-
+                    if (!user.isLocal && isSupabaseConfigured) supabase.from('meals').upsert(newItem).then();
                     if(exists) return prev.map(m => m.id === id ? newItem : m);
                     return [...prev, newItem];
                 });
             };
             
-            const handleAddBook = (book) => { const newItem = { ...book, id: generateUUID(), user_id: user?.id }; setBooks(prev => [...prev, newItem]); if (isSupabaseConfigured) supabase.from('library').insert(newItem).then(); };
-            const handleDeleteBook = (id) => { setBooks(prev => prev.filter(b => b.id !== id)); if (isSupabaseConfigured) supabase.from('library').delete().eq('id', id).then(); };
-            const handleUpdateBook = (item) => { setBooks(prev => prev.map(b => b.id === item.id ? item : b)); if (isSupabaseConfigured) supabase.from('library').update(item).eq('id', item.id).then(); };
+            const handleAddBook = (book) => { const newItem = { ...book, id: generateUUID(), user_id: user?.id }; setBooks(prev => [...prev, newItem]); if (!user.isLocal && isSupabaseConfigured) supabase.from('library').insert(newItem).then(); };
+            const handleDeleteBook = (id) => { setBooks(prev => prev.filter(b => b.id !== id)); if (!user.isLocal && isSupabaseConfigured) supabase.from('library').delete().eq('id', id).then(); };
+            const handleUpdateBook = (item) => { setBooks(prev => prev.map(b => b.id === item.id ? item : b)); if (!user.isLocal && isSupabaseConfigured) supabase.from('library').update(item).eq('id', item.id).then(); };
 
             const handleUpdateDashboard = (newData) => setDashboardData(newData);
             const handleUpdateDailyPlan = (newData) => setDailyPlan(newData);
