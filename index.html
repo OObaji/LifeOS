@@ -1465,13 +1465,12 @@
                             if (!mounted) return;
 
                             if(bRes.data) setDumps(bRes.data);
-                            if(mRes.data && mRes.data.length > 0) setMeals(mRes.data);
+                            if(mRes.data && mRes.data.length > 0) { setMeals(mRes.data); } else { setMeals(DEFAULT_MEALS); }
                             if(lRes.data && lRes.data.length > 0) setBooks(lRes.data);
                             if(tRes.data) setTasks(tRes.data.sort((a,b) => (a.order_index || 0) - (b.order_index || 0)));
                             if(oRes.data) setOvertimeEntries(oRes.data);
 
                             if(aRes.data) { 
-                                if(aRes.data.meals) setMeals(aRes.data.meals);
                                 if(aRes.data.goals_2026) {
                                     const gData = aRes.data.goals_2026;
                                     if (gData.mission !== undefined || gData.mainFocus !== undefined) {
@@ -1563,7 +1562,6 @@
                                 countdowns: countdowns,
                                 idea_notes: ideaNotes,
                                 overtime_target: overtimeTarget,
-                                meals: meals,
                                 updated_at: new Date().toISOString()
                             }, { onConflict: 'user_id' });
                         } catch(e) { console.error("Cloud sync failed:", e); }
@@ -1592,6 +1590,12 @@
                 const plan = JSON.parse(jsonMatch[0]);
                 const planWithUser = plan.map(item => ({ ...item, id: generateUUID(), user_id: user.id }));
                 setMeals(planWithUser);
+                
+                if (!user.isLocal && isSupabaseConfigured) {
+                    supabase.from('meals').delete().eq('user_id', user.id).then(() => {
+                        supabase.from('meals').insert(planWithUser).then();
+                    });
+                }
             };
 
             const generateBookRecommendations = async (goals) => {
@@ -1627,6 +1631,11 @@
                     const exists = prev.find(m => m.day === day && m.type === type);
                     const id = exists ? exists.id : generateUUID();
                     const newItem = { id, day, type, text, user_id: user?.id };
+                    
+                    if (!user?.isLocal && isSupabaseConfigured) {
+                        supabase.from('meals').upsert(newItem).then();
+                    }
+
                     if(exists) return prev.map(m => m.id === id ? newItem : m);
                     return [...prev, newItem];
                 });
