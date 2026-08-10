@@ -1530,6 +1530,26 @@
             }, [user]);
 
             useEffect(() => {
+                if (!user || !user.isLocal || !isSupabaseConfigured) return;
+                let mounted = true;
+                const fetchCloudLibraryAndMeals = async () => {
+                    try {
+                        const [mRes, lRes] = await Promise.all([
+                            supabase.from('meals').select('*').eq('user_id', user.id),
+                            supabase.from('library').select('*').eq('user_id', user.id)
+                        ]);
+                        if (!mounted) return;
+                        if (mRes.data && mRes.data.length > 0) setMeals(mRes.data);
+                        if (lRes.data && lRes.data.length > 0) setBooks(lRes.data);
+                    } catch (err) {
+                        console.error("Cloud meals/library fetch failed.", err);
+                    }
+                };
+                fetchCloudLibraryAndMeals();
+                return () => { mounted = false; };
+            }, [user, isSupabaseConfigured]);
+
+            useEffect(() => {
                 if (!user || !isDataLoaded) return;
 
                 if (user.isLocal) {
@@ -1590,7 +1610,7 @@
                 const plan = JSON.parse(jsonMatch[0]);
                 const planWithUser = plan.map(item => ({ ...item, id: generateUUID(), user_id: user.id }));
                 setMeals(planWithUser);
-                if (!user.isLocal && isSupabaseConfigured) {
+                if (isSupabaseConfigured) {
                     await supabase.from('meals').delete().eq('user_id', user.id);
                     await supabase.from('meals').insert(planWithUser);
                 }
@@ -1629,15 +1649,15 @@
                     const exists = prev.find(m => m.day === day && m.type === type);
                     const id = exists ? exists.id : generateUUID();
                     const newItem = { id, day, type, text, user_id: user?.id };
-                    if (!user.isLocal && isSupabaseConfigured) supabase.from('meals').upsert(newItem).then();
+                    if (isSupabaseConfigured) supabase.from('meals').upsert(newItem).then();
                     if(exists) return prev.map(m => m.id === id ? newItem : m);
                     return [...prev, newItem];
                 });
             };
             
-            const handleAddBook = (book) => { const newItem = { ...book, id: generateUUID(), user_id: user?.id }; setBooks(prev => [...prev, newItem]); if (!user.isLocal && isSupabaseConfigured) supabase.from('library').insert(newItem).then(); };
-            const handleDeleteBook = (id) => { setBooks(prev => prev.filter(b => b.id !== id)); if (!user.isLocal && isSupabaseConfigured) supabase.from('library').delete().eq('id', id).then(); };
-            const handleUpdateBook = (item) => { setBooks(prev => prev.map(b => b.id === item.id ? item : b)); if (!user.isLocal && isSupabaseConfigured) supabase.from('library').update(item).eq('id', item.id).then(); };
+            const handleAddBook = (book) => { const newItem = { ...book, id: generateUUID(), user_id: user?.id }; setBooks(prev => [...prev, newItem]); if (isSupabaseConfigured) supabase.from('library').insert(newItem).then(); };
+            const handleDeleteBook = (id) => { setBooks(prev => prev.filter(b => b.id !== id)); if (isSupabaseConfigured) supabase.from('library').delete().eq('id', id).then(); };
+            const handleUpdateBook = (item) => { setBooks(prev => prev.map(b => b.id === item.id ? item : b)); if (isSupabaseConfigured) supabase.from('library').update(item).eq('id', item.id).then(); };
 
             const handleUpdateDashboard = (newData) => setDashboardData(newData);
             const handleUpdateDailyPlan = (newData) => setDailyPlan(newData);
