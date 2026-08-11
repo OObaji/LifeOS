@@ -72,10 +72,13 @@
         const decodeJwtPayload = (token) => { const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'); const json = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); return JSON.parse(json); };
         const LocalAuth = { user: JSON.parse(localStorage.getItem('lifeos_user')) || null, login: (email, password) => { if (password.length < 3) throw new Error("Password too short"); const user = { id: 'local_user', email, isLocal: true }; localStorage.setItem('lifeos_user', JSON.stringify(user)); return user; }, signup: (email, password) => LocalAuth.login(email, password), logout: () => { localStorage.removeItem('lifeos_user'); return null; } };
 
+        const DEFAULT_SUPABASE_URL = "https://lquxwdnaqxcfsmgmguxn.supabase.co";
+        const DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxdXh3ZG5hcXhjZnNtZ21ndXhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzOTU3NDEsImV4cCI6MjEwMTk3MTc0MX0.jEHiwO-HxDr9jGcQmm-ZpEgwcRwrCZKVdV8KBca6FUw";
+
         let _supabaseClient = null, _supabaseClientKey = null;
         const getSupabase = () => {
-            const url = (localStorage.getItem('lifeos_supabase_url') || '').trim();
-            const key = (localStorage.getItem('lifeos_supabase_key') || '').trim();
+            const url = (localStorage.getItem('lifeos_supabase_url') || DEFAULT_SUPABASE_URL).trim();
+            const key = (localStorage.getItem('lifeos_supabase_key') || DEFAULT_SUPABASE_KEY).trim();
             if (!url || !key) return null;
             const cacheKey = url + '|' + key;
             if (_supabaseClient && _supabaseClientKey === cacheKey) return _supabaseClient;
@@ -395,8 +398,8 @@
 
         const SettingsView = ({ onClose, onSave }) => {
             const [googleClientId, setGoogleClientId] = useState(localStorage.getItem('lifeos_google_client_id') || "");
-            const [supabaseUrl, setSupabaseUrl] = useState(localStorage.getItem('lifeos_supabase_url') || "");
-            const [supabaseKey, setSupabaseKey] = useState(localStorage.getItem('lifeos_supabase_key') || "");
+            const [supabaseUrl, setSupabaseUrl] = useState(localStorage.getItem('lifeos_supabase_url') || DEFAULT_SUPABASE_URL);
+            const [supabaseKey, setSupabaseKey] = useState(localStorage.getItem('lifeos_supabase_key') || DEFAULT_SUPABASE_KEY);
             const handleSave = () => {
                 localStorage.setItem('lifeos_google_client_id', googleClientId.trim());
                 localStorage.setItem('lifeos_supabase_url', supabaseUrl.trim());
