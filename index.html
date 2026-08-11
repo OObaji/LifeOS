@@ -1159,6 +1159,8 @@
             const [user, setUser] = useState(null);
             const [showSettings, setShowSettings] = useState(false);
             const cloudRefs = useRef({ dumps: [], meals: [], books: [], tasks: [] });
+            const suppressRealtimeRef = useRef(false);
+            const saveTimerRef = useRef(null);
             const [dumps, setDumps] = useState([]);
             const [countdowns, setCountdowns] = useState([]);
             const [ideaNotes, setIdeaNotes] = useState([]);
@@ -1304,30 +1306,35 @@
                 const isCloud = !!(user.isCloud && supabase);
 
                 if (isCloud) {
-                    (async () => {
-                        const prev = cloudRefs.current;
-                        await Promise.all([
-                            syncListToSupabase(supabase, 'brain_dumps', user.id, prev.dumps, dumps),
-                            syncListToSupabase(supabase, 'meals', user.id, prev.meals, meals),
-                            syncListToSupabase(supabase, 'library', user.id, prev.books, books),
-                            syncListToSupabase(supabase, 'tasks', user.id, prev.tasks, tasks),
-                        ]);
-                        try {
-                            await supabase.from('app_data').upsert({
-                                user_id: user.id,
-                                goals_2026: goalsData,
-                                dashboard_config: dashboardData,
-                                book_categories: bookCategories,
-                                book_planner: bookPlannerData,
-                                daily_plan: dailyPlan,
-                                monthly_plan: monthlyPlan,
-                                countdowns,
-                                idea_notes: ideaNotes,
-                                updated_at: new Date().toISOString()
-                            });
-                        } catch (err) { console.error("Cloud sync failed for app_data:", err); }
-                        cloudRefs.current = { dumps, meals, books, tasks };
-                    })();
+                    suppressRealtimeRef.current = true;
+                    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+                    saveTimerRef.current = setTimeout(() => {
+                        (async () => {
+                            const prev = cloudRefs.current;
+                            await Promise.all([
+                                syncListToSupabase(supabase, 'brain_dumps', user.id, prev.dumps, dumps),
+                                syncListToSupabase(supabase, 'meals', user.id, prev.meals, meals),
+                                syncListToSupabase(supabase, 'library', user.id, prev.books, books),
+                                syncListToSupabase(supabase, 'tasks', user.id, prev.tasks, tasks),
+                            ]);
+                            try {
+                                await supabase.from('app_data').upsert({
+                                    user_id: user.id,
+                                    goals_2026: goalsData,
+                                    dashboard_config: dashboardData,
+                                    book_categories: bookCategories,
+                                    book_planner: bookPlannerData,
+                                    daily_plan: dailyPlan,
+                                    monthly_plan: monthlyPlan,
+                                    countdowns,
+                                    idea_notes: ideaNotes,
+                                    updated_at: new Date().toISOString()
+                                });
+                            } catch (err) { console.error("Cloud sync failed for app_data:", err); }
+                            cloudRefs.current = { dumps, meals, books, tasks };
+                            setTimeout(() => { suppressRealtimeRef.current = false; }, 500);
+                        })();
+                    }, 600);
                 } else {
                     const prefix = `lifeos_data_${user.id}_`;
                     localStorage.setItem(`${prefix}dumps`, JSON.stringify(dumps));
@@ -1351,6 +1358,7 @@
                 if (!(user.isCloud && supabase)) return;
 
                 const applyListChange = (setList, key) => (payload) => {
+                    if (suppressRealtimeRef.current) return;
                     setList(prev => {
                         const next = mergeRealtimeChange(prev, payload);
                         if (next !== prev) cloudRefs.current[key] = next;
@@ -1367,6 +1375,7 @@
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'library', filter: `user_id=eq.${user.id}` }, applyListChange(setBooks, 'books'))
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.id}` }, applyListChange(setTasks, 'tasks'))
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'app_data', filter: `user_id=eq.${user.id}` }, (payload) => {
+                        if (suppressRealtimeRef.current) return;
                         const row = payload.new;
                         if (!row) return;
                         applyIfChanged(setGoalsData)(row.goals_2026 || { [new Date().getFullYear()]: DEFAULT_SINGLE_YEAR_GOALS });
