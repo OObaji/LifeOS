@@ -1309,6 +1309,215 @@
             );
         };
 
+        const BIBLE_BOOKS = [
+            { name: 'Genesis', testament: 'Old', category: 'Law', chapters: 50 }, { name: 'Exodus', testament: 'Old', category: 'Law', chapters: 40 },
+            { name: 'Leviticus', testament: 'Old', category: 'Law', chapters: 27 }, { name: 'Numbers', testament: 'Old', category: 'Law', chapters: 36 },
+            { name: 'Deuteronomy', testament: 'Old', category: 'Law', chapters: 34 },
+            { name: 'Joshua', testament: 'Old', category: 'History', chapters: 24 }, { name: 'Judges', testament: 'Old', category: 'History', chapters: 21 },
+            { name: 'Ruth', testament: 'Old', category: 'History', chapters: 4 }, { name: '1 Samuel', testament: 'Old', category: 'History', chapters: 31 },
+            { name: '2 Samuel', testament: 'Old', category: 'History', chapters: 24 }, { name: '1 Kings', testament: 'Old', category: 'History', chapters: 22 },
+            { name: '2 Kings', testament: 'Old', category: 'History', chapters: 25 }, { name: '1 Chronicles', testament: 'Old', category: 'History', chapters: 29 },
+            { name: '2 Chronicles', testament: 'Old', category: 'History', chapters: 36 }, { name: 'Ezra', testament: 'Old', category: 'History', chapters: 10 },
+            { name: 'Nehemiah', testament: 'Old', category: 'History', chapters: 13 }, { name: 'Esther', testament: 'Old', category: 'History', chapters: 10 },
+            { name: 'Job', testament: 'Old', category: 'Wisdom', chapters: 42 }, { name: 'Psalms', testament: 'Old', category: 'Wisdom', chapters: 150 },
+            { name: 'Proverbs', testament: 'Old', category: 'Wisdom', chapters: 31 }, { name: 'Ecclesiastes', testament: 'Old', category: 'Wisdom', chapters: 12 },
+            { name: 'Song of Solomon', testament: 'Old', category: 'Wisdom', chapters: 8 },
+            { name: 'Isaiah', testament: 'Old', category: 'Major Prophets', chapters: 66 }, { name: 'Jeremiah', testament: 'Old', category: 'Major Prophets', chapters: 52 },
+            { name: 'Lamentations', testament: 'Old', category: 'Major Prophets', chapters: 5 }, { name: 'Ezekiel', testament: 'Old', category: 'Major Prophets', chapters: 48 },
+            { name: 'Daniel', testament: 'Old', category: 'Major Prophets', chapters: 12 },
+            { name: 'Hosea', testament: 'Old', category: 'Minor Prophets', chapters: 14 }, { name: 'Joel', testament: 'Old', category: 'Minor Prophets', chapters: 3 },
+            { name: 'Amos', testament: 'Old', category: 'Minor Prophets', chapters: 9 }, { name: 'Obadiah', testament: 'Old', category: 'Minor Prophets', chapters: 1 },
+            { name: 'Jonah', testament: 'Old', category: 'Minor Prophets', chapters: 4 }, { name: 'Micah', testament: 'Old', category: 'Minor Prophets', chapters: 7 },
+            { name: 'Nahum', testament: 'Old', category: 'Minor Prophets', chapters: 3 }, { name: 'Habakkuk', testament: 'Old', category: 'Minor Prophets', chapters: 3 },
+            { name: 'Zephaniah', testament: 'Old', category: 'Minor Prophets', chapters: 3 }, { name: 'Haggai', testament: 'Old', category: 'Minor Prophets', chapters: 2 },
+            { name: 'Zechariah', testament: 'Old', category: 'Minor Prophets', chapters: 14 }, { name: 'Malachi', testament: 'Old', category: 'Minor Prophets', chapters: 4 },
+            { name: 'Matthew', testament: 'New', category: 'Gospels', chapters: 28 }, { name: 'Mark', testament: 'New', category: 'Gospels', chapters: 16 },
+            { name: 'Luke', testament: 'New', category: 'Gospels', chapters: 24 }, { name: 'John', testament: 'New', category: 'Gospels', chapters: 21 },
+            { name: 'Acts', testament: 'New', category: 'History', chapters: 28 },
+            { name: 'Romans', testament: 'New', category: 'Pauline Epistles', chapters: 16 }, { name: '1 Corinthians', testament: 'New', category: 'Pauline Epistles', chapters: 16 },
+            { name: '2 Corinthians', testament: 'New', category: 'Pauline Epistles', chapters: 13 }, { name: 'Galatians', testament: 'New', category: 'Pauline Epistles', chapters: 6 },
+            { name: 'Ephesians', testament: 'New', category: 'Pauline Epistles', chapters: 6 }, { name: 'Philippians', testament: 'New', category: 'Pauline Epistles', chapters: 4 },
+            { name: 'Colossians', testament: 'New', category: 'Pauline Epistles', chapters: 4 }, { name: '1 Thessalonians', testament: 'New', category: 'Pauline Epistles', chapters: 5 },
+            { name: '2 Thessalonians', testament: 'New', category: 'Pauline Epistles', chapters: 3 }, { name: '1 Timothy', testament: 'New', category: 'Pauline Epistles', chapters: 6 },
+            { name: '2 Timothy', testament: 'New', category: 'Pauline Epistles', chapters: 4 }, { name: 'Titus', testament: 'New', category: 'Pauline Epistles', chapters: 3 },
+            { name: 'Philemon', testament: 'New', category: 'Pauline Epistles', chapters: 1 },
+            { name: 'Hebrews', testament: 'New', category: 'General Epistles', chapters: 13 }, { name: 'James', testament: 'New', category: 'General Epistles', chapters: 5 },
+            { name: '1 Peter', testament: 'New', category: 'General Epistles', chapters: 5 }, { name: '2 Peter', testament: 'New', category: 'General Epistles', chapters: 3 },
+            { name: '1 John', testament: 'New', category: 'General Epistles', chapters: 5 }, { name: '2 John', testament: 'New', category: 'General Epistles', chapters: 1 },
+            { name: '3 John', testament: 'New', category: 'General Epistles', chapters: 1 }, { name: 'Jude', testament: 'New', category: 'General Epistles', chapters: 1 },
+            { name: 'Revelation', testament: 'New', category: 'Apocalyptic', chapters: 22 }
+        ];
+
+        const BiblePlanView = ({ bibleBookNotes, onGenerateBookInsights, bibleTopicSearches, onGenerateTopicRecommendation, biblePlan, onGeneratePlanDays, onMarkDayDone }) => {
+            const [testamentFilter, setTestamentFilter] = useState('Old');
+            const [selectedBook, setSelectedBook] = useState(null);
+            const [isGeneratingBook, setIsGeneratingBook] = useState(false);
+            const [bookError, setBookError] = useState(null);
+            const [topicInput, setTopicInput] = useState("");
+            const [isSearchingTopic, setIsSearchingTopic] = useState(false);
+            const [topicError, setTopicError] = useState(null);
+            const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+            const [planError, setPlanError] = useState(null);
+
+            const days = biblePlan.days || [];
+            const completedDays = biblePlan.completedDays || [];
+            const sortedDays = [...days].sort((a, b) => a.day - b.day);
+            const nextEntry = sortedDays.find(d => !completedDays.includes(d.day));
+            const priorThemes = [...new Set(sortedDays.map(d => d.theme))];
+
+            const openBook = async (book) => {
+                setSelectedBook(book);
+                setBookError(null);
+                if (bibleBookNotes[book.name]) return;
+                setIsGeneratingBook(true);
+                try {
+                    await onGenerateBookInsights(book.name);
+                } catch (err) {
+                    console.error(err);
+                    setBookError(err.message || "Couldn't generate insights right now. Please try again.");
+                } finally {
+                    setIsGeneratingBook(false);
+                }
+            };
+
+            const handleTopicSearch = async () => {
+                if (!topicInput.trim() || isSearchingTopic) return;
+                setIsSearchingTopic(true);
+                setTopicError(null);
+                try {
+                    await onGenerateTopicRecommendation(topicInput.trim());
+                    setTopicInput("");
+                } catch (err) {
+                    console.error(err);
+                    setTopicError(err.message || "Couldn't find a recommendation right now. Please try again.");
+                } finally {
+                    setIsSearchingTopic(false);
+                }
+            };
+
+            const handleGeneratePlan = async () => {
+                if (isGeneratingPlan) return;
+                setIsGeneratingPlan(true);
+                setPlanError(null);
+                try {
+                    const startDay = days.length > 0 ? Math.max(...days.map(d => d.day)) + 1 : 1;
+                    await onGeneratePlanDays(startDay, priorThemes);
+                } catch (err) {
+                    console.error(err);
+                    setPlanError(err.message || "Couldn't generate the plan right now. Please try again.");
+                } finally {
+                    setIsGeneratingPlan(false);
+                }
+            };
+
+            const bookNotes = selectedBook ? bibleBookNotes[selectedBook.name] : null;
+
+            return React.createElement("div", { className: "p-4 md:p-8 pb-32 max-w-7xl mx-auto h-full overflow-y-auto no-scrollbar space-y-8" },
+                React.createElement("div", null,
+                    React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(BookOpen, { className: "text-indigo-500" }), "Bible Plan"),
+                    React.createElement("p", { className: "text-zinc-500 text-sm mt-1" }, "Read with understanding — daily guidance, book insights, and answers to what you want to learn.")
+                ),
+
+                React.createElement("div", { className: "relative overflow-hidden rounded-3xl p-8 border border-indigo-200/50 dark:border-indigo-500/20 bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-700 shadow-xl shadow-indigo-500/20" },
+                    React.createElement("div", { className: "flex items-center gap-2 mb-4 text-indigo-100 text-xs font-bold uppercase tracking-widest" }, React.createElement(CalendarIcon, { size: 14 }), "Today's Reading"),
+                    !nextEntry ? React.createElement("div", null,
+                        React.createElement("p", { className: "text-white text-lg mb-5" }, days.length === 0 ? "No plan yet — let AI build one for you, grouped into themes you can go deep on." : "You're caught up on everything generated so far. Ready for the next stretch?"),
+                        planError && React.createElement("p", { className: "text-red-200 text-sm mb-3" }, planError),
+                        React.createElement("button", { onClick: handleGeneratePlan, disabled: isGeneratingPlan, className: "flex items-center gap-2 px-6 py-3 bg-white text-indigo-700 rounded-xl font-bold hover:bg-indigo-50 transition-all active:scale-95 disabled:opacity-50" },
+                            isGeneratingPlan ? React.createElement(Loader2, { size: 18, className: "animate-spin" }) : React.createElement(Sparkles, { size: 18 }),
+                            isGeneratingPlan ? "Building..." : (days.length === 0 ? "Generate My Plan" : "Generate Next Stretch")
+                        )
+                    ) : React.createElement("div", null,
+                        React.createElement("div", { className: "flex items-center gap-3 mb-2 flex-wrap" },
+                            React.createElement("span", { className: "text-xs font-bold text-indigo-100 bg-white/15 px-3 py-1 rounded-full" }, `Day ${nextEntry.day}`),
+                            React.createElement("span", { className: "text-xs font-bold text-indigo-100 bg-white/15 px-3 py-1 rounded-full" }, nextEntry.theme)
+                        ),
+                        React.createElement("h3", { className: "text-2xl md:text-3xl font-bold text-white mb-2" }, nextEntry.reference),
+                        React.createElement("p", { className: "text-indigo-100 mb-5" }, nextEntry.blurb),
+                        React.createElement("div", { className: "flex items-center gap-3 flex-wrap" },
+                            React.createElement("button", { onClick: () => onMarkDayDone(nextEntry.day), className: "flex items-center gap-2 px-6 py-3 bg-white text-indigo-700 rounded-xl font-bold hover:bg-indigo-50 transition-all active:scale-95" }, React.createElement(Check, { size: 18 }), "Mark as Read"),
+                            React.createElement("span", { className: "text-indigo-100 text-xs font-medium" }, `${completedDays.length} day${completedDays.length === 1 ? '' : 's'} completed`)
+                        )
+                    )
+                ),
+
+                React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-sm" },
+                    React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4 flex items-center gap-2" }, React.createElement(Search, { size: 14 }), "What do you want to learn about?"),
+                    React.createElement("div", { className: "flex gap-2 mb-4" },
+                        React.createElement("input", { value: topicInput, onChange: e => setTopicInput(e.target.value), onKeyDown: e => { if (e.key === 'Enter') handleTopicSearch(); }, placeholder: "e.g. forgiveness, patience, leadership", className: "flex-1 p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl outline-none text-zinc-900 dark:text-white focus:border-indigo-500 transition-colors text-base md:text-sm" }),
+                        React.createElement("button", { onClick: handleTopicSearch, disabled: isSearchingTopic || !topicInput.trim(), className: "flex items-center gap-2 px-5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 transition-colors active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shrink-0" },
+                            isSearchingTopic ? React.createElement(Loader2, { size: 18, className: "animate-spin" }) : React.createElement(Sparkles, { size: 18 })
+                        )
+                    ),
+                    topicError && React.createElement("p", { className: "text-red-500 text-sm mb-4" }, topicError),
+                    bibleTopicSearches.length === 0 ? React.createElement("p", { className: "text-zinc-400 text-sm italic" }, "Ask about anything you want to understand — it'll point you to the book and passage that teaches it.") :
+                        React.createElement("div", { className: "space-y-3" },
+                            bibleTopicSearches.slice(0, 6).map(t => React.createElement("div", { key: t.id, className: "bg-zinc-50 dark:bg-black/20 rounded-2xl p-4" },
+                                React.createElement("div", { className: "flex items-center gap-2 mb-1 flex-wrap" },
+                                    React.createElement("span", { className: "text-xs font-bold text-zinc-400" }, `"${t.query}"`, " →"),
+                                    React.createElement("span", { className: "text-sm font-bold text-indigo-600 dark:text-indigo-400" }, t.book),
+                                    t.reference && React.createElement("span", { className: "text-xs text-zinc-500" }, t.reference)
+                                ),
+                                React.createElement("p", { className: "text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed" }, t.explanation)
+                            ))
+                        )
+                ),
+
+                React.createElement("div", null,
+                    React.createElement("div", { className: "flex items-center justify-between mb-4 gap-3 flex-wrap" },
+                        React.createElement("h3", { className: "text-xl font-bold text-zinc-900 dark:text-white" }, "Explore the Books"),
+                        React.createElement("div", { className: "flex gap-2 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-full" },
+                            ['Old', 'New'].map(t => React.createElement("button", { key: t, onClick: () => setTestamentFilter(t), className: `px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${testamentFilter === t ? 'bg-indigo-600 text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}` }, t === 'Old' ? 'Old Testament' : 'New Testament'))
+                        )
+                    ),
+                    React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3" },
+                        BIBLE_BOOKS.filter(b => b.testament === testamentFilter).map(book => React.createElement("button", { key: book.name, onClick: () => openBook(book), className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 text-left hover:border-indigo-500/50 hover:shadow-md transition-all active:scale-95" },
+                            React.createElement("h4", { className: "font-bold text-sm text-zinc-900 dark:text-white leading-tight" }, book.name),
+                            React.createElement("p", { className: "text-[10px] text-zinc-400 mt-1" }, book.category),
+                            bibleBookNotes[book.name] && React.createElement("span", { className: "inline-flex items-center gap-1 text-[10px] font-bold text-emerald-500 mt-2" }, React.createElement(Check, { size: 10 }), "Explored")
+                        ))
+                    )
+                ),
+
+                selectedBook && React.createElement("div", { className: "fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm overflow-y-auto" },
+                    React.createElement("div", { className: "flex min-h-full items-start justify-center p-4 sm:p-8" },
+                        React.createElement("div", { className: "my-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-2xl p-6 md:p-8 shadow-2xl shrink-0" },
+                            React.createElement("div", { className: "flex justify-between items-start mb-4" },
+                                React.createElement("div", null,
+                                    React.createElement("h2", { className: "text-2xl font-bold text-zinc-900 dark:text-white" }, selectedBook.name),
+                                    React.createElement("p", { className: "text-xs text-zinc-400 mt-1" }, `${selectedBook.testament} Testament · ${selectedBook.category} · ${selectedBook.chapters} chapters`)
+                                ),
+                                React.createElement("button", { onClick: () => setSelectedBook(null), className: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 -m-2 active:scale-90" }, React.createElement(X, { size: 24 }))
+                            ),
+                            isGeneratingBook ? React.createElement("div", { className: "py-16 flex flex-col items-center justify-center text-zinc-400" }, React.createElement(Loader2, { size: 32, className: "animate-spin mb-3" }), "Generating insights...") :
+                            bookError ? React.createElement("p", { className: "text-red-500 text-sm py-8 text-center" }, bookError) :
+                            bookNotes ? React.createElement("div", { className: "space-y-6" },
+                                React.createElement("div", null,
+                                    React.createElement("h3", { className: "text-xs font-bold text-indigo-500 uppercase tracking-widest mb-2" }, "What it's about"),
+                                    React.createElement("p", { className: "text-zinc-700 dark:text-zinc-300 leading-relaxed" }, bookNotes.summary)
+                                ),
+                                React.createElement("div", null,
+                                    React.createElement("h3", { className: "text-xs font-bold text-indigo-500 uppercase tracking-widest mb-2" }, "Real-world teaching"),
+                                    React.createElement("p", { className: "text-zinc-700 dark:text-zinc-300 leading-relaxed" }, bookNotes.teaching)
+                                ),
+                                bookNotes.people && bookNotes.people.length > 0 && React.createElement("div", null,
+                                    React.createElement("h3", { className: "text-xs font-bold text-indigo-500 uppercase tracking-widest mb-3" }, "Key people"),
+                                    React.createElement("div", { className: "space-y-2" },
+                                        bookNotes.people.map((p, i) => React.createElement("div", { key: i, className: "flex gap-3 bg-zinc-50 dark:bg-black/20 rounded-xl p-3" },
+                                            React.createElement(User, { size: 16, className: "text-zinc-400 shrink-0 mt-0.5" }),
+                                            React.createElement("div", null,
+                                                React.createElement("span", { className: "font-bold text-sm text-zinc-900 dark:text-white" }, p.name),
+                                                React.createElement("p", { className: "text-sm text-zinc-500" }, p.note)
+                                            )
+                                        ))
+                                    )
+                                )
+                            ) : null
+                        )
+                    )
+                )
+            );
+        };
 
         const App = () => {
             const tabConfig = {
@@ -1323,6 +1532,7 @@
                 bookPlanner: { label: "Book Planner", icon: Sparkles },
                 food: { label: "Nutrition", icon: Utensils },
                 countdown: { label: "Countdown", icon: Hourglass },
+                biblePlan: { label: "Bible Plan", icon: BookOpen },
                 profile: { label: "Profile", icon: User }
             };
             const VALID_TABS = Object.keys(tabConfig);
@@ -1352,6 +1562,9 @@
             const [monthlyPlan, setMonthlyPlan] = useState({ weeks: { week1: [], week2: [], week3: [], week4: [] } });
             const [foodBank, setFoodBank] = useState([]);
             const [supplements, setSupplements] = useState([]);
+            const [bibleBookNotes, setBibleBookNotes] = useState({});
+            const [bibleTopicSearches, setBibleTopicSearches] = useState([]);
+            const [biblePlan, setBiblePlan] = useState({ days: [], completedDays: [] });
 
             const [activeSound, setActiveSound] = useState(null);
             const [isPlayingSound, setIsPlayingSound] = useState(false);
@@ -1434,6 +1647,9 @@
                     setTasks(JSON.parse(localStorage.getItem(`${prefix}tasks`) || '[]'));
                     setFoodBank(JSON.parse(localStorage.getItem(`${prefix}food_bank`) || '[]'));
                     setSupplements(JSON.parse(localStorage.getItem(`${prefix}supplements`) || '[]'));
+                    setBibleBookNotes(JSON.parse(localStorage.getItem(`${prefix}bible_book_notes`) || '{}'));
+                    setBibleTopicSearches(JSON.parse(localStorage.getItem(`${prefix}bible_topic_searches`) || '[]'));
+                    setBiblePlan(JSON.parse(localStorage.getItem(`${prefix}bible_plan`) || JSON.stringify({ days: [], completedDays: [] })));
                 };
 
                 if (isCloud) {
@@ -1469,6 +1685,9 @@
                             setIdeaNotes(appData.idea_notes || []);
                             setFoodBank(appData.food_bank || []);
                             setSupplements(appData.supplements || []);
+                            setBibleBookNotes(appData.bible_book_notes || {});
+                            setBibleTopicSearches(appData.bible_topic_searches || []);
+                            setBiblePlan(appData.bible_plan || { days: [], completedDays: [] });
                             cloudRefs.current = { dumps: loadedDumps, meals: loadedMeals, books: loadedBooks, tasks: loadedTasks };
                             setIsDataLoaded(true);
                         } catch (err) {
@@ -1513,6 +1732,9 @@
                                     idea_notes: ideaNotes,
                                     food_bank: foodBank,
                                     supplements,
+                                    bible_book_notes: bibleBookNotes,
+                                    bible_topic_searches: bibleTopicSearches,
+                                    bible_plan: biblePlan,
                                     updated_at: new Date().toISOString()
                                 });
                             } catch (err) { console.error("Cloud sync failed for app_data:", err); }
@@ -1536,8 +1758,11 @@
                     localStorage.setItem(`${prefix}tasks`, JSON.stringify(tasks));
                     localStorage.setItem(`${prefix}food_bank`, JSON.stringify(foodBank));
                     localStorage.setItem(`${prefix}supplements`, JSON.stringify(supplements));
+                    localStorage.setItem(`${prefix}bible_book_notes`, JSON.stringify(bibleBookNotes));
+                    localStorage.setItem(`${prefix}bible_topic_searches`, JSON.stringify(bibleTopicSearches));
+                    localStorage.setItem(`${prefix}bible_plan`, JSON.stringify(biblePlan));
                 }
-            }, [dumps, meals, goalsData, dashboardData, books, bookCategories, bookPlannerData, dailyPlan, monthlyPlan, countdowns, ideaNotes, tasks, foodBank, supplements, user, isDataLoaded]);
+            }, [dumps, meals, goalsData, dashboardData, books, bookCategories, bookPlannerData, dailyPlan, monthlyPlan, countdowns, ideaNotes, tasks, foodBank, supplements, bibleBookNotes, bibleTopicSearches, biblePlan, user, isDataLoaded]);
 
             useEffect(() => {
                 if (!user || !isDataLoaded) return;
@@ -1575,6 +1800,9 @@
                         applyIfChanged(setIdeaNotes)(row.idea_notes || []);
                         applyIfChanged(setFoodBank)(row.food_bank || []);
                         applyIfChanged(setSupplements)(row.supplements || []);
+                        applyIfChanged(setBibleBookNotes)(row.bible_book_notes || {});
+                        applyIfChanged(setBibleTopicSearches)(row.bible_topic_searches || []);
+                        applyIfChanged(setBiblePlan)(row.bible_plan || { days: [], completedDays: [] });
                     })
                     .subscribe();
 
@@ -1626,6 +1854,28 @@
             const handleAddFoodBankItem = (item) => setFoodBank(prev => [...prev, { ...item, id: generateUUID() }]);
             const handleDeleteFoodBankItem = (id) => setFoodBank(prev => prev.filter(f => f.id !== id));
             const handleDeleteSupplement = (id) => setSupplements(prev => prev.filter(s => s.id !== id));
+
+            const generateBibleBookInsights = async (bookName) => {
+                const prompt = `Give a reader-friendly overview of the Bible book of ${bookName}. Include: (1) a 2-3 sentence summary of what the book is about, (2) a short paragraph on its main real-world teaching and practical application — what it teaches someone living today and why it's worth reading, (3) a list of the 3-6 most important people in the book with a one-sentence note on who each is and their role. Respond with ONLY raw JSON, no markdown fences, no commentary, in this exact shape: {"summary": string, "teaching": string, "people": [{"name": string, "note": string}]}.`;
+                const data = await callGemini(prompt, false);
+                setBibleBookNotes(prev => ({ ...prev, [bookName]: data }));
+            };
+
+            const generateBibleTopicRecommendation = async (topic) => {
+                const prompt = `Someone wants to learn about "${topic}" from the Bible. Recommend ONE specific book and passage/chapter(s) that best teaches this, and explain in 2-4 sentences why it's the best place to look and what they'll learn. Respond with ONLY raw JSON, no markdown fences, no commentary, in this exact shape: {"book": string, "reference": string, "explanation": string}.`;
+                const data = await callGemini(prompt, false);
+                const entry = { ...data, id: generateUUID(), query: topic, createdAt: new Date().toISOString() };
+                setBibleTopicSearches(prev => [entry, ...prev].slice(0, 20));
+            };
+
+            const generateBiblePlanDays = async (startDay, priorThemes) => {
+                const priorText = priorThemes.length ? `The reader has already completed these themes, so continue naturally without repeating them: ${priorThemes.join('; ')}.` : `This is the very start of their plan.`;
+                const prompt = `Create the next 14 days of a thematic daily Bible reading plan, starting at day ${startDay}. ${priorText} Group multiple consecutive days under the same theme (e.g. several days on the life of Joseph, then move to a new theme) so the reader builds real depth before moving on, rather than jumping around randomly. Each day should point to a short specific passage (a chapter or a small handful of chapters, not a whole book at once). Respond with ONLY a raw JSON array, no markdown fences, no commentary, where each item has this exact shape: {"day": number, "theme": string, "reference": string, "blurb": string}. "blurb" is one sentence on why that day's reading matters.`;
+                const newDays = await callGemini(prompt, false);
+                setBiblePlan(prev => ({ ...prev, days: [...prev.days, ...newDays] }));
+            };
+
+            const handleMarkBibleDayDone = (day) => setBiblePlan(prev => prev.completedDays.includes(day) ? prev : { ...prev, completedDays: [...prev.completedDays, day] });
 
             const handleLoginSuccess = (u) => { setUser(u); localStorage.setItem('lifeos_user_session', JSON.stringify(u)); };
             const handleLogout = async () => {
@@ -1713,6 +1963,7 @@
                     activeTab === 'bookPlanner' && React.createElement(BookPlannerView, { bookPlannerData, onUpdateBookPlanner: handleUpdateBookPlanner, onGenerate: generateBookRecommendations, books, categories: bookCategories, onAddBook: handleAddBook }),
                     activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal, foodBank, onAddFoodBankItem: handleAddFoodBankItem, onDeleteFoodBankItem: handleDeleteFoodBankItem, onGeneratePlan: generateNutritionPlan, supplements, onGenerateSupplements: generateSupplements, onDeleteSupplement: handleDeleteSupplement }),
                     activeTab === 'countdown' && React.createElement(CountdownView, { countdowns, onAdd: handleAddCountdown, onDelete: handleDeleteCountdown, onToggle: handleToggleCountdown, onUpdate: handleUpdateCountdown }),
+                    activeTab === 'biblePlan' && React.createElement(BiblePlanView, { bibleBookNotes, onGenerateBookInsights: generateBibleBookInsights, bibleTopicSearches, onGenerateTopicRecommendation: generateBibleTopicRecommendation, biblePlan, onGeneratePlanDays: generateBiblePlanDays, onMarkDayDone: handleMarkBibleDayDone }),
                     activeTab === 'profile' && React.createElement(ProfileView, { user, onLogout: handleLogout, onUpdateProfile: handleUpdateProfile })
                 ),
                 showSettings && React.createElement(SettingsView, { onClose: () => setShowSettings(false), onSave: () => setShowSettings(false) }),
