@@ -108,6 +108,18 @@
             }
         };
 
+        const mergeRealtimeChange = (prevList, payload) => {
+            if (payload.eventType === 'DELETE') {
+                if (!prevList.some(item => item.id === payload.old.id)) return prevList;
+                return prevList.filter(item => item.id !== payload.old.id);
+            }
+            const incoming = payload.new;
+            const idx = prevList.findIndex(item => item.id === incoming.id);
+            if (idx === -1) return [...prevList, incoming];
+            if (JSON.stringify(prevList[idx]) === JSON.stringify(incoming)) return prevList;
+            return prevList.map(item => item.id === incoming.id ? incoming : item);
+        };
+
         const DEFAULT_SINGLE_YEAR_GOALS = { mission: "Reshape my life by achieving financial stability, building iron discipline, and gaining clear direction for my future.", mainFocus: [{id: '1', text: 'Financial Freedom'}, {id: '2', text: 'Improved Fitness'}, {id: '3', text: 'Skill Mastery'}], dos: [], donts: [], milestones: [], quarters: { q1: [], q2: [], q3: [], q4: [] }, phases: { phase1: [], phase2: [], phase3: [] } };
         const DEFAULT_MEALS = [{ day: 'Monday', type: 'Breakfast', text: 'Oats + milk\n1 banana\n1 scoop protein powder' }];
         const DEFAULT_BOOK_CATEGORIES = ['General', 'Fiction', 'Non-Fiction', 'Self-Help', 'Technical'];
@@ -1333,6 +1345,44 @@
                 }
             }, [dumps, meals, goalsData, dashboardData, books, bookCategories, bookPlannerData, dailyPlan, monthlyPlan, countdowns, ideaNotes, tasks, user, isDataLoaded]);
 
+            useEffect(() => {
+                if (!user || !isDataLoaded) return;
+                const supabase = getSupabase();
+                if (!(user.isCloud && supabase)) return;
+
+                const applyListChange = (setList, key) => (payload) => {
+                    setList(prev => {
+                        const next = mergeRealtimeChange(prev, payload);
+                        if (next !== prev) cloudRefs.current[key] = next;
+                        return next;
+                    });
+                };
+                const applyIfChanged = (setter) => (val) => {
+                    setter(prev => JSON.stringify(prev) === JSON.stringify(val) ? prev : val);
+                };
+
+                const channel = supabase.channel(`lifeos-sync-${user.id}`)
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'brain_dumps', filter: `user_id=eq.${user.id}` }, applyListChange(setDumps, 'dumps'))
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'meals', filter: `user_id=eq.${user.id}` }, applyListChange(setMeals, 'meals'))
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'library', filter: `user_id=eq.${user.id}` }, applyListChange(setBooks, 'books'))
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.id}` }, applyListChange(setTasks, 'tasks'))
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'app_data', filter: `user_id=eq.${user.id}` }, (payload) => {
+                        const row = payload.new;
+                        if (!row) return;
+                        applyIfChanged(setGoalsData)(row.goals_2026 || { [new Date().getFullYear()]: DEFAULT_SINGLE_YEAR_GOALS });
+                        applyIfChanged(setDashboardData)(row.dashboard_config || {});
+                        applyIfChanged(setBookCategories)(row.book_categories || DEFAULT_BOOK_CATEGORIES);
+                        applyIfChanged(setBookPlannerData)(row.book_planner || { goals: [], recommendations: [], lastGeneratedAt: null });
+                        applyIfChanged(setDailyPlan)(row.daily_plan || { priorities: ['', '', ''], schedule: {}, notes: '', minorTasks: [] });
+                        applyIfChanged(setMonthlyPlan)(row.monthly_plan || { weeks: { week1: [], week2: [], week3: [], week4: [] } });
+                        applyIfChanged(setCountdowns)(row.countdowns || []);
+                        applyIfChanged(setIdeaNotes)(row.idea_notes || []);
+                    })
+                    .subscribe();
+
+                return () => { supabase.removeChannel(channel); };
+            }, [user, isDataLoaded]);
+
             const handleLoginSuccess = (u) => { setUser(u); localStorage.setItem('lifeos_user_session', JSON.stringify(u)); };
             const handleLogout = async () => {
                 const supabase = getSupabase();
@@ -1400,7 +1450,7 @@
 
             if (!user) return React.createElement(React.Fragment, null,
                 React.createElement(LandingPage, { onLoginSuccess: handleLoginSuccess, onGuestLogin: handleLoginSuccess, onOpenSettings: () => setShowSettings(true) }),
-                showSettings && React.createElement(SettingsView, { onClose: () => setShowSettings(false), onSave: () => window.location.reload() })
+                showSettings && React.createElement(SettingsView, { onClose: () => setShowSettings(false), onSave: () => setShowSettings(false) })
             );
 
             return React.createElement("div", { className: "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300" },
@@ -1421,7 +1471,7 @@
                     activeTab === 'countdown' && React.createElement(CountdownView, { countdowns, onAdd: handleAddCountdown, onDelete: handleDeleteCountdown, onToggle: handleToggleCountdown, onUpdate: handleUpdateCountdown }),
                     activeTab === 'profile' && React.createElement(ProfileView, { user, onLogout: handleLogout, onUpdateProfile: handleUpdateProfile })
                 ),
-                showSettings && React.createElement(SettingsView, { onClose: () => setShowSettings(false), onSave: () => window.location.reload() }),
+                showSettings && React.createElement(SettingsView, { onClose: () => setShowSettings(false), onSave: () => setShowSettings(false) }),
                 showTimerAlert && React.createElement("div", { className: "fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" },
                     React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-300" },
                         React.createElement("div", { className: "w-20 h-20 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-6" }, React.createElement(Timer, { size: 40 })),
