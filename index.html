@@ -34,18 +34,15 @@
         .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(82, 82, 91, 0.4); }
         .idea-board-bg { background-image: radial-gradient(#e5e7eb 1px, transparent 1px); background-size: 20px 20px; background-color: #f3f4f6; }
         .dark .idea-board-bg { background-image: radial-gradient(#374151 1px, transparent 1px); background-color: #1f2937; }
-        .sticky-note { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); transition: transform .15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s; overflow: hidden; border-radius: 0.5rem; }
+        .sticky-note { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); transition: transform .15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s; cursor: grab; resize: both; overflow: hidden; border-radius: 0.5rem; }
         .sticky-note:hover { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
-        .sticky-note.dragging { transform: scale(1.05) rotate(2deg); z-index: 50; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+        .sticky-note.dragging { transform: scale(1.05) rotate(2deg); z-index: 50; cursor: grabbing; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
         @keyframes pulse-brain { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } }
         .animate-brain { animation: pulse-brain 4s infinite ease-in-out; }
         .animate-shimmer { background: linear-gradient(90deg, transparent 25%, rgba(99, 102, 241, 0.1) 50%, transparent 75%); background-size: 1000px 100%; animation: shimmer 2s infinite linear; }
         @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
         .cursor-move { cursor: move; cursor: grab; cursor: -webkit-grabbing; }
         .cursor-grabbing { cursor: grabbing !important; }
-        .calendar-grid { position: relative; height: 1920px; }
-        .event-card { transition: box-shadow 0.2s, transform 0.1s; }
-        .event-card-dragging { opacity: 0.8; z-index: 50; cursor: grabbing !important; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
         .touch-none { touch-action: none; }
         @supports (padding-bottom: env(safe-area-inset-bottom)) {
             .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem) !important; }
@@ -60,31 +57,59 @@
 
         import React, { useState, useEffect, useRef, useMemo } from "https://esm.sh/react@18.2.0";
         import { createRoot } from "https://esm.sh/react-dom@18.2.0/client";
-        import { 
-            Layout, BookOpen, Target, Settings, Plus, CheckCircle2, ArrowRight, Brain, 
-            Calendar as CalendarIcon, ChevronRight, ChevronLeft, Sun, Moon, Music, Trash2, 
-            Edit3, Timer, Play, Pause, RotateCcw, X, CloudRain, Utensils, Trash, 
-            ListTodo, CheckSquare, AlertCircle, Book, Hourglass, Check, Gift, 
-            Chrome, Calendar, Loader2, CalendarRange, GripVertical, GripHorizontal, ArrowUp, ArrowDown, Scale,
-            Lightbulb, Crosshair, Flag, Activity, Ban, Bookmark, Eye, EyeOff, User, LogOut, LinkIcon, Globe, ExternalLink, Search, Star, Sparkles, Clock, Coffee, Wind
+        import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+        import {
+            Layout, BookOpen, Target, Settings, Plus, CheckCircle2, ArrowRight, Brain,
+            Calendar as CalendarIcon, ChevronRight, ChevronLeft, Sun, Moon, Music, Trash2,
+            Edit3, Timer, Play, Pause, RotateCcw, X, CloudRain, Utensils, Trash,
+            ListTodo, CheckSquare, AlertCircle, Book, Hourglass, Check, Gift,
+            Chrome, Calendar, CalendarRange, GripVertical, ArrowUp, ArrowDown, Scale,
+            Lightbulb, Flag, Activity, Ban, Bookmark, Eye, EyeOff, User, LogOut, LinkIcon, Globe, Search, Star, Sparkles, Coffee, Wind,
+            Quote
         } from "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0";
-        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-
-        const STORED_URL = localStorage.getItem('lifeos_sb_url') || "";
-        const STORED_KEY = localStorage.getItem('lifeos_sb_key') || "";
-        let supabase = null;
-        let isSupabaseConfigured = false;
-        if (STORED_URL && STORED_KEY) { try { supabase = createClient(STORED_URL, STORED_KEY); isSupabaseConfigured = true; } catch(e) { console.error("Supabase Init Failed", e); } }
 
         const generateUUID = () => { if (typeof crypto !== 'undefined' && crypto.randomUUID) { return crypto.randomUUID(); } return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) { var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); };
         const decodeJwtPayload = (token) => { const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'); const json = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); return JSON.parse(json); };
         const LocalAuth = { user: JSON.parse(localStorage.getItem('lifeos_user')) || null, login: (email, password) => { if (password.length < 3) throw new Error("Password too short"); const user = { id: 'local_user', email, isLocal: true }; localStorage.setItem('lifeos_user', JSON.stringify(user)); return user; }, signup: (email, password) => LocalAuth.login(email, password), logout: () => { localStorage.removeItem('lifeos_user'); return null; } };
 
+        let _supabaseClient = null, _supabaseClientKey = null;
+        const getSupabase = () => {
+            const url = (localStorage.getItem('lifeos_supabase_url') || '').trim();
+            const key = (localStorage.getItem('lifeos_supabase_key') || '').trim();
+            if (!url || !key) return null;
+            const cacheKey = url + '|' + key;
+            if (_supabaseClient && _supabaseClientKey === cacheKey) return _supabaseClient;
+            try {
+                _supabaseClient = createClient(url, key);
+                _supabaseClientKey = cacheKey;
+                return _supabaseClient;
+            } catch (e) {
+                console.error("Failed to create Supabase client:", e);
+                return null;
+            }
+        };
+
+        const syncListToSupabase = async (supabase, table, userId, prevList, nextList) => {
+            try {
+                const prevIds = new Set(prevList.map(i => i.id));
+                const nextIds = new Set(nextList.map(i => i.id));
+                const toDelete = [...prevIds].filter(id => !nextIds.has(id));
+                if (toDelete.length) await supabase.from(table).delete().in('id', toDelete);
+                const toUpsert = nextList.filter(item => {
+                    const prevItem = prevList.find(p => p.id === item.id);
+                    return !prevItem || JSON.stringify(prevItem) !== JSON.stringify(item);
+                }).map(item => ({ ...item, user_id: userId }));
+                if (toUpsert.length) await supabase.from(table).upsert(toUpsert);
+            } catch (err) {
+                console.error(`Cloud sync failed for ${table}:`, err);
+            }
+        };
+
         const DEFAULT_SINGLE_YEAR_GOALS = { mission: "Reshape my life by achieving financial stability, building iron discipline, and gaining clear direction for my future.", mainFocus: [{id: '1', text: 'Financial Freedom'}, {id: '2', text: 'Improved Fitness'}, {id: '3', text: 'Skill Mastery'}], dos: [], donts: [], milestones: [], quarters: { q1: [], q2: [], q3: [], q4: [] }, phases: { phase1: [], phase2: [], phase3: [] } };
         const DEFAULT_MEALS = [{ day: 'Monday', type: 'Breakfast', text: 'Oats + milk\n1 banana\n1 scoop protein powder' }];
         const DEFAULT_BOOK_CATEGORIES = ['General', 'Fiction', 'Non-Fiction', 'Self-Help', 'Technical'];
-        const FOCUS_SOUNDS = [ 
-            { id: 'rain', label: 'Heavy Rain', icon: CloudRain, url: 'https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg' }, 
+        const FOCUS_SOUNDS = [
+            { id: 'rain', label: 'Heavy Rain', icon: CloudRain, url: 'https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg' },
             { id: 'waves', label: 'Ocean Waves', icon: Wind, url: 'https://actions.google.com/sounds/v1/water/waves_crashing_on_rock_beach.ogg' },
             { id: 'coffee', label: 'Cafe', icon: Coffee, url: 'https://actions.google.com/sounds/v1/crowds/cafe_restaurant_chatter.ogg' },
             { id: 'drone', label: 'Deep Focus', icon: Music, url: 'https://actions.google.com/sounds/v1/science_fiction/space_engine.ogg' }
@@ -98,13 +123,13 @@
         };
 
         const Card = ({ children, className = "", title, action }) => ( React.createElement("div", { className: `bg-white/80 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-200 dark:border-white/5 rounded-2xl p-5 flex flex-col transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/50 shadow-sm dark:shadow-none ${className}` }, (title || action) && ( React.createElement("div", { className: "flex justify-between items-center mb-4 border-b border-zinc-100 dark:border-white/5 pb-2" }, title && React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest flex items-center gap-2" }, React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block" }), title), action) ), children) );
-        
+
         const NavItem = ({ icon: Icon, label, active, onClick }) => ( React.createElement("button", { onClick: onClick, className: `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden ${active ? 'text-zinc-900 dark:text-white bg-zinc-100 dark:bg-white/5' : 'text-zinc-600 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-white/5'}` }, active && React.createElement("div", { className: "absolute inset-y-0 left-0 w-1 bg-indigo-500 rounded-r-full" }), React.createElement(Icon, { size: 18, className: active ? 'text-indigo-500 dark:text-indigo-400' : 'opacity-70' }), React.createElement("span", { className: "font-medium text-sm tracking-wide" }, label)) );
-        
+
         const MobileTopBar = ({ handleLogout, user, darkMode, toggleDarkMode, onProfileClick }) => ( React.createElement("header", { className: "md:hidden fixed top-0 left-0 right-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800 z-50 px-4 h-14 flex items-center justify-between transition-colors duration-300" }, React.createElement("div", { className: "flex items-center gap-3" }, React.createElement("div", { className: "w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-glow" }, React.createElement(Brain, { size: 18 })), React.createElement("span", { className: "font-bold text-lg tracking-tight text-zinc-900 dark:text-white" }, "LifeOS")), React.createElement("div", { className: "flex items-center gap-2" }, React.createElement("button", { onClick: toggleDarkMode, className: "p-2 rounded-full text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-95" }, darkMode ? React.createElement(Sun, { size: 18 }) : React.createElement(Moon, { size: 18 })), user && React.createElement("button", { onClick: onProfileClick, className: "w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase active:scale-95" }, (user.user_metadata?.full_name || user.displayName || user.email)[0]))));
-        
+
         const MobileNavBar = ({ activeTab, setActiveTab, tabConfig }) => { const tabs = Object.keys(tabConfig).filter(t => t !== 'profile'); return React.createElement("div", { className: "md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border-t border-zinc-200 dark:border-zinc-800 z-50 px-2 pb-safe flex h-[4.5rem] shadow-[0_-5px_20px_rgba(0,0,0,0.05)] dark:shadow-[0_-5px_20px_rgba(0,0,0,0.2)] transition-colors duration-300" }, React.createElement("div", { className: "flex-1 flex overflow-x-auto no-scrollbar items-center px-2 gap-1" }, tabs.map(t => { const isActive = activeTab === t; const config = tabConfig[t]; if(!config) return null; return React.createElement("button", { key: t, onClick: () => setActiveTab(t), className: `flex flex-col items-center justify-center min-w-[3.5rem] h-full rounded-xl transition-all shrink-0 ${isActive ? 'text-indigo-600 dark:text-indigo-400 scale-105' : 'text-zinc-500 dark:text-zinc-600 active:scale-95'}` }, React.createElement("div", { className: `p-1.5 rounded-lg mb-0.5 transition-all ${isActive ? 'bg-indigo-100 dark:bg-indigo-500/20' : 'bg-transparent'}` }, React.createElement(config.icon, { size: 20, strokeWidth: isActive ? 2.5 : 2 })), React.createElement("span", { className: "text-[9px] font-medium leading-none" }, config.label.split(' ')[0])); }))); };
-        
+
         const EditableList = ({ items = [], onAdd, onToggle, onDelete, onEdit, onReorder, placeholder }) => {
             const [newItem, setNewItem] = useState("");
             const [editingId, setEditingId] = useState(null);
@@ -138,16 +163,16 @@
             const completedCount = items.filter(i => i.completed).length;
 
             const renderItem = (item, index, isCompletedSection) => {
-                return React.createElement("div", { 
+                return React.createElement("div", {
                     key: item.id, draggable: !!onReorder && !editingId && !isCompletedSection, onDragStart: (e) => handleDragStart(e, index), onDragEnter: (e) => handleDragEnter(e, index), onDragEnd: handleDragEnd, onDragOver: (e) => e.preventDefault(),
-                    className: `flex items-start gap-3 md:gap-4 w-full group transition-all py-3 px-2 md:p-2.5 rounded-xl border border-transparent ${onReorder && !editingId && !isCompletedSection ? 'md:cursor-move md:hover:bg-zinc-50 md:dark:hover:bg-zinc-800/40 hover:border-zinc-200 dark:hover:border-zinc-700/50' : ''} ${isCompletedSection ? 'opacity-60' : ''}` 
-                }, 
+                    className: `flex items-start gap-3 md:gap-4 w-full group transition-all py-3 px-2 md:p-2.5 rounded-xl border border-transparent ${onReorder && !editingId && !isCompletedSection ? 'md:cursor-move md:hover:bg-zinc-50 md:dark:hover:bg-zinc-800/40 hover:border-zinc-200 dark:hover:border-zinc-700/50' : ''} ${isCompletedSection ? 'opacity-60' : ''}`
+                },
                     onReorder && !editingId && !isCompletedSection && React.createElement("div", { className: "mt-1 text-zinc-300 dark:text-zinc-600 transition-opacity hidden md:block cursor-grab active:cursor-grabbing" }, React.createElement(GripVertical, { size: 16 })),
-                    React.createElement("button", { onClick: () => onToggle(item.id), className: `mt-0.5 w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-all active:scale-90 ${item.completed ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900'}` }, React.createElement(CheckCircle2, { size: 16, className: item.completed ? "opacity-100" : "opacity-0" })), 
-                    
-                    editingId === item.id ? 
+                    React.createElement("button", { onClick: () => onToggle(item.id), className: `mt-0.5 w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-all active:scale-90 ${item.completed ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900'}` }, React.createElement(CheckCircle2, { size: 16, className: item.completed ? "opacity-100" : "opacity-0" })),
+
+                    editingId === item.id ?
                         React.createElement("div", { className: "flex-1 flex gap-2 items-center" },
-                            React.createElement("input", { 
+                            React.createElement("input", {
                                 value: editValue, onChange: (e) => setEditValue(e.target.value),
                                 onKeyDown: (e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') cancelEdit(); },
                                 autoFocus: true, className: "flex-1 bg-white dark:bg-zinc-800 border border-indigo-500 rounded-lg px-3 py-2 text-base md:text-sm text-zinc-900 dark:text-white outline-none"
@@ -169,10 +194,10 @@
                 );
             };
 
-            return React.createElement("div", { className: "flex flex-col w-full h-full" }, 
+            return React.createElement("div", { className: "flex flex-col w-full" },
                 React.createElement("div", { className: "space-y-1 w-full overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar flex-1" },
                     items.map((item, index) => !item.completed ? renderItem(item, index, false) : null),
-                    
+
                     completedCount > 0 && React.createElement("div", { className: "mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800/50" },
                         React.createElement("button", { onClick: () => setShowCompleted(!showCompleted), className: "flex items-center gap-2 text-[10px] font-bold text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 uppercase tracking-widest transition-colors mb-2 w-full text-left focus:outline-none py-2" },
                             React.createElement(ChevronRight, { size: 14, className: `transition-transform ${showCompleted ? 'rotate-90' : ''}` }),
@@ -182,23 +207,41 @@
                             items.map((item, index) => item.completed ? renderItem(item, index, true) : null)
                         )
                     )
-                ), 
-                React.createElement("div", { className: "flex gap-2 mt-2 pt-4 border-t border-zinc-100 dark:border-zinc-800 shrink-0 items-center" }, 
-                    React.createElement("input", { type: "text", value: newItem, onChange: (e) => setNewItem(e.target.value), onKeyDown: (e) => { if (e.key === 'Enter' && newItem.trim()) { onAdd(newItem); setNewItem(""); } }, placeholder: placeholder || "Add new...", className: "flex-1 bg-transparent text-base md:text-[15px] focus:outline-none text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 pl-1 py-2" }), 
-                    React.createElement("button", { onClick: () => { if (newItem.trim()) { onAdd(newItem); setNewItem(""); } }, className: "text-indigo-500 hover:text-indigo-400 p-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl active:scale-95" }, React.createElement(Plus, { size: 20 }))
+                ),
+                React.createElement("div", { className: "flex gap-2 mt-2 pt-4 pb-1 border-t border-zinc-100 dark:border-zinc-800 shrink-0 items-center" },
+                    React.createElement("input", { type: "text", value: newItem, onChange: (e) => setNewItem(e.target.value), onKeyDown: (e) => { if (e.key === 'Enter' && newItem.trim()) { onAdd(newItem); setNewItem(""); } }, placeholder: placeholder || "Add new...", className: "flex-1 min-w-0 bg-transparent text-base md:text-[15px] focus:outline-none text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 pl-1 py-2" }),
+                    React.createElement("button", { onClick: () => { if (newItem.trim()) { onAdd(newItem); setNewItem(""); } }, className: "shrink-0 text-indigo-500 hover:text-indigo-400 p-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl active:scale-95" }, React.createElement(Plus, { size: 20 }))
                 )
             );
         };
 
         const TimeWidget = () => { const [time, setTime] = useState(new Date()); useEffect(() => { const t = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(t); }, []); return React.createElement("div", { className: "text-right" }, React.createElement("div", { className: "text-3xl font-bold font-mono text-indigo-500 dark:text-indigo-400" }, time.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})), React.createElement("div", { className: "text-xs font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500" }, time.toLocaleDateString())); };
-        
+
         const AuthModal = ({ onClose, onLogin, inline = false, onOpenSettings }) => {
             const [isLogin, setIsLogin] = useState(true); const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [showPassword, setShowPassword] = useState(false); const [error, setError] = useState(null); const [loading, setLoading] = useState(false);
             const googleBtnRef = useRef(null);
             const googleClientId = localStorage.getItem('lifeos_google_client_id') || "";
             useEffect(() => { const handleEsc = (e) => { if (e.key === 'Escape' && !inline) onClose(); }; window.addEventListener('keydown', handleEsc); return () => window.removeEventListener('keydown', handleEsc); }, [inline, onClose]);
-            const isRecoverableSupabaseError = (msg) => /fetch|invalid api key|apikey|network/i.test(msg || "");
-            const handleSubmit = async (e) => { e.preventDefault(); setError(null); setLoading(true); if (isSupabaseConfigured) { try { const { data, error } = isLogin ? await supabase.auth.signInWithPassword({ email, password }) : await supabase.auth.signUp({ email, password }); if (error) throw error; if (data?.user) { onLogin({ email: data.user.email, id: data.user.id, isLocal: false }); if(!inline) onClose(); } } catch(err) { if (isRecoverableSupabaseError(err.message)) { setError("Cloud sync isn't reachable. Continuing in Local Mode..."); setTimeout(handleLocalAuth, 1000); } else { setError(err.message); } } finally { setLoading(false); } } else { handleLocalAuth(); } }; const handleLocalAuth = () => { try { const user = isLogin ? LocalAuth.login(email, password) : LocalAuth.signup(email, password); onLogin(user); if(!inline) onClose(); } catch(e) { setError(e.message); } finally { setLoading(false); } };
+            const handleSubmit = async (e) => {
+                e.preventDefault(); setError(null); setLoading(true);
+                try {
+                    const supabase = getSupabase();
+                    if (supabase) {
+                        const { data, error: authError } = isLogin
+                            ? await supabase.auth.signInWithPassword({ email, password })
+                            : await supabase.auth.signUp({ email, password });
+                        if (authError) throw authError;
+                        if (!data.session) { setError("Check your email to confirm your account, then log in."); setLoading(false); return; }
+                        const user = { id: data.user.id, email: data.user.email, isCloud: true };
+                        onLogin(user);
+                        if (!inline) onClose();
+                    } else {
+                        const user = isLogin ? LocalAuth.login(email, password) : LocalAuth.signup(email, password);
+                        onLogin(user);
+                        if (!inline) onClose();
+                    }
+                } catch(err) { setError(err.message); } finally { setLoading(false); }
+            };
             const handleGoogleCredential = (response) => { try { const payload = decodeJwtPayload(response.credential); const user = { id: 'google_' + payload.sub, email: payload.email, displayName: payload.name, photoURL: payload.picture, isLocal: true, isGoogle: true }; onLogin(user); if(!inline) onClose(); } catch(e) { setError("Google sign-in failed. Please try again."); } };
             useEffect(() => {
                 if (!googleClientId) return;
@@ -215,7 +258,7 @@
                 tryInit();
                 return () => { cancelled = true; };
             }, [googleClientId]);
-            const content = React.createElement("div", { className: inline ? "" : "my-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[32px] p-8 max-w-sm w-full relative shadow-xl shrink-0" }, !inline && React.createElement("button", { onClick: onClose, className: "absolute top-6 right-6 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 -m-2 active:scale-90" }, React.createElement(X, { size: 24 })), React.createElement("h2", { className: "text-2xl font-bold text-zinc-900 dark:text-white mb-8 text-center" }, isLogin ? "Welcome Back" : "Create Account"), React.createElement("form", { onSubmit: handleSubmit, className: "space-y-4" }, React.createElement("input", { type: "email", value: email, onChange: e => setEmail(e.target.value), placeholder: "Email", className: "w-full p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:border-indigo-500 outline-none text-base md:text-sm" }), React.createElement("div", { className: "relative" }, React.createElement("input", { type: showPassword ? "text" : "password", value: password, onChange: e => setPassword(e.target.value), placeholder: "Password", className: "w-full p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:border-indigo-500 outline-none pr-12 text-base md:text-sm" }), React.createElement("button", { type: "button", onClick: () => setShowPassword(!showPassword), className: "absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-white transition-colors p-3 active:scale-95" }, showPassword ? React.createElement(EyeOff, { size: 20 }) : React.createElement(Eye, { size: 20 }))), error && React.createElement("div", { className: "text-red-500 text-sm px-1" }, error), React.createElement("button", { type: "submit", disabled: loading, className: "w-full py-4 bg-indigo-600 text-white rounded-xl font-bold text-lg hover:bg-indigo-500 active:scale-[0.98] transition-transform" }, loading ? "Processing..." : (isLogin ? "Login" : "Sign Up")), React.createElement("div", { className: "relative my-6" }, React.createElement("div", { className: "absolute inset-0 flex items-center" }, React.createElement("span", { className: "w-full border-t border-zinc-200 dark:border-zinc-700" })), React.createElement("div", { className: "relative flex justify-center text-xs uppercase" }, React.createElement("span", { className: "bg-white dark:bg-zinc-900 px-2 text-zinc-500" }, "Or continue with"))), googleClientId ? React.createElement("div", { className: "flex justify-center", ref: googleBtnRef }) : React.createElement("button", { type: "button", onClick: () => onOpenSettings && onOpenSettings(), className: "w-full py-4 bg-white dark:bg-zinc-800 border border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 rounded-xl font-bold text-sm hover:border-indigo-500 hover:text-indigo-500 flex items-center justify-center gap-2 transition-colors active:scale-[0.98]" }, React.createElement(Chrome, { size: 18 }), "Set up Google Sign-In"), React.createElement("div", { className: "text-center text-base text-zinc-500 mt-6 cursor-pointer hover:text-zinc-800 dark:hover:text-white py-2", onClick: () => setIsLogin(!isLogin) }, isLogin ? "Need an account? Sign up" : "Have an account? Login"))); return inline ? content : React.createElement("div", { className: "fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm overflow-y-auto" }, React.createElement("div", { className: "flex min-h-full items-start justify-center p-4" }, content));
+            const content = React.createElement("div", { className: inline ? "" : "my-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[32px] p-8 max-w-sm w-full relative shadow-xl shrink-0" }, !inline && React.createElement("button", { onClick: onClose, className: "absolute top-6 right-6 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 -m-2 active:scale-90" }, React.createElement(X, { size: 24 })), React.createElement("h2", { className: "text-2xl font-bold text-zinc-900 dark:text-white mb-2 text-center" }, isLogin ? "Welcome Back" : "Create Account"), React.createElement("p", { className: "text-center text-xs font-medium mb-6 flex items-center justify-center gap-1.5 " + (getSupabase() ? "text-emerald-500" : "text-zinc-400") }, getSupabase() ? "Cloud sync enabled — syncs across devices" : "Local only — set up Supabase in Settings to sync across devices"), React.createElement("form", { onSubmit: handleSubmit, className: "space-y-4" }, React.createElement("input", { type: "email", value: email, onChange: e => setEmail(e.target.value), placeholder: "Email", className: "w-full p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:border-indigo-500 outline-none text-base md:text-sm" }), React.createElement("div", { className: "relative" }, React.createElement("input", { type: showPassword ? "text" : "password", value: password, onChange: e => setPassword(e.target.value), placeholder: "Password", className: "w-full p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:border-indigo-500 outline-none pr-12 text-base md:text-sm" }), React.createElement("button", { type: "button", onClick: () => setShowPassword(!showPassword), className: "absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-white transition-colors p-3 active:scale-95" }, showPassword ? React.createElement(EyeOff, { size: 20 }) : React.createElement(Eye, { size: 20 }))), error && React.createElement("div", { className: "text-red-500 text-sm px-1" }, error), React.createElement("button", { type: "submit", disabled: loading, className: "w-full py-4 bg-indigo-600 text-white rounded-xl font-bold text-lg hover:bg-indigo-500 active:scale-[0.98] transition-transform" }, loading ? "Processing..." : (isLogin ? "Login" : "Sign Up")), React.createElement("div", { className: "relative my-6" }, React.createElement("div", { className: "absolute inset-0 flex items-center" }, React.createElement("span", { className: "w-full border-t border-zinc-200 dark:border-zinc-700" })), React.createElement("div", { className: "relative flex justify-center text-xs uppercase" }, React.createElement("span", { className: "bg-white dark:bg-zinc-900 px-2 text-zinc-500" }, "Or continue with"))), googleClientId ? React.createElement("div", { className: "flex justify-center", ref: googleBtnRef }) : React.createElement("button", { type: "button", onClick: () => onOpenSettings && onOpenSettings(), className: "w-full py-4 bg-white dark:bg-zinc-800 border border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 rounded-xl font-bold text-sm hover:border-indigo-500 hover:text-indigo-500 flex items-center justify-center gap-2 transition-colors active:scale-[0.98]" }, React.createElement(Chrome, { size: 18 }), "Set up Google Sign-In"), React.createElement("div", { className: "text-center text-base text-zinc-500 mt-6 cursor-pointer hover:text-zinc-800 dark:hover:text-white py-2", onClick: () => setIsLogin(!isLogin) }, isLogin ? "Need an account? Sign up" : "Have an account? Login"))); return inline ? content : React.createElement("div", { className: "fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm overflow-y-auto" }, React.createElement("div", { className: "flex min-h-full items-start justify-center p-4" }, content));
         };
 
         const LandingPage = ({ onLoginSuccess, onGuestLogin, onOpenSettings }) => { return React.createElement("div", { className: "min-h-screen flex flex-col md:flex-row bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white font-sans overflow-hidden transition-colors duration-300" }, React.createElement("div", { className: "fixed inset-0 z-0 pointer-events-none" }, React.createElement("div", { className: "absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 dark:bg-indigo-600/20 rounded-full blur-[120px]" }), React.createElement("div", { className: "absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] bg-purple-500/10 dark:bg-purple-600/10 rounded-full blur-[100px]" })), React.createElement("button", { onClick: onOpenSettings, className: "fixed top-4 right-4 z-30 p-2.5 rounded-full bg-white/70 dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-zinc-500 hover:text-indigo-500 hover:border-indigo-500 transition-colors backdrop-blur", title: "Settings" }, React.createElement(Settings, { size: 18 })), React.createElement("div", { className: "md:w-1/2 p-8 md:p-16 flex flex-col justify-center relative z-10" }, React.createElement("div", { className: "mb-8 flex items-center gap-3" }, React.createElement("div", { className: "w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-glow" }, React.createElement(Brain, { size: 20 })), React.createElement("h1", { className: "text-2xl font-bold tracking-tight text-zinc-900 dark:text-white" }, "LifeOS")), React.createElement("h2", { className: "text-5xl md:text-7xl font-bold mb-6 leading-tight tracking-tight" }, "Design Your ", React.createElement("span", { className: "text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500" }, "Mind.")), React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 text-lg md:text-xl max-w-md leading-relaxed mb-10" }, "A futuristic operating system for your life. Organize habits, tasks, and goals in one unified interface."), React.createElement("div", { className: "grid grid-cols-2 gap-4 max-w-sm" }, [{l:"Focus", i:Timer}, {l:"Goals", i:Flag}, {l:"Habits", i:CheckCircle2}, {l:"Health", i:Activity}].map((f, i) => React.createElement("div", { key: i, className: "flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-white/5 border border-zinc-200 dark:border-white/5 shadow-sm dark:shadow-none" }, React.createElement(f.i, { className: "text-indigo-500 dark:text-indigo-400", size: 18 }), React.createElement("span", { className: "text-sm font-medium text-zinc-700 dark:text-zinc-300" }, f.l))))), React.createElement("div", { className: "md:w-1/2 bg-white/30 dark:bg-black/40 backdrop-blur-xl border-l border-zinc-200 dark:border-white/5 flex flex-col justify-center p-8 md:p-16 relative z-20" }, React.createElement(AuthModal, { onClose: () => {}, onLogin: onLoginSuccess, inline: true, onOpenSettings }), React.createElement("div", { className: "mt-6 text-center" }, React.createElement("button", { onClick: () => onGuestLogin({ email: "guest@lifeos.app", displayName: "Guest", id: "guest-user", isLocal: true }), className: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-white text-xs font-medium transition-colors flex items-center justify-center gap-2 mx-auto p-2" }, "Enter as Guest", React.createElement(ArrowRight, { size: 12 }))))); };
@@ -233,7 +276,7 @@
                         React.createElement("div", { className: "w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-4xl font-bold text-white shadow-lg uppercase shrink-0" }, name ? name[0] : user.email[0]),
                         React.createElement("div", { className: "flex-1 min-w-0" },
                             React.createElement("div", { className: "mb-1" },
-                                isEditing ? 
+                                isEditing ?
                                 React.createElement("div", { className: "flex items-center gap-2" },
                                     React.createElement("input", { ref: inputRef, value: name, onChange: e => setName(e.target.value), onKeyDown: e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') { setIsEditing(false); setName(user.user_metadata?.full_name || user.user_metadata?.name || user.displayName || user.email?.split('@')[0] || "User"); } }, className: "bg-transparent border-b-2 border-indigo-500 text-2xl font-bold text-zinc-900 dark:text-white focus:outline-none w-full max-w-[200px]" }),
                                     React.createElement("button", { onClick: handleSave, className: "p-1 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200" }, React.createElement(Check, { size: 18 }))
@@ -245,8 +288,8 @@
                             ),
                             React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 truncate" }, user.email),
                             React.createElement("div", { className: "flex flex-wrap gap-2 mt-3" },
-                                React.createElement("span", { className: `px-3 py-1 rounded-full text-xs font-bold ${user.isLocal ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}` }, user.isLocal ? 'Local Account' : 'Cloud Sync'),
-                                user.app_metadata?.provider === 'google' && React.createElement("span", { className: "px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 flex items-center gap-1" }, React.createElement(Chrome, { size: 12 }), "Google")
+                                React.createElement("span", { className: "px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700" }, "Local Account"),
+                                user.isGoogle && React.createElement("span", { className: "px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 flex items-center gap-1" }, React.createElement(Chrome, { size: 12 }), "Google")
                             )
                         )
                     ),
@@ -275,13 +318,39 @@
             const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
             const todaysBreakfast = meals.find(m => m.day === todayName && m.type === 'Breakfast')?.text || "No breakfast planned";
             const currentYear = new Date().getFullYear();
+            const rulesDoneCount = rulesConfig.filter(r => dailyRules[r.id]).length;
+
+            const iconBadge = (Icon, gradient) => React.createElement("div", { className: `w-9 h-9 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white shadow-sm shrink-0` }, React.createElement(Icon, { size: 16 }));
 
             return React.createElement("div", { className: "p-4 space-y-6 pb-24 max-w-7xl mx-auto" },
-                React.createElement("div", { className: "flex flex-col sm:flex-row justify-between items-start sm:items-end mb-4 gap-2" }, React.createElement("h2", { className: "text-3xl font-bold tracking-tight text-zinc-900 dark:text-white" }, "Command Center"), React.createElement(TimeWidget)),
-                React.createElement(Card, { className: "relative overflow-hidden rounded-3xl p-8 border border-indigo-500/30 bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-black" }, React.createElement("div", { className: "relative z-10" }, React.createElement("div", { className: "flex items-center gap-2 mb-4 text-indigo-500 dark:text-indigo-300 text-xs font-bold uppercase tracking-widest" }, React.createElement(Target, { size: 14 }), "Weekly mission"), React.createElement("input", { value: dailyFocus, onChange: (e) => onUpdateDashboard({ ...dashboardData, focus: e.target.value }), placeholder: "Win the day by...", className: "w-full bg-transparent border-b-2 border-zinc-300 dark:border-zinc-700/50 text-2xl md:text-5xl font-bold focus:outline-none py-2 text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-700 focus:border-indigo-500 transition-all" }))),
+                React.createElement("div", { className: "flex flex-col sm:flex-row justify-between items-start sm:items-end mb-2 gap-2" },
+                    React.createElement("div", null,
+                        React.createElement("h2", { className: "text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 dark:text-white" }, "Command Center"),
+                        React.createElement("p", { className: "text-sm text-zinc-500 dark:text-zinc-400 mt-1" }, `${rulesDoneCount}/${rulesConfig.length} non-negotiables done today`)
+                    ),
+                    React.createElement(TimeWidget)
+                ),
+                React.createElement("div", { className: "relative overflow-hidden rounded-3xl p-8 md:p-10 border border-indigo-200/50 dark:border-indigo-500/20 bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-700 shadow-xl shadow-indigo-500/20 dark:shadow-indigo-900/30" },
+                    React.createElement("div", { className: "absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" }),
+                    React.createElement("div", { className: "absolute -bottom-16 -left-16 w-48 h-48 bg-purple-400/20 rounded-full blur-3xl pointer-events-none" }),
+                    React.createElement("div", { className: "relative z-10" },
+                        React.createElement("div", { className: "flex items-center gap-2 mb-4 text-indigo-100 text-xs font-bold uppercase tracking-widest" }, React.createElement("div", { className: "w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center" }, React.createElement(Target, { size: 12 })), "Weekly mission"),
+                        React.createElement("input", { value: dailyFocus, onChange: (e) => onUpdateDashboard({ ...dashboardData, focus: e.target.value }), placeholder: "Win the day by...", className: "w-full bg-transparent border-b-2 border-white/25 text-2xl md:text-5xl font-bold focus:outline-none py-2 text-white placeholder:text-indigo-200/60 focus:border-white transition-all" })
+                    )
+                ),
                 React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" },
-                     React.createElement(Card, { title: `${currentYear} Vision`, className: "lg:col-span-2 border-purple-500/20 dark:border-purple-500/20", action: React.createElement("button", { onClick: () => onNavigate('goals2026'), className: "text-zinc-400 hover:text-purple-500 dark:hover:text-purple-400 p-2" }, React.createElement(Flag, { size: 16 })) }, React.createElement("p", { className: "text-lg font-medium text-zinc-800 dark:text-zinc-200 italic leading-relaxed" }, goalsData[currentYear]?.mission ? `"${goalsData[currentYear].mission}"` : "Define your mission in the Yearly Vision tab.")),
-                     React.createElement(Card, { title: "Daily non-negotiables", className: "lg:col-span-2", action: React.createElement("button", { onClick: () => setIsEditingRules(!isEditingRules), className: "text-zinc-400 hover:text-indigo-500 p-2 active:scale-95" }, React.createElement(isEditingRules ? Check : Edit3, { size: 16 })) }, 
+                     React.createElement(Card, { className: "lg:col-span-2 border-purple-200 dark:border-purple-500/20 bg-gradient-to-br from-purple-50/80 to-white dark:from-purple-900/10 dark:to-zinc-900/60" },
+                        React.createElement("div", { className: "flex items-center justify-between mb-4" },
+                            React.createElement("div", { className: "flex items-center gap-3" }, iconBadge(Flag, "from-purple-500 to-fuchsia-600"), React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest" }, `${currentYear} Vision`)),
+                            React.createElement("button", { onClick: () => onNavigate('goals2026'), className: "text-zinc-400 hover:text-purple-500 dark:hover:text-purple-400 p-2 rounded-lg hover:bg-purple-100/50 dark:hover:bg-purple-500/10 transition-colors" }, React.createElement(ArrowRight, { size: 16 }))
+                        ),
+                        React.createElement("p", { className: "text-lg font-medium text-zinc-800 dark:text-zinc-200 italic leading-relaxed" }, goalsData[currentYear]?.mission ? `"${goalsData[currentYear].mission}"` : "Define your mission in the Yearly Vision tab.")
+                     ),
+                     React.createElement(Card, { className: "lg:col-span-2" },
+                        React.createElement("div", { className: "flex items-center justify-between mb-4" },
+                            React.createElement("div", { className: "flex items-center gap-3" }, iconBadge(CheckCircle2, "from-indigo-500 to-blue-600"), React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest" }, "Daily non-negotiables")),
+                            React.createElement("button", { onClick: () => setIsEditingRules(!isEditingRules), className: "text-zinc-400 hover:text-indigo-500 p-2 rounded-lg hover:bg-indigo-100/50 dark:hover:bg-indigo-500/10 active:scale-95 transition-colors" }, React.createElement(isEditingRules ? Check : Edit3, { size: 16 }))
+                        ),
                         isEditingRules ? (
                             React.createElement("div", { className: "flex flex-col gap-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-2" },
                                 rulesConfig.map(rule => React.createElement("div", { key: rule.id, className: "flex items-center gap-2" },
@@ -292,37 +361,47 @@
                                 React.createElement("button", { onClick: handleAddRule, className: "flex items-center justify-center gap-2 p-2 mt-1 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg text-sm text-zinc-500 hover:text-indigo-500 hover:border-indigo-500 transition-colors active:scale-95" }, React.createElement(Plus, { size: 16 }), "Add Rule")
                             )
                         ) : (
-                            React.createElement("div", { className: "flex flex-wrap gap-2" }, rulesConfig.map(item => React.createElement("button", { key: item.id, onClick: () => toggleRule(item.id), className: `flex-1 min-w-[4rem] flex flex-col items-center justify-center p-3 rounded-lg transition-all ${dailyRules[item.id] ? 'bg-indigo-50 dark:bg-indigo-600/20 border border-indigo-200 dark:border-indigo-500/50' : 'bg-zinc-50 dark:bg-zinc-800/50 border border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800'}` }, React.createElement("span", { className: `text-lg font-bold ${dailyRules[item.id] ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400 text-zinc-500'}` }, item.letter), React.createElement("span", { className: "text-[8px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mt-1" }, item.label))))
+                            React.createElement("div", { className: "flex flex-wrap gap-2" }, rulesConfig.map(item => React.createElement("button", { key: item.id, onClick: () => toggleRule(item.id), className: `flex-1 min-w-[4rem] flex flex-col items-center justify-center p-3 rounded-xl transition-all ${dailyRules[item.id] ? 'bg-gradient-to-br from-indigo-500 to-blue-600 shadow-md shadow-indigo-500/25 scale-[1.02]' : 'bg-zinc-50 dark:bg-zinc-800/50 border border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800'}` }, React.createElement("span", { className: `text-lg font-bold ${dailyRules[item.id] ? 'text-white' : 'text-zinc-400 dark:text-zinc-500'}` }, item.letter), React.createElement("span", { className: `text-[8px] uppercase tracking-wider mt-1 ${dailyRules[item.id] ? 'text-indigo-100' : 'text-zinc-400 dark:text-zinc-500'}` }, item.label))))
                         )
                      ),
-                     React.createElement(Card, { title: "Latest Thought", className: "lg:col-span-1", action: React.createElement("button", { onClick: () => onNavigate('braindump'), className: "text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-2" }, React.createElement(Brain, { size: 16 })) }, dumps.length > 0 ? React.createElement("p", { className: "text-sm text-zinc-600 dark:text-zinc-400 line-clamp-3" }, dumps[dumps.length - 1].text) : React.createElement("p", { className: "text-zinc-400 text-sm italic" }, "Mind clear.")),
-                     React.createElement(Card, { title: "Now Reading", className: "lg:col-span-1", action: React.createElement("button", { onClick: () => onNavigate('library'), className: "text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-2" }, React.createElement(Book, { size: 16 })) }, currentBook ? React.createElement("div", null, React.createElement("h4", { className: "font-bold text-zinc-900 dark:text-white truncate leading-tight" }, currentBook.title), React.createElement("p", { className: "text-xs text-zinc-500 mt-1" }, currentBook.author)) : React.createElement("div", { className: "text-zinc-400 text-sm italic" }, "No book active.")),
-                     React.createElement(Card, { title: "Today's Fuel", className: "lg:col-span-2", action: React.createElement("button", { onClick: () => onNavigate('food'), className: "text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-2" }, React.createElement(Utensils, { size: 16 })) }, React.createElement("div", { className: "flex flex-col gap-1" }, React.createElement("span", { className: "text-[10px] uppercase font-bold text-zinc-500" }, "Breakfast"), React.createElement("p", { className: "text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap leading-snug" }, todaysBreakfast))),
-                     React.createElement(Card, { title: "Daily affirmations", className: "lg:col-span-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/10 dark:to-teal-900/10 border-emerald-500/20" }, React.createElement("textarea", { value: positiveNote, onChange: (e) => onUpdateDashboard({ ...dashboardData, positiveNote: e.target.value }), className: "w-full h-16 bg-transparent text-emerald-800 dark:text-emerald-100/90 text-lg font-hand resize-none focus:outline-none placeholder:text-emerald-500/30 leading-relaxed", placeholder: "Write something kind to yourself..." }))
+                     React.createElement(Card, { className: "lg:col-span-1" },
+                        React.createElement("div", { className: "flex items-center justify-between mb-4" },
+                            React.createElement("div", { className: "flex items-center gap-3" }, iconBadge(Brain, "from-pink-500 to-rose-600"), React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest" }, "Latest Thought")),
+                            React.createElement("button", { onClick: () => onNavigate('braindump'), className: "text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" }, React.createElement(ArrowRight, { size: 16 }))
+                        ),
+                        dumps.length > 0 ? React.createElement("p", { className: "text-sm text-zinc-600 dark:text-zinc-400 line-clamp-3" }, dumps[dumps.length - 1].text) : React.createElement("p", { className: "text-zinc-400 text-sm italic" }, "Mind clear.")
+                     ),
+                     React.createElement(Card, { className: "lg:col-span-1" },
+                        React.createElement("div", { className: "flex items-center justify-between mb-4" },
+                            React.createElement("div", { className: "flex items-center gap-3" }, iconBadge(Book, "from-amber-500 to-orange-600"), React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest" }, "Now Reading")),
+                            React.createElement("button", { onClick: () => onNavigate('library'), className: "text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" }, React.createElement(ArrowRight, { size: 16 }))
+                        ),
+                        currentBook ? React.createElement("div", null, React.createElement("h4", { className: "font-bold text-zinc-900 dark:text-white truncate leading-tight" }, currentBook.title), React.createElement("p", { className: "text-xs text-zinc-500 mt-1" }, currentBook.author)) : React.createElement("div", { className: "text-zinc-400 text-sm italic" }, "No book active.")
+                     ),
+                     React.createElement(Card, { className: "lg:col-span-2" },
+                        React.createElement("div", { className: "flex items-center justify-between mb-4" },
+                            React.createElement("div", { className: "flex items-center gap-3" }, iconBadge(Utensils, "from-teal-500 to-emerald-600"), React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest" }, "Today's Fuel")),
+                            React.createElement("button", { onClick: () => onNavigate('food'), className: "text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" }, React.createElement(ArrowRight, { size: 16 }))
+                        ),
+                        React.createElement("div", { className: "flex flex-col gap-1" }, React.createElement("span", { className: "text-[10px] uppercase font-bold text-zinc-500" }, "Breakfast"), React.createElement("p", { className: "text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap leading-snug" }, todaysBreakfast))
+                     ),
+                     React.createElement(Card, { className: "lg:col-span-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 dark:from-emerald-900/10 dark:via-teal-900/10 dark:to-emerald-900/10 border-emerald-200 dark:border-emerald-500/20" },
+                        React.createElement("div", { className: "flex items-center gap-3 mb-3" }, iconBadge(Quote, "from-emerald-500 to-teal-600"), React.createElement("h3", { className: "text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest" }, "Daily affirmations")),
+                        React.createElement("textarea", { value: positiveNote, onChange: (e) => onUpdateDashboard({ ...dashboardData, positiveNote: e.target.value }), className: "w-full h-16 bg-transparent text-emerald-800 dark:text-emerald-100/90 text-lg font-hand resize-none focus:outline-none placeholder:text-emerald-500/30 leading-relaxed", placeholder: "Write something kind to yourself..." })
+                     )
                 )
             );
         };
 
         const SettingsView = ({ onClose, onSave }) => {
-            const [url, setUrl] = useState(localStorage.getItem('lifeos_sb_url') || "");
-            const [key, setKey] = useState(localStorage.getItem('lifeos_sb_key') || "");
-            const [geminiKey, setGeminiKey] = useState(localStorage.getItem('lifeos_gemini_key') || "");
             const [googleClientId, setGoogleClientId] = useState(localStorage.getItem('lifeos_google_client_id') || "");
-            const [testStatus, setTestStatus] = useState(null);
-            const [testing, setTesting] = useState(false);
-            const handleSave = () => { localStorage.setItem('lifeos_sb_url', url.trim()); localStorage.setItem('lifeos_sb_key', key.trim()); localStorage.setItem('lifeos_gemini_key', geminiKey.trim()); localStorage.setItem('lifeos_google_client_id', googleClientId.trim()); onSave(); };
-            const handleTestConnection = async () => {
-                setTesting(true); setTestStatus(null);
-                try {
-                    const testClient = createClient(url.trim(), key.trim());
-                    const { error } = await testClient.from('app_data').select('user_id', { count: 'exact', head: true });
-                    if (error) throw error;
-                    setTestStatus({ ok: true, message: "Connected — the app_data table is reachable." });
-                } catch (e) {
-                    setTestStatus({ ok: false, message: e.message || "Connection failed." });
-                } finally {
-                    setTesting(false);
-                }
+            const [supabaseUrl, setSupabaseUrl] = useState(localStorage.getItem('lifeos_supabase_url') || "");
+            const [supabaseKey, setSupabaseKey] = useState(localStorage.getItem('lifeos_supabase_key') || "");
+            const handleSave = () => {
+                localStorage.setItem('lifeos_google_client_id', googleClientId.trim());
+                localStorage.setItem('lifeos_supabase_url', supabaseUrl.trim());
+                localStorage.setItem('lifeos_supabase_key', supabaseKey.trim());
+                onSave();
             };
 
             useEffect(() => { const handleEsc = (e) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', handleEsc); return () => window.removeEventListener('keydown', handleEsc); }, [onClose]);
@@ -330,18 +409,13 @@
             return React.createElement("div", { className: "fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm overflow-y-auto" },
                 React.createElement("div", { className: "flex min-h-full items-start justify-center p-4 sm:p-8" },
                     React.createElement("div", { className: "my-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-2xl p-6 md:p-8 shadow-2xl shrink-0" },
+                        React.createElement("h2", { className: "text-2xl font-bold mb-2 text-zinc-900 dark:text-white" }, "Cloud Sync (Supabase)"),
+                        React.createElement("p", { className: "text-sm text-zinc-500 mb-4" }, "Only email/password accounts sync to the cloud, secured by row-level security tied to your real login. Google Sign-In and Guest mode stay local-only on this device. Find these values in your Supabase project under Settings → API."),
+                        React.createElement("input", { value: supabaseUrl, onChange: e => setSupabaseUrl(e.target.value), placeholder: "Supabase Project URL", className: "w-full mb-3 p-4 rounded-xl bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-base md:text-sm focus:outline-none focus:border-indigo-500" }),
+                        React.createElement("input", { value: supabaseKey, onChange: e => setSupabaseKey(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), type: "password", placeholder: "Supabase Anon Key", className: "w-full mb-6 p-4 rounded-xl bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-base md:text-sm focus:outline-none focus:border-indigo-500" }),
                         React.createElement("h2", { className: "text-2xl font-bold mb-2 text-zinc-900 dark:text-white" }, "Google Sign-In"),
                         React.createElement("p", { className: "text-sm text-zinc-500 mb-4" }, "Create a free OAuth Client ID in the ", React.createElement("a", { href: "https://console.cloud.google.com/apis/credentials", target: "_blank", rel: "noopener noreferrer", className: "text-indigo-500 hover:underline" }, "Google Cloud Console"), " (Credentials → Create OAuth client ID → Web application), and add this site's exact URL (", typeof window !== 'undefined' ? window.location.origin : '', ") as an Authorized JavaScript origin."),
                         React.createElement("input", { value: googleClientId, onChange: e => setGoogleClientId(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), placeholder: "Google Client ID (ends in .apps.googleusercontent.com)", className: "w-full mb-6 p-4 rounded-xl bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-base md:text-sm focus:outline-none focus:border-indigo-500" }),
-                        React.createElement("h2", { className: "text-2xl font-bold mb-2 text-zinc-900 dark:text-white" }, "AI Features"),
-                        React.createElement("p", { className: "text-sm text-zinc-500 mb-4" }, "Needed for AI meal plans and the Book Planner. Get a free key at ", React.createElement("a", { href: "https://aistudio.google.com/apikey", target: "_blank", rel: "noopener noreferrer", className: "text-indigo-500 hover:underline" }, "aistudio.google.com/apikey"), "."),
-                        React.createElement("input", { value: geminiKey, onChange: e => setGeminiKey(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), type: "password", placeholder: "Gemini API Key", className: "w-full mb-6 p-4 rounded-xl bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-base md:text-sm focus:outline-none focus:border-indigo-500" }),
-                        React.createElement("h2", { className: "text-2xl font-bold mb-2 text-zinc-900 dark:text-white" }, "Cloud Sync (optional)"),
-                        React.createElement("p", { className: "text-sm text-zinc-500 mb-4" }, "Only needed if you want your data synced across devices via your own ", React.createElement("a", { href: "https://supabase.com", target: "_blank", rel: "noopener noreferrer", className: "text-indigo-500 hover:underline" }, "Supabase"), " project. Leave blank to use Local Mode. Cloud Sync only works when you're signed in with a real email/password account here — Guest and Google Sign-In stay device-local, since they have no server-verified session for Supabase's security rules to check."),
-                        React.createElement("input", { value: url, onChange: e => setUrl(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), placeholder: "Supabase URL", className: "w-full mb-4 p-4 rounded-xl bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-base md:text-sm focus:outline-none focus:border-indigo-500" }),
-                        React.createElement("input", { value: key, onChange: e => setKey(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), type: "password", placeholder: "Anon Key", className: "w-full mb-4 p-4 rounded-xl bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-base md:text-sm focus:outline-none focus:border-indigo-500" }),
-                        React.createElement("button", { onClick: handleTestConnection, disabled: !url.trim() || !key.trim() || testing, type: "button", className: "mb-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-xl font-bold text-sm hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed" }, testing ? "Testing..." : "Test Connection"),
-                        testStatus && React.createElement("p", { className: `text-sm mb-4 ${testStatus.ok ? 'text-emerald-500' : 'text-red-500'}` }, testStatus.message),
                         React.createElement("div", { className: "flex justify-end gap-3 mt-2" }, React.createElement("button", { onClick: onClose, className: "px-6 py-3 md:py-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-white font-bold rounded-xl active:scale-95" }, "Cancel"), React.createElement("button", { onClick: handleSave, className: "px-8 py-3 md:py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 shadow-glow-sm active:scale-95" }, "Save"))
                     )
                 )
@@ -351,11 +425,11 @@
         const MonthlyPlanView = ({ plan, onUpdate }) => {
             const now = new Date();
             const monthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-            const weeks = { 
-                week1: plan.weeks?.week1 || [], 
-                week2: plan.weeks?.week2 || [], 
-                week3: plan.weeks?.week3 || [], 
-                week4: plan.weeks?.week4 || [] 
+            const weeks = {
+                week1: plan.weeks?.week1 || [],
+                week2: plan.weeks?.week2 || [],
+                week3: plan.weeks?.week3 || [],
+                week4: plan.weeks?.week4 || []
             };
 
             const addSprintItem = (weekKey, text) => onUpdate({ ...plan, weeks: { ...weeks, [weekKey]: [...weeks[weekKey], { id: generateUUID(), text, completed: false }] } });
@@ -395,7 +469,7 @@
                         const isActive = i === activeIndex;
                         const startDate = getSprintStart(i);
                         const label = `Starts ${startDate.getDate()}${(startDate.getDate() === 1 || startDate.getDate() === 21 || startDate.getDate() === 31) ? 'st' : (startDate.getDate() === 2 || startDate.getDate() === 22) ? 'nd' : (startDate.getDate() === 3 || startDate.getDate() === 23) ? 'rd' : 'th'} ${startDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
-                        
+
                         return React.createElement("div", { key: wKey, className: `p-6 border rounded-3xl shadow-sm flex flex-col h-full min-h-[450px] transition-all duration-300 ${isActive ? 'bg-indigo-50/30 dark:bg-indigo-900/10 border-indigo-500 ring-1 ring-indigo-500 transform scale-[1.01]' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'}` },
                             React.createElement("div", { className: "flex justify-between items-center mb-4 border-b border-zinc-100 dark:border-zinc-800 pb-3" }, React.createElement("div", null, React.createElement("span", { className: `text-sm font-bold uppercase tracking-widest block ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400'}` }, `Sprint 0${i + 1}`), React.createElement("span", { className: "text-[11px] text-zinc-400 font-medium" }, label)), isActive ? React.createElement("span", { onClick: () => onUpdate({ ...plan, activeWeek: undefined }), className: "text-[10px] font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-500/30 cursor-pointer hover:bg-indigo-200 dark:hover:bg-indigo-500/30 transition-colors" }, "ACTIVE") : React.createElement("button", { onClick: () => onUpdate({ ...plan, activeWeek: i }), className: "text-[10px] font-bold text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-300 px-3 py-1 rounded-full border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors opacity-0 group-hover:opacity-100 active:scale-95" }, "Set Active")),
                             React.createElement(EditableList, { items: weeks[wKey] || [], onAdd: (text) => addSprintItem(wKey, text), onToggle: (id) => toggleSprintItem(wKey, id), onDelete: (id) => deleteSprintItem(wKey, id), onEdit: (id, text) => editSprintItem(wKey, id, text), onReorder: (newItems) => reorderSprintItem(wKey, newItems), placeholder: "Add sprint task..." })
@@ -404,6 +478,7 @@
                 )
             );
         };
+
 
         const YearlyGoalsView = ({ goalsData, onUpdateGoals }) => {
             const [activeYear, setActiveYear] = useState(new Date().getFullYear());
@@ -419,315 +494,152 @@
             const deleteItem = (path, id) => { const parts = path.split('.'); let list = parts.length > 1 ? safeData[parts[0]][parts[1]] : safeData[path]; updateSection(path, list.filter(i => i.id !== id)); };
             const editItem = (path, id, text) => { const parts = path.split('.'); let list = parts.length > 1 ? safeData[parts[0]][parts[1]] : safeData[path]; updateSection(path, list.map(i => i.id === id ? { ...i, text } : i)); };
             const updateMainFocus = (idx, text) => { const newFocus = [...safeData.mainFocus]; if (!newFocus[idx]) newFocus[idx] = { id: generateUUID(), text: "" }; newFocus[idx].text = text; updateSection('mainFocus', newFocus); };
-            
+
             const saveMilestoneEdit = () => { if (editingMilestoneId && milestoneEditValue.trim()) editItem('milestones', editingMilestoneId, milestoneEditValue.trim()); setEditingMilestoneId(null); setMilestoneEditValue(""); };
 
-            return React.createElement("div", { className: "p-4 md:p-8 pb-32 space-y-12 h-full overflow-y-auto max-w-7xl mx-auto" }, 
-                React.createElement("div", { className: "text-center space-y-2" }, 
+            return React.createElement("div", { className: "p-4 md:p-8 pb-32 space-y-12 h-full overflow-y-auto max-w-7xl mx-auto" },
+                React.createElement("div", { className: "text-center space-y-2" },
                     React.createElement("div", { className: "flex items-center justify-center gap-4" },
                         React.createElement("button", { onClick: () => setActiveYear(activeYear - 1), className: "p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-zinc-400 hover:text-zinc-900 dark:hover:text-white active:scale-95" }, React.createElement(ChevronLeft, { size: 28 })),
                         React.createElement("h2", { className: "text-4xl md:text-5xl font-bold text-zinc-900 dark:text-white tracking-tight" }, activeYear, " Vision Board"),
                         React.createElement("button", { onClick: () => setActiveYear(activeYear + 1), className: "p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-zinc-400 hover:text-zinc-900 dark:hover:text-white active:scale-95" }, React.createElement(ChevronRight, { size: 28 }))
                     ),
                     React.createElement("p", { className: "text-zinc-500 dark:text-zinc-400 mt-2" }, "Design your future. Execute your present.")
-                ), 
-                React.createElement("div", { className: "relative group" }, 
-                    React.createElement("div", { className: "absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-10 dark:opacity-20 group-hover:opacity-30 dark:group-hover:opacity-40 transition duration-1000 group-hover:duration-200" }), 
-                    React.createElement("div", { className: "relative p-8 bg-white dark:bg-zinc-900 ring-1 ring-zinc-200 dark:ring-white/10 rounded-xl leading-none flex items-top justify-start space-x-6 shadow-sm" }, 
-                        React.createElement(Target, { className: "w-8 h-8 text-indigo-500 dark:text-indigo-400 shrink-0 mt-2" }), 
+                ),
+                React.createElement("div", { className: "relative group" },
+                    React.createElement("div", { className: "absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-10 dark:opacity-20 group-hover:opacity-30 dark:group-hover:opacity-40 transition duration-1000 group-hover:duration-200" }),
+                    React.createElement("div", { className: "relative p-8 bg-white dark:bg-zinc-900 ring-1 ring-zinc-200 dark:ring-white/10 rounded-xl leading-none flex items-top justify-start space-x-6 shadow-sm" },
+                        React.createElement(Target, { className: "w-8 h-8 text-indigo-500 dark:text-indigo-400 shrink-0 mt-2" }),
                         React.createElement("div", { className: "space-y-4 w-full" }, React.createElement("h3", { className: "text-lg font-bold text-indigo-900 dark:text-indigo-100" }, "North Star Mission"), React.createElement("textarea", { value: safeData.mission, onChange: (e) => updateSection('mission', e.target.value), className: "w-full bg-transparent text-2xl md:text-3xl font-bold text-zinc-800 dark:text-white leading-tight resize-none focus:outline-none placeholder:text-zinc-300 dark:placeholder:text-zinc-700 h-auto min-h-[120px]", placeholder: `What is your ultimate goal for ${activeYear}?` }))
                     )
-                ), 
-                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-6" }, 
-                    [0, 1, 2].map(i => React.createElement("div", { key: i, className: "relative p-6 bg-white/70 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 rounded-2xl transition-all group flex flex-col items-center text-center gap-4 hover:-translate-y-1 shadow-sm hover:shadow-md" }, 
-                        React.createElement("div", { className: "w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xl font-bold text-zinc-400 dark:text-zinc-500 group-hover:bg-indigo-600 group-hover:text-white transition-colors" }, i + 1), 
-                        React.createElement("input", { value: safeData.mainFocus[i]?.text || "", onChange: (e) => updateMainFocus(i, e.target.value), className: "bg-transparent text-center font-bold text-xl text-zinc-900 dark:text-white w-full focus:outline-none placeholder:text-zinc-300 dark:placeholder:text-zinc-700 text-base", placeholder: "Core Focus" }), 
+                ),
+                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-6" },
+                    [0, 1, 2].map(i => React.createElement("div", { key: i, className: "relative p-6 bg-white/70 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 rounded-2xl transition-all group flex flex-col items-center text-center gap-4 hover:-translate-y-1 shadow-sm hover:shadow-md" },
+                        React.createElement("div", { className: "w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xl font-bold text-zinc-400 dark:text-zinc-500 group-hover:bg-indigo-600 group-hover:text-white transition-colors" }, i + 1),
+                        React.createElement("input", { value: safeData.mainFocus[i]?.text || "", onChange: (e) => updateMainFocus(i, e.target.value), className: "bg-transparent text-center font-bold text-xl text-zinc-900 dark:text-white w-full focus:outline-none placeholder:text-zinc-300 dark:placeholder:text-zinc-700 text-base", placeholder: "Core Focus" }),
                         React.createElement("div", { className: "h-1 w-12 bg-zinc-200 dark:bg-zinc-800 group-hover:bg-indigo-500 transition-colors rounded-full" })
                     ))
-                ), 
-                React.createElement("div", null, 
-                    React.createElement("div", { className: "flex items-center gap-3 mb-6" }, React.createElement("div", { className: "p-2 bg-indigo-100 dark:bg-indigo-500/10 rounded-lg text-indigo-600 dark:text-indigo-400" }, React.createElement(CalendarIcon, { size: 20 })), React.createElement("h3", { className: "text-2xl font-bold text-zinc-900 dark:text-white" }, "Quarterly Execution")), 
-                    React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6" }, 
-                        ['Q1', 'Q2', 'Q3', 'Q4'].map(q => { 
-                            const months = { 'Q1': 'Jan - Mar', 'Q2': 'Apr - Jun', 'Q3': 'Jul - Sep', 'Q4': 'Oct - Dec' }[q]; 
-                            return React.createElement("div", { key: q, className: "bg-white/60 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800/60 rounded-2xl p-5 hover:bg-white dark:hover:bg-zinc-900/50 transition-colors shadow-sm" }, 
-                                React.createElement("div", { className: "flex justify-between items-center mb-4" }, React.createElement("span", { className: "text-3xl font-black text-zinc-900 dark:text-zinc-800 select-none" }, q), React.createElement("span", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-500 bg-zinc-100 dark:bg-black/30 px-2 py-1 rounded" }, months)), 
+                ),
+                React.createElement("div", null,
+                    React.createElement("div", { className: "flex items-center gap-3 mb-6" }, React.createElement("div", { className: "p-2 bg-indigo-100 dark:bg-indigo-500/10 rounded-lg text-indigo-600 dark:text-indigo-400" }, React.createElement(CalendarIcon, { size: 20 })), React.createElement("h3", { className: "text-2xl font-bold text-zinc-900 dark:text-white" }, "Quarterly Execution")),
+                    React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6" },
+                        ['Q1', 'Q2', 'Q3', 'Q4'].map(q => {
+                            const months = { 'Q1': 'Jan - Mar', 'Q2': 'Apr - Jun', 'Q3': 'Jul - Sep', 'Q4': 'Oct - Dec' }[q];
+                            return React.createElement("div", { key: q, className: "bg-white/60 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800/60 rounded-2xl p-5 hover:bg-white dark:hover:bg-zinc-900/50 transition-colors shadow-sm overflow-hidden" },
+                                React.createElement("div", { className: "flex justify-between items-center mb-4" }, React.createElement("span", { className: "text-3xl font-black text-zinc-900 dark:text-zinc-800 select-none" }, q), React.createElement("span", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-500 bg-zinc-100 dark:bg-black/30 px-2 py-1 rounded" }, months)),
                                 React.createElement(EditableList, { items: safeData.quarters[q.toLowerCase()] || [], onAdd: t => addItem(`quarters.${q.toLowerCase()}`, t), onToggle: id => toggleItem(`quarters.${q.toLowerCase()}`, id), onDelete: id => deleteItem(`quarters.${q.toLowerCase()}`, id), onEdit: (id, text) => editItem(`quarters.${q.toLowerCase()}`, id, text), placeholder: "Key objective..." })
-                            ); 
+                            );
                         })
                     )
-                ), 
-                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-8" }, 
-                    React.createElement("div", { className: "bg-emerald-50 dark:bg-emerald-950/10 border border-emerald-200 dark:border-emerald-500/20 rounded-3xl p-6 md:p-8" }, React.createElement("h3", { className: "text-xl font-bold text-emerald-600 dark:text-emerald-400 mb-6 flex items-center gap-2" }, React.createElement(CheckCircle2, { size: 24 }), "Focus habits"), React.createElement(EditableList, { items: safeData.dos || [], onAdd: t => addItem('dos', t), onToggle: id => toggleItem('dos', id), onDelete: id => deleteItem('dos', id), onEdit: (id, text) => editItem('dos', id, text), placeholder: "I am someone who..." })), 
-                    React.createElement("div", { className: "bg-rose-50 dark:bg-rose-950/10 border border-rose-200 dark:border-rose-500/20 rounded-3xl p-6 md:p-8" }, React.createElement("h3", { className: "text-xl font-bold text-rose-600 dark:text-rose-400 mb-6 flex items-center gap-2" }, React.createElement(Ban, { size: 24 }), "Distractions"), React.createElement(EditableList, { items: safeData.donts || [], onAdd: t => addItem('donts', t), onToggle: id => toggleItem('donts', id), onDelete: id => deleteItem('donts', id), onEdit: (id, text) => editItem('donts', id, text), placeholder: "I refuse to..." }))
-                ), 
-                React.createElement("div", { className: "bg-white/70 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 relative overflow-hidden shadow-sm" }, 
-                    React.createElement("h3", { className: "text-lg font-bold text-zinc-900 dark:text-white mb-6 flex items-center gap-2 relative z-10" }, React.createElement(Flag, { size: 18, className: "text-yellow-500" }), "Milestone Journey"), 
-                    React.createElement("div", { className: "relative z-10 pl-2" }, 
-                        safeData.milestones.length > 0 && React.createElement("div", { className: "absolute left-[19px] top-3 bottom-10 w-0.5 bg-zinc-200 dark:bg-zinc-800" }), 
-                        safeData.milestones.map((item, idx) => { 
-                            const isCompleted = item.completed; const isNext = !isCompleted && (idx === 0 || safeData.milestones[idx-1].completed); 
-                            return React.createElement("div", { key: item.id, className: "relative flex items-start gap-4 mb-6 last:mb-0 group" }, 
-                                React.createElement("button", { onClick: () => toggleItem('milestones', item.id), className: `relative z-10 w-8 h-8 shrink-0 rounded-full flex items-center justify-center border-2 transition-all duration-300 cursor-pointer ${isCompleted ? 'bg-emerald-500 border-emerald-500 text-white shadow-md' : isNext ? 'bg-indigo-600 border-indigo-400 text-white animate-pulse shadow-md scale-110' : 'bg-zinc-100 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-400 dark:text-zinc-600'}` }, isCompleted ? React.createElement(Check, { size: 14, strokeWidth: 3 }) : React.createElement("span", { className: "text-xs font-bold" }, idx + 1)), 
-                                editingMilestoneId === item.id ? 
-                                    React.createElement("div", { className: "flex-1 pt-1.5 flex gap-2 items-center" }, React.createElement("input", { value: milestoneEditValue, onChange: (e) => setMilestoneEditValue(e.target.value), onKeyDown: (e) => { if(e.key === 'Enter') saveMilestoneEdit(); if(e.key === 'Escape') setEditingMilestoneId(null); }, className: "flex-1 bg-white dark:bg-zinc-900 px-2 py-1 rounded border border-indigo-500 outline-none text-sm text-zinc-900 dark:white text-base", autoFocus: true }), React.createElement("button", { onClick: saveMilestoneEdit, className: "text-indigo-500 hover:text-indigo-600 p-2" }, React.createElement(Check, { size: 16 }))) 
-                                : 
+                ),
+                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-8" },
+                    React.createElement("div", { className: "bg-emerald-50 dark:bg-emerald-950/10 border border-emerald-200 dark:border-emerald-500/20 rounded-3xl p-6 md:p-8 overflow-hidden" }, React.createElement("h3", { className: "text-xl font-bold text-emerald-600 dark:text-emerald-400 mb-6 flex items-center gap-2" }, React.createElement(CheckCircle2, { size: 24 }), "Focus habits"), React.createElement(EditableList, { items: safeData.dos || [], onAdd: t => addItem('dos', t), onToggle: id => toggleItem('dos', id), onDelete: id => deleteItem('dos', id), onEdit: (id, text) => editItem('dos', id, text), placeholder: "I am someone who..." })),
+                    React.createElement("div", { className: "bg-rose-50 dark:bg-rose-950/10 border border-rose-200 dark:border-rose-500/20 rounded-3xl p-6 md:p-8 overflow-hidden" }, React.createElement("h3", { className: "text-xl font-bold text-rose-600 dark:text-rose-400 mb-6 flex items-center gap-2" }, React.createElement(Ban, { size: 24 }), "Distractions"), React.createElement(EditableList, { items: safeData.donts || [], onAdd: t => addItem('donts', t), onToggle: id => toggleItem('donts', id), onDelete: id => deleteItem('donts', id), onEdit: (id, text) => editItem('donts', id, text), placeholder: "I refuse to..." }))
+                ),
+                React.createElement("div", { className: "bg-white/70 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 relative overflow-hidden shadow-sm" },
+                    React.createElement("h3", { className: "text-lg font-bold text-zinc-900 dark:text-white mb-6 flex items-center gap-2 relative z-10" }, React.createElement(Flag, { size: 18, className: "text-yellow-500" }), "Milestone Journey"),
+                    React.createElement("div", { className: "relative z-10 pl-2" },
+                        safeData.milestones.length > 0 && React.createElement("div", { className: "absolute left-[19px] top-3 bottom-10 w-0.5 bg-zinc-200 dark:bg-zinc-800" }),
+                        safeData.milestones.map((item, idx) => {
+                            const isCompleted = item.completed; const isNext = !isCompleted && (idx === 0 || safeData.milestones[idx-1].completed);
+                            return React.createElement("div", { key: item.id, className: "relative flex items-start gap-4 mb-6 last:mb-0 group" },
+                                React.createElement("button", { onClick: () => toggleItem('milestones', item.id), className: `relative z-10 w-8 h-8 shrink-0 rounded-full flex items-center justify-center border-2 transition-all duration-300 cursor-pointer ${isCompleted ? 'bg-emerald-500 border-emerald-500 text-white shadow-md' : isNext ? 'bg-indigo-600 border-indigo-400 text-white animate-pulse shadow-md scale-110' : 'bg-zinc-100 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-400 dark:text-zinc-600'}` }, isCompleted ? React.createElement(Check, { size: 14, strokeWidth: 3 }) : React.createElement("span", { className: "text-xs font-bold" }, idx + 1)),
+                                editingMilestoneId === item.id ?
+                                    React.createElement("div", { className: "flex-1 pt-1.5 flex gap-2 items-center" }, React.createElement("input", { value: milestoneEditValue, onChange: (e) => setMilestoneEditValue(e.target.value), onKeyDown: (e) => { if(e.key === 'Enter') saveMilestoneEdit(); if(e.key === 'Escape') setEditingMilestoneId(null); }, className: "flex-1 bg-white dark:bg-zinc-900 px-2 py-1 rounded border border-indigo-500 outline-none text-sm text-zinc-900 dark:white text-base", autoFocus: true }), React.createElement("button", { onClick: saveMilestoneEdit, className: "text-indigo-500 hover:text-indigo-600 p-2" }, React.createElement(Check, { size: 16 })))
+                                :
                                     React.createElement("div", { className: "flex-1 pt-1.5" }, React.createElement("div", { className: "flex justify-between items-start" }, React.createElement("span", { className: `text-sm font-medium transition-colors duration-300 leading-none ${isCompleted ? 'text-zinc-400 dark:text-zinc-500 line-through' : isNext ? 'text-zinc-900 dark:text-white font-bold' : 'text-zinc-400 dark:text-zinc-500'}` }, item.text), React.createElement("div", { className: "flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity p-1" }, React.createElement("button", { onClick: () => { setEditingMilestoneId(item.id); setMilestoneEditValue(item.text); }, className: "text-zinc-400 hover:text-indigo-500 p-1" }, React.createElement(Edit3, { size: 14 })), React.createElement("button", { onClick: () => deleteItem('milestones', item.id), className: "text-zinc-400 hover:text-red-500 p-1" }, React.createElement(Trash, { size: 14 })))))
-                            ); 
-                        }), 
+                            );
+                        }),
                         React.createElement("div", { className: "relative flex items-center gap-4 mt-4 pt-2" }, React.createElement("div", { className: "w-8 h-8 shrink-0 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 border-dashed flex items-center justify-center text-zinc-400 dark:text-zinc-500" }, React.createElement(Plus, { size: 14 })), React.createElement("input", { onKeyDown: (e) => { if(e.key === 'Enter' && e.target.value.trim()) { addItem('milestones', e.target.value); e.target.value = ''; } }, placeholder: "Add next step...", className: "bg-transparent text-sm text-zinc-500 dark:text-zinc-400 focus:text-zinc-900 dark:focus:text-white focus:outline-none w-full placeholder:text-zinc-400 dark:placeholder:text-zinc-700 text-base" }))
                     )
                 )
             );
         };
 
-        const IdeaBoardView = ({ notes, onAdd, onUpdate, onDelete, tabs, activeTab, setActiveTab, onAddTab, onDeleteTab, onRenameTab }) => {
-            const boardRef = useRef(null); 
-            const [draggingId, setDraggingId] = useState(null); 
-            const [offset, setOffset] = useState({ x: 0, y: 0 });
-            const [boardSize] = useState({ w: window.innerWidth < 768 ? 2000 : 4000, h: window.innerWidth < 768 ? 2000 : 4000 });
-            const [isAddingTab, setIsAddingTab] = useState(false);
-            const [newTabName, setNewTabName] = useState("");
-            const [editingTab, setEditingTab] = useState(null);
-            const [editTabValue, setEditTabValue] = useState("");
-            
-            const colors = ["bg-yellow-200 text-yellow-900 dark:bg-yellow-400 dark:text-yellow-950", "bg-green-200 text-green-900 dark:bg-green-400 dark:text-green-950", "bg-pink-200 text-pink-900 dark:bg-pink-400 dark:text-pink-950", "bg-blue-200 text-blue-900 dark:bg-blue-400 dark:text-blue-950", "bg-purple-200 text-purple-900 dark:bg-purple-400 dark:text-purple-950"];
-            const fonts = ["font-hand", "font-sans", "font-mono"];
 
-            const centerOnNotes = (smooth = true) => {
-                if (!boardRef.current) return;
-                const currentNotes = notes.filter(n => (n.tabId || tabs[0] || 'Main') === activeTab);
-                let targetX = boardSize.w / 2;
-                let targetY = boardSize.h / 2;
+        const IDEA_COLORS = ['bg-yellow-200 dark:bg-yellow-400', 'bg-blue-200 dark:bg-blue-400', 'bg-pink-200 dark:bg-pink-400', 'bg-emerald-200 dark:bg-emerald-400'];
 
-                if (currentNotes.length > 0) {
-                    const minX = Math.min(...currentNotes.map(n => n.x));
-                    const maxX = Math.max(...currentNotes.map(n => n.x + (n.width || 240)));
-                    const minY = Math.min(...currentNotes.map(n => n.y));
-                    const maxY = Math.max(...currentNotes.map(n => n.y + (n.height || 240)));
-                    
-                    targetX = minX + (maxX - minX) / 2;
-                    targetY = minY + (maxY - minY) / 2;
-                }
+        const IdeaBoardView = ({ notes, onAdd, onUpdate, onDelete }) => {
+            const boardRef = useRef(null);
+            const [draggingId, setDraggingId] = useState(null);
+            const offsetRef = useRef({ x: 0, y: 0 });
+            const noteRefs = useRef({});
 
-                boardRef.current.scrollTo({
-                    left: targetX - (boardRef.current.clientWidth / 2),
-                    top: targetY - (boardRef.current.clientHeight / 2),
-                    behavior: smooth ? 'smooth' : 'auto'
-                });
+            const handleDragStart = (e, note) => {
+                setDraggingId(note.id);
+                const pos = getPointerPos(e);
+                offsetRef.current = { x: pos.x - note.x, y: pos.y - note.y };
             };
 
             useEffect(() => {
-                const timeoutId = setTimeout(() => centerOnNotes(false), 50);
-                return () => clearTimeout(timeoutId);
-            }, [boardSize.w, boardSize.h, activeTab]);
-
-            const currentNotes = notes.filter(n => (n.tabId || tabs[0] || 'Main') === activeTab);
-
-            const handleDragHandleDown = (e, note) => { 
-                const pos = getPointerPos(e);
-                setDraggingId(note.id); 
-                const boardRect = boardRef.current.getBoundingClientRect();
-                const scrollX = boardRef.current.scrollLeft;
-                const scrollY = boardRef.current.scrollTop;
-                setOffset({ x: pos.x - boardRect.left + scrollX - note.x, y: pos.y - boardRect.top + scrollY - note.y }); 
-            };
-            
-            const handleMouseMove = (e) => { 
-                if (draggingId && boardRef.current) { 
+                if (!draggingId) return;
+                const handleMove = (e) => {
                     if (e.cancelable) e.preventDefault();
                     const pos = getPointerPos(e);
-                    const boardRect = boardRef.current.getBoundingClientRect();
                     const note = notes.find(n => n.id === draggingId);
                     if (!note) return;
-                    
-                    const scrollX = boardRef.current.scrollLeft;
-                    const scrollY = boardRef.current.scrollTop;
+                    const newX = Math.max(0, pos.x - offsetRef.current.x);
+                    const newY = Math.max(0, pos.y - offsetRef.current.y);
+                    onUpdate({ ...note, x: newX, y: newY });
+                };
+                const handleUp = () => setDraggingId(null);
+                window.addEventListener('mousemove', handleMove, { passive: false });
+                window.addEventListener('touchmove', handleMove, { passive: false });
+                window.addEventListener('mouseup', handleUp);
+                window.addEventListener('touchend', handleUp);
+                return () => {
+                    window.removeEventListener('mousemove', handleMove);
+                    window.removeEventListener('touchmove', handleMove);
+                    window.removeEventListener('mouseup', handleUp);
+                    window.removeEventListener('touchend', handleUp);
+                };
+            }, [draggingId, notes]);
 
-                    const noteW = note.width || 240;
-                    const noteH = note.height || 240;
-
-                    let newX = pos.x - boardRect.left + scrollX - offset.x;
-                    let newY = pos.y - boardRect.top + scrollY - offset.y;
-
-                    newX = Math.max(0, Math.min(newX, boardSize.w - noteW));
-                    newY = Math.max(0, Math.min(newY, boardSize.h - noteH));
-
-                    onUpdate({ ...note, x: newX, y: newY }, false); 
-                } 
-            };
-            
-            const handleMouseUpGlobal = (e) => { 
-                if (draggingId) setDraggingId(null); 
-            };
-
-            const handleNoteMouseUp = (e, note) => {
-                const w = e.currentTarget.offsetWidth;
-                const h = e.currentTarget.offsetHeight;
+            const handleNoteMouseUp = (note) => {
+                const el = noteRefs.current[note.id];
+                if (!el) return;
+                const w = el.offsetWidth, h = el.offsetHeight;
                 if (w !== note.width || h !== note.height) {
-                    onUpdate({ ...note, width: w, height: h }, true);
-                }
-            };
-            
-            const handleCycleFont = (e, note) => {
-                e.stopPropagation();
-                const currentIndex = fonts.indexOf(note.font || 'font-sans');
-                const nextIndex = (currentIndex + 1) % fonts.length;
-                onUpdate({ ...note, font: fonts[nextIndex] }, true);
-            };
-
-            const handleCopy = (e, text) => {
-                e.stopPropagation();
-                const button = e.currentTarget;
-                const originalHTML = button.innerHTML;
-                const successHTML = `<svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
-                
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(text).then(() => { button.innerHTML = successHTML; setTimeout(() => button.innerHTML = originalHTML, 1500); });
-                } else {
-                    const tempInput = document.createElement('textarea'); tempInput.value = text; document.body.appendChild(tempInput); tempInput.select(); document.execCommand('copy'); document.body.removeChild(tempInput);
-                    button.innerHTML = successHTML; setTimeout(() => button.innerHTML = originalHTML, 1500);
+                    onUpdate({ ...note, width: w, height: h });
                 }
             };
 
             const handleAddNote = () => {
-                const randomColor = colors[Math.floor(Math.random() * colors.length)];
-                const startW = window.innerWidth < 640 ? 200 : 240;
-                const startH = window.innerWidth < 640 ? 200 : 240;
-                
-                let x = boardSize.w / 2;
-                let y = boardSize.h / 2;
-                
-                if (boardRef.current) {
-                    x = boardRef.current.scrollLeft + (boardRef.current.clientWidth / 2) - (startW / 2);
-                    y = boardRef.current.scrollTop + (boardRef.current.clientHeight / 2) - (startH / 2);
-                }
-                
-                onAdd({ text: "", x, y, color: randomColor, width: startW, height: startH, font: 'font-sans', tabId: activeTab });
+                const color = IDEA_COLORS[notes.length % IDEA_COLORS.length];
+                const boardW = boardRef.current ? boardRef.current.clientWidth : 800;
+                const boardH = boardRef.current ? boardRef.current.clientHeight : 600;
+                const x = Math.max(20, Math.random() * (boardW - 280));
+                const y = Math.max(20, Math.random() * (boardH - 280));
+                onAdd({ text: '', x, y, width: 256, height: 256, color });
             };
 
-            const submitRename = () => {
-                if (editingTab && editTabValue.trim() && editTabValue.trim() !== editingTab) {
-                    onRenameTab(editingTab, editTabValue.trim());
-                }
-                setEditingTab(null);
-            };
-
-            useEffect(() => { 
-                if(draggingId) { 
-                    window.addEventListener('mousemove', handleMouseMove, { passive: false }); 
-                    window.addEventListener('touchmove', handleMouseMove, { passive: false }); 
-                    window.addEventListener('mouseup', handleMouseUpGlobal); 
-                    window.addEventListener('touchend', handleMouseUpGlobal); 
-                } else { 
-                    window.removeEventListener('mousemove', handleMouseMove); 
-                    window.removeEventListener('touchmove', handleMouseMove); 
-                    window.removeEventListener('mouseup', handleMouseUpGlobal); 
-                    window.removeEventListener('touchend', handleMouseUpGlobal); 
-                } 
-                return () => { 
-                    window.removeEventListener('mousemove', handleMouseMove); 
-                    window.removeEventListener('touchmove', handleMouseMove); 
-                    window.removeEventListener('mouseup', handleMouseUpGlobal); 
-                    window.removeEventListener('touchend', handleMouseUpGlobal); 
-                }; 
-            }, [draggingId, offset, notes, boardSize]);
-            
-            return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-[calc(100vh-10rem)] md:h-[calc(100vh-6rem)] flex flex-col max-w-[1600px] mx-auto w-full relative" },
-                React.createElement("div", { className: "flex justify-between items-start mb-6 shrink-0" },
-                    React.createElement("div", null,
-                        React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white flex items-center gap-3" }, React.createElement(Lightbulb, { className: "text-indigo-500" }), "Idea Board"),
-                        React.createElement("p", { className: "text-zinc-500 text-sm mt-1" }, "Unlimited space for your thoughts. Scroll to explore.")
-                    )
-                ),
-
-                React.createElement("div", { className: "flex gap-2 mb-4 items-center overflow-x-auto no-scrollbar pb-2 shrink-0 w-full border-b border-zinc-200 dark:border-zinc-800" },
-                    tabs.map(tab => (
-                        React.createElement("div", { key: tab, onClick: () => { if(editingTab !== tab) setActiveTab(tab); }, className: `flex items-center gap-2 px-4 py-2 rounded-t-xl text-sm font-bold whitespace-nowrap transition-colors border-x border-t cursor-pointer border-b-0 -mb-[1px] ${activeTab === tab ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400' : 'bg-transparent text-zinc-500 dark:text-zinc-500 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900'}` }, 
-                            editingTab === tab ?
-                                React.createElement("input", { autoFocus: true, value: editTabValue, onChange: e => setEditTabValue(e.target.value), onBlur: submitRename, onKeyDown: e => { if(e.key === 'Enter') submitRename(); if(e.key === 'Escape') setEditingTab(null); }, className: "px-2 py-0.5 rounded bg-white dark:bg-zinc-900 border border-indigo-500 outline-none text-zinc-900 dark:text-white min-w-[100px]" })
-                            :
-                                React.createElement("span", { onDoubleClick: (e) => { e.stopPropagation(); setEditingTab(tab); setEditTabValue(tab); } }, tab),
-                            
-                            activeTab === tab && editingTab !== tab && React.createElement("div", { className: "flex items-center gap-1 ml-1" },
-                                React.createElement("button", { onClick: (e) => { e.stopPropagation(); setEditingTab(tab); setEditTabValue(tab); }, className: "hover:text-indigo-500 opacity-50 hover:opacity-100 transition-colors", title: "Rename Board" }, React.createElement(Edit3, { size: 12 })),
-                                tabs.length > 1 && React.createElement("button", { onClick: (e) => { e.stopPropagation(); if(confirm('Delete this board and all its notes?')) onDeleteTab(tab); }, className: "hover:text-red-500 opacity-50 hover:opacity-100 transition-colors", title: "Delete Board" }, React.createElement(X, { size: 14 }))
-                            )
-                        )
-                    )),
-                    isAddingTab ? React.createElement("div", { className: "flex items-center gap-1 mb-[1px]" },
-                        React.createElement("input", { autoFocus: true, value: newTabName, onChange: e => setNewTabName(e.target.value), onKeyDown: e => { if(e.key==='Enter' && newTabName.trim()) { onAddTab(newTabName.trim()); setIsAddingTab(false); setNewTabName(""); } if(e.key==='Escape') setIsAddingTab(false); }, className: "px-3 py-1.5 rounded-lg text-sm bg-white dark:bg-zinc-900 border border-indigo-500 outline-none text-zinc-900 dark:text-white w-32 shadow-sm" }),
-                        React.createElement("button", { onClick: () => { if(newTabName.trim()) { onAddTab(newTabName.trim()); setIsAddingTab(false); setNewTabName(""); } }, className: "p-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 shadow-sm" }, React.createElement(Check, { size: 14 })),
-                        React.createElement("button", { onClick: () => setIsAddingTab(false), className: "p-1.5 bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-md hover:bg-zinc-300 dark:hover:bg-zinc-700" }, React.createElement(X, { size: 14 }))
-                    ) : React.createElement("button", { onClick: () => setIsAddingTab(true), className: "px-3 py-1.5 rounded-md text-sm font-bold whitespace-nowrap text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors flex items-center gap-1 mb-[1px]" },
-                        React.createElement(Plus, { size: 16 }), "New Board"
-                    )
-                ),
-
-                React.createElement("div", { ref: boardRef, className: `relative flex-1 w-full rounded-3xl overflow-auto shadow-inner group idea-board-bg border border-zinc-200 dark:border-zinc-800 ${draggingId ? 'touch-none' : ''}` },
-                    React.createElement("div", { style: { width: `${boardSize.w}px`, height: `${boardSize.h}px` }, className: "relative" },
-                        React.createElement("div", { className: "absolute w-6 h-6 text-zinc-300 dark:text-zinc-700/60 pointer-events-none -translate-x-1/2 -translate-y-1/2 flex items-center justify-center", style: { left: boardSize.w / 2, top: boardSize.h / 2 } },
-                            React.createElement(Plus, { size: 24 })
+            return React.createElement("div", { className: "h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)] relative" },
+                React.createElement("div", { ref: boardRef, className: "idea-board-bg absolute inset-0 overflow-hidden" },
+                    notes.map(note => React.createElement("div", {
+                        key: note.id,
+                        ref: (el) => { noteRefs.current[note.id] = el; },
+                        onMouseUp: () => handleNoteMouseUp(note),
+                        className: `sticky-note absolute flex flex-col text-slate-800 ${note.color} ${draggingId === note.id ? 'dragging' : ''}`,
+                        style: { left: note.x, top: note.y, width: note.width || 256, height: note.height || 256 }
+                    },
+                        React.createElement("div", {
+                            onMouseDown: (e) => handleDragStart(e, note),
+                            onTouchStart: (e) => handleDragStart(e, note),
+                            className: "flex justify-between items-center px-3 py-2 border-b border-black/10 cursor-grab active:cursor-grabbing shrink-0"
+                        },
+                            React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider opacity-50" }, "Note"),
+                            React.createElement("button", { onClick: () => onDelete(note.id), className: "opacity-50 hover:opacity-100" }, React.createElement(X, { size: 14 }))
                         ),
-                        currentNotes.length === 0 && React.createElement("div", { className: "sticky left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-600 pointer-events-none p-4 w-fit" }, 
-                            React.createElement("div", { className: "text-center bg-white/80 dark:bg-zinc-900/80 p-8 rounded-3xl backdrop-blur-md border border-zinc-200 dark:border-zinc-800 shadow-sm" }, 
-                                React.createElement(Lightbulb, { size: 48, className: "mx-auto mb-3 opacity-50" }), 
-                                React.createElement("p", { className: "text-lg font-bold uppercase tracking-wider" }, "Board Empty"),
-                                React.createElement("p", { className: "text-sm mt-2 opacity-80" }, "Click 'Add Note' to start brainstorming.")
-                            )
-                        ),
-                        currentNotes.map(note => {
-                            const noteW = Math.min(note.width || 240, boardSize.w);
-                            const noteH = Math.min(note.height || 240, boardSize.h);
-                            const safeX = Math.max(0, Math.min(note.x, boardSize.w - noteW));
-                            const safeY = Math.max(0, Math.min(note.y, boardSize.h - noteH));
-
-                            return React.createElement("div", { 
-                                id: note.id, 
-                                key: note.id, 
-                                onMouseUp: (e) => handleNoteMouseUp(e, note),
-                                onTouchEnd: (e) => handleNoteMouseUp(e, note),
-                                style: { 
-                                    left: safeX, 
-                                    top: safeY, 
-                                    width: `${noteW}px`, 
-                                    height: `${noteH}px`,
-                                    maxWidth: `calc(100% - ${safeX}px)`,
-                                    maxHeight: `calc(100% - ${safeY}px)`,
-                                    resize: 'both'
-                                }, 
-                                className: `sticky-note absolute flex flex-col ${note.color} ${draggingId === note.id ? 'dragging' : ''}` 
-                            }, 
-                                React.createElement("div", {
-                                    onMouseDown: (e) => handleDragHandleDown(e, note),
-                                    onTouchStart: (e) => handleDragHandleDown(e, note),
-                                    className: "w-full h-8 flex items-center justify-center cursor-move shrink-0 bg-black/5 hover:bg-black/10 transition-colors border-b border-black/5"
-                                },
-                                    React.createElement(GripHorizontal, { size: 16, className: "opacity-40 text-black" })
-                                ),
-                                React.createElement("div", { className: "flex-grow overflow-auto no-scrollbar p-4 pt-3" },
-                                    React.createElement("textarea", { value: note.text, onChange: (e) => onUpdate({ ...note, text: e.target.value }, true), placeholder: "Write idea...", className: `w-full h-full bg-transparent resize-none outline-none ${note.font || 'font-sans'} text-base md:text-lg placeholder-black/30 dark:placeholder-black/30 leading-relaxed text-gray-800 dark:text-gray-900` })
-                                ),
-                                React.createElement("div", { className: "flex justify-end items-center px-4 pb-4 space-x-2 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" },
-                                    React.createElement("button", { onClick: (e) => handleCycleFont(e, note), className: "text-gray-600 hover:text-black dark:text-gray-700 dark:hover:text-black font-serif font-bold text-xs p-2 md:px-2 md:py-1 bg-white/40 hover:bg-white/60 rounded transition-colors active:scale-95" }, "Aa"),
-                                    React.createElement("button", { onClick: (e) => handleCopy(e, note.text), className: "copy-note-btn text-gray-600 hover:text-black dark:text-gray-700 dark:hover:text-black p-2 md:p-1 bg-white/40 hover:bg-white/60 rounded transition-colors active:scale-95" }, 
-                                        React.createElement("svg", { className: "w-5 h-5 md:w-4 md:h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" }))
-                                    ),
-                                    React.createElement("button", { onClick: (e) => { e.stopPropagation(); onDelete(note.id); }, className: "delete-note-btn text-gray-600 hover:text-red-600 dark:text-gray-700 dark:hover:text-red-600 p-2 md:p-1 bg-white/40 hover:bg-white/60 rounded transition-colors active:scale-95" }, 
-                                        React.createElement("svg", { className: "w-5 h-5 md:w-4 md:h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" }))
-                                    )
-                                )
-                            )
+                        React.createElement("textarea", {
+                            value: note.text,
+                            onChange: (e) => onUpdate({ ...note, text: e.target.value }),
+                            placeholder: "Write idea...",
+                            className: "flex-1 bg-transparent resize-none outline-none p-3 text-sm font-medium placeholder-black/30"
                         })
-                    )
+                    ))
                 ),
-                React.createElement("div", { className: "absolute bottom-10 right-10 md:bottom-12 md:right-12 flex gap-4 z-[60]" },
-                    React.createElement("button", { onClick: () => centerOnNotes(true), className: "w-14 h-14 md:w-16 md:h-16 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold rounded-full shadow-[0_10px_25px_rgba(0,0,0,0.1)] hover:bg-zinc-50 dark:hover:bg-zinc-700 active:scale-95 transition-all flex items-center justify-center border border-zinc-200 dark:border-zinc-700 group", title: "Recenter on Notes" }, 
-                        React.createElement(Crosshair, { size: 24, className: "group-hover:text-indigo-500 transition-colors" })
-                    ),
-                    React.createElement("button", { onClick: handleAddNote, className: "px-6 py-4 md:px-8 md:py-4 bg-yellow-400 text-yellow-900 font-bold rounded-full shadow-[0_10px_25px_rgba(250,204,21,0.5)] hover:bg-yellow-300 hover:scale-110 active:scale-95 transition-all flex items-center gap-2 border-2 border-yellow-500/20" }, 
-                        React.createElement("svg", { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M12 4v16m8-8H4" })), React.createElement("span", { className: "hidden md:inline" }, "Add Note")
-                    )
+                React.createElement("button", { onClick: handleAddNote, className: "absolute bottom-8 right-8 px-6 py-4 bg-yellow-400 text-yellow-900 font-bold rounded-full shadow-2xl hover:bg-yellow-300 hover:scale-110 transition-all z-20 flex items-center gap-2" },
+                    React.createElement(Plus, { size: 24 }), React.createElement("span", { className: "hidden md:inline" }, "Add Note")
                 )
             );
         };
@@ -749,11 +661,11 @@
                 ),
                 React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-4 md:p-6 shadow-sm flex-1 flex flex-col h-full min-h-[400px] relative" },
                     React.createElement("h3", { className: "font-bold text-lg text-indigo-600 dark:text-indigo-400 mb-6 text-center" }, "What problem are you trying to solve today?"),
-                    
-                    React.createElement("div", { className: "flex flex-col w-full h-full" }, 
+
+                    React.createElement("div", { className: "flex flex-col w-full h-full" },
                         React.createElement("div", { className: "space-y-1 w-full overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar flex-1" },
                             tasks.map((item, index) => !item.completed ? React.createElement(TaskItem, { key: item.id, item, index, onToggle, onDelete, onEdit, onReorder, isCompletedSection: false }) : null),
-                            
+
                             completedCount > 0 && React.createElement("div", { className: "mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800/50" },
                                 React.createElement("h4", { className: "text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 px-2" }, `Completed (${completedCount})`),
                                 React.createElement("div", { className: "space-y-1 mt-2" },
@@ -761,7 +673,7 @@
                                 )
                             )
                         ),
-                        
+
                         incompleteCount < MAX_TASKS ? React.createElement(TaskInput, { onAdd }) : React.createElement("div", { className: "mt-4 text-center text-sm font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700" }, `Maximum limit of ${MAX_TASKS} daily tasks reached.`)
                     )
                 )
@@ -777,15 +689,15 @@
             const saveEdit = () => { if (editingId && editValue.trim() && onEdit) { onEdit(editingId, editValue.trim()); } setEditingId(null); setEditValue(""); };
             const cancelEdit = () => { setEditingId(null); setEditValue(""); };
 
-            return React.createElement("div", { 
+            return React.createElement("div", {
                 key: item.id,
-                className: `flex items-start gap-3 md:gap-4 w-full group transition-all py-3 px-2 md:p-2.5 rounded-xl border border-transparent ${isCompletedSection ? 'opacity-60' : 'hover:border-zinc-200 dark:hover:border-zinc-700/50'}` 
-            }, 
-                React.createElement("button", { onClick: () => onToggle(item.id), className: `mt-0.5 w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-all active:scale-90 ${item.completed ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900'}` }, React.createElement(CheckCircle2, { size: 16, className: item.completed ? "opacity-100" : "opacity-0" })), 
-                
-                editingId === item.id ? 
+                className: `flex items-start gap-3 md:gap-4 w-full group transition-all py-3 px-2 md:p-2.5 rounded-xl border border-transparent ${isCompletedSection ? 'opacity-60' : 'hover:border-zinc-200 dark:hover:border-zinc-700/50'}`
+            },
+                React.createElement("button", { onClick: () => onToggle(item.id), className: `mt-0.5 w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-all active:scale-90 ${item.completed ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900'}` }, React.createElement(CheckCircle2, { size: 16, className: item.completed ? "opacity-100" : "opacity-0" })),
+
+                editingId === item.id ?
                     React.createElement("div", { className: "flex-1 flex gap-2 items-center" },
-                        React.createElement("input", { 
+                        React.createElement("input", {
                             value: editValue, onChange: (e) => setEditValue(e.target.value),
                             onKeyDown: (e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') cancelEdit(); },
                             autoFocus: true, className: "flex-1 bg-white dark:bg-zinc-800 border border-indigo-500 rounded-lg px-3 py-2 text-base md:text-sm text-zinc-900 dark:text-white outline-none"
@@ -805,8 +717,8 @@
 
         const TaskInput = ({ onAdd }) => {
             const [newItem, setNewItem] = useState("");
-            return React.createElement("div", { className: "flex gap-2 mt-2 pt-4 border-t border-zinc-100 dark:border-zinc-800 shrink-0 items-center" }, 
-                React.createElement("input", { type: "text", value: newItem, onChange: (e) => setNewItem(e.target.value), onKeyDown: (e) => { if (e.key === 'Enter' && newItem.trim()) { onAdd(newItem); setNewItem(""); } }, placeholder: "Add new task...", className: "flex-1 bg-transparent text-base md:text-[15px] focus:outline-none text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 pl-1 py-2" }), 
+            return React.createElement("div", { className: "flex gap-2 mt-2 pt-4 border-t border-zinc-100 dark:border-zinc-800 shrink-0 items-center" },
+                React.createElement("input", { type: "text", value: newItem, onChange: (e) => setNewItem(e.target.value), onKeyDown: (e) => { if (e.key === 'Enter' && newItem.trim()) { onAdd(newItem); setNewItem(""); } }, placeholder: "Add new task...", className: "flex-1 bg-transparent text-base md:text-[15px] focus:outline-none text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 pl-1 py-2" }),
                 React.createElement("button", { onClick: () => { if (newItem.trim()) { onAdd(newItem); setNewItem(""); } }, className: "text-indigo-500 hover:text-indigo-400 p-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl active:scale-95" }, React.createElement(Plus, { size: 20 }))
             );
         };
@@ -817,11 +729,11 @@
             const [filter, setFilter] = useState('All');
             const [searchQuery, setSearchQuery] = useState('');
             const [newBook, setNewBook] = useState({ title: '', author: '', category: categories[0] || 'General', status: 'To Read' });
-            
-            const [viewMode, setViewMode] = useState('library'); 
+
+            const [viewMode, setViewMode] = useState('library');
             const [goalYear, setGoalYear] = useState(new Date().getFullYear());
             const [isEditingTarget, setIsEditingTarget] = useState(false);
-            
+
             const [goalsConfig, setGoalsConfig] = useState(() => {
                 const stored = localStorage.getItem('lifeos_reading_goals');
                 return stored ? JSON.parse(stored) : {};
@@ -832,7 +744,7 @@
             }, [goalsConfig]);
 
             const currentGoal = goalsConfig[goalYear] || { target: 12, bookIds: [] };
-            
+
             const handleUpdateTarget = (e) => {
                 if (e.key === 'Enter') {
                     const newTarget = parseInt(e.target.value);
@@ -853,16 +765,16 @@
                 });
             };
 
-            const handleAdd = () => { 
-                if(newBook.title) { 
-                    onAddBook(newBook); 
-                    setIsAdding(false); 
-                    setNewBook({ title: '', author: '', category: categories[0] || 'General', status: 'To Read' }); 
-                } 
+            const handleAdd = () => {
+                if(newBook.title) {
+                    onAddBook(newBook);
+                    setIsAdding(false);
+                    setNewBook({ title: '', author: '', category: categories[0] || 'General', status: 'To Read' });
+                }
             };
 
             let displayedBooks = [];
-            
+
             if (viewMode === 'goals') {
                 displayedBooks = books.filter(b => currentGoal.bookIds.includes(b.id));
             } else {
@@ -876,7 +788,7 @@
 
             const UnassignedBooksList = () => {
                 const availableBooks = books.filter(b => !currentGoal.bookIds.includes(b.id) && (b.title.toLowerCase().includes(searchQuery.toLowerCase()) || (b.author || '').toLowerCase().includes(searchQuery.toLowerCase())));
-                
+
                 return React.createElement("div", { className: "mb-8 bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm animate-in slide-in-from-top-4 duration-300" },
                     React.createElement("div", { className: "flex justify-between items-center mb-4" },
                         React.createElement("h3", { className: "font-bold text-lg text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(Book, { size: 18, className: "text-indigo-500" }), `Select Books for ${goalYear}`),
@@ -910,13 +822,13 @@
                             React.createElement(Search, { size: 16, className: "absolute left-3 top-2.5 text-zinc-400" }),
                             React.createElement("input", { placeholder: "Search books...", value: searchQuery, onChange: e => setSearchQuery(e.target.value), className: "w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 h-full" })
                         ),
-                        viewMode === 'library' ? 
+                        viewMode === 'library' ?
                             React.createElement("button", { onClick: () => setIsAdding(!isAdding), className: "bg-indigo-600 text-white p-2.5 rounded-xl hover:bg-indigo-500 shadow-glow-sm transition-all active:scale-95 shrink-0" }, React.createElement(Plus, { size: 20 }))
                             :
                             React.createElement("button", { onClick: () => setIsSelectingForGoal(!isSelectingForGoal), className: "bg-indigo-600 text-white p-2.5 rounded-xl hover:bg-indigo-500 shadow-glow-sm transition-all active:scale-95 shrink-0 flex items-center gap-2 px-4" }, React.createElement(BookOpen, { size: 18 }), React.createElement("span", { className: "text-sm font-bold" }, "Add from Library"))
                     )
                 ),
-                
+
                 viewMode === 'goals' && React.createElement("div", { className: "mb-8 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 p-6 rounded-3xl border border-indigo-100 dark:border-indigo-500/20" },
                     React.createElement("div", { className: "flex justify-between items-start mb-6" },
                         React.createElement("div", { className: "flex items-center gap-4" },
@@ -926,7 +838,7 @@
                         ),
                         React.createElement("div", { className: "text-right" },
                             React.createElement("div", { className: "text-sm text-indigo-600/80 dark:text-indigo-400/80 font-bold uppercase tracking-widest mb-1" }, "Target"),
-                            isEditingTarget ? 
+                            isEditingTarget ?
                                 React.createElement("input", { type: "number", autoFocus: true, defaultValue: currentGoal.target, onKeyDown: handleUpdateTarget, onBlur: () => setIsEditingTarget(false), className: "w-16 text-right bg-white dark:bg-zinc-900 border border-indigo-500 rounded p-1 text-xl font-black outline-none" })
                                 :
                                 React.createElement("div", { onClick: () => setIsEditingTarget(true), className: "text-4xl font-black text-indigo-600 dark:text-indigo-400 cursor-pointer hover:scale-105 transition-transform" }, completedGoalCount, React.createElement("span", { className: "text-xl text-indigo-300 dark:text-indigo-600" }, "/", currentGoal.target))
@@ -953,7 +865,7 @@
                         React.createElement("button", { onClick: handleAdd, className: "px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold shadow-glow-sm hover:bg-indigo-500 transition-colors active:scale-95" }, "Save Book")
                     )
                 ),
-                
+
                 isSelectingForGoal && viewMode === 'goals' && React.createElement(UnassignedBooksList, null),
 
                 viewMode === 'library' && React.createElement("div", { className: "flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-2" },
@@ -986,14 +898,12 @@
             );
         };
 
+
         const BOOK_GOAL_SUGGESTIONS = ["Leadership", "Public Speaking", "Financial Literacy", "Physical Health", "Mindfulness", "Creativity", "Career Growth", "Better Relationships", "Discipline", "Writing"];
 
-        const BookPlannerView = ({ bookPlannerData, onUpdateBookPlanner, onGenerate, books, categories, onAddBook }) => {
+        const BookPlannerView = ({ bookPlannerData, onUpdateBookPlanner }) => {
             const goals = bookPlannerData.goals || [];
-            const recommendations = bookPlannerData.recommendations || [];
             const [goalInput, setGoalInput] = useState("");
-            const [isLoading, setIsLoading] = useState(false);
-            const [error, setError] = useState(null);
 
             const addGoal = (text) => {
                 if (!text.trim() || goals.some(g => g.text.toLowerCase() === text.trim().toLowerCase())) return;
@@ -1002,32 +912,10 @@
             };
             const deleteGoal = (id) => onUpdateBookPlanner({ ...bookPlannerData, goals: goals.filter(g => g.id !== id) });
 
-            const handleGenerate = async () => {
-                if (goals.length === 0 || isLoading) return;
-                setIsLoading(true);
-                setError(null);
-                try {
-                    const recs = await onGenerate(goals);
-                    onUpdateBookPlanner({ ...bookPlannerData, recommendations: recs, lastGeneratedAt: new Date().toISOString() });
-                } catch (err) {
-                    console.error(err);
-                    setError(err.message || "Couldn't fetch recommendations right now. Please try again in a moment.");
-                } finally {
-                    setIsLoading(false);
-                }
-            };
-
-            const isInLibrary = (rec) => books.some(b => b.title.toLowerCase() === (rec.title || '').toLowerCase());
-
-            const handleAddToLibrary = (rec) => {
-                const category = categories.includes(rec.category) ? rec.category : (categories[0] || 'General');
-                onAddBook({ title: rec.title, author: rec.author || '', category, status: 'To Read' });
-            };
-
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 h-full flex flex-col max-w-7xl mx-auto overflow-y-auto no-scrollbar" },
                 React.createElement("div", { className: "mb-8" },
                     React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white flex items-center gap-3" }, React.createElement(Sparkles, { className: "text-indigo-500", size: 28 }), "Book Planner"),
-                    React.createElement("p", { className: "text-zinc-500 text-sm mt-1" }, "Tell it what you want to get better at this year. It searches the web and builds you a reading list.")
+                    React.createElement("p", { className: "text-zinc-500 text-sm mt-1" }, "Tell it what you want to get better at this year, and build your reading list.")
                 ),
                 React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-sm mb-8" },
                     React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4 flex items-center gap-2" }, React.createElement(Target, { size: 14 }), "Growth goals for this year"),
@@ -1042,76 +930,46 @@
                         React.createElement("input", { value: goalInput, onChange: e => setGoalInput(e.target.value), onKeyDown: e => { if (e.key === 'Enter') addGoal(goalInput); }, placeholder: "e.g. Get better at public speaking", className: "flex-1 p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl outline-none text-zinc-900 dark:text-white focus:border-indigo-500 transition-colors text-base md:text-sm" }),
                         React.createElement("button", { onClick: () => addGoal(goalInput), className: "px-5 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-xl font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors active:scale-95 shrink-0" }, React.createElement(Plus, { size: 18 }))
                     ),
-                    React.createElement("div", { className: "flex flex-wrap gap-2 mb-6" },
+                    React.createElement("div", { className: "flex flex-wrap gap-2" },
                         BOOK_GOAL_SUGGESTIONS.filter(s => !goals.some(g => g.text.toLowerCase() === s.toLowerCase())).slice(0, 6).map(s => React.createElement("button", { key: s, onClick: () => addGoal(s), className: "text-xs px-3 py-1.5 rounded-full border border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-500 hover:border-indigo-500 hover:text-indigo-500 transition-colors" }, "+ ", s))
-                    ),
-                    React.createElement("button", { onClick: handleGenerate, disabled: goals.length === 0 || isLoading, className: "w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 shadow-glow-sm transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed" },
-                        isLoading ? React.createElement(Loader2, { size: 18, className: "animate-spin" }) : React.createElement(Sparkles, { size: 18 }),
-                        isLoading ? "Searching the web..." : (recommendations.length > 0 ? "Regenerate Recommendations" : "Get AI Recommendations")
-                    ),
-                    error && React.createElement("p", { className: "text-red-500 text-sm mt-3" }, error)
-                ),
-                recommendations.length > 0 && React.createElement("div", null,
-                    React.createElement("div", { className: "flex items-center justify-between mb-4" },
-                        React.createElement("h3", { className: "text-xl font-bold text-zinc-900 dark:text-white" }, "Recommended for you"),
-                        bookPlannerData.lastGeneratedAt && React.createElement("span", { className: "text-xs text-zinc-400" }, "Updated ", new Date(bookPlannerData.lastGeneratedAt).toLocaleString())
-                    ),
-                    React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" },
-                        recommendations.map((rec, idx) => {
-                            const added = isInLibrary(rec);
-                            return React.createElement("div", { key: rec.id || idx, className: "bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col h-full hover:shadow-md transition-all" },
-                                React.createElement("div", { className: "flex justify-between items-start mb-3 gap-2" },
-                                    React.createElement("span", { className: "text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 truncate max-w-[70%]" }, rec.goalMatch || "General"),
-                                    React.createElement("span", { className: "text-[10px] font-bold text-zinc-400 shrink-0" }, rec.year || "")
-                                ),
-                                React.createElement("h4", { className: "font-bold text-lg text-zinc-900 dark:text-white leading-tight mb-1" }, rec.title),
-                                React.createElement("p", { className: "text-sm text-zinc-500 mb-3" }, rec.author),
-                                React.createElement("p", { className: "text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed flex-1 mb-4" }, rec.reason),
-                                React.createElement("div", { className: "mt-auto pt-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between gap-2" },
-                                    React.createElement("a", { href: `https://www.google.com/search?q=${encodeURIComponent((rec.title || '') + ' ' + (rec.author || '') + ' book')}`, target: "_blank", rel: "noopener noreferrer", className: "flex items-center gap-1 text-xs font-bold text-zinc-400 hover:text-indigo-500 transition-colors" }, React.createElement(ExternalLink, { size: 12 }), "Look up"),
-                                    added ? React.createElement("span", { className: "flex items-center gap-1 text-xs font-bold text-emerald-500" }, React.createElement(Check, { size: 14 }), "In Library") :
-                                        React.createElement("button", { onClick: () => handleAddToLibrary(rec), className: "flex items-center gap-1 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors" }, React.createElement(Plus, { size: 12 }), "Add to Library")
-                                )
-                            );
-                        })
                     )
                 ),
-                recommendations.length === 0 && !isLoading && React.createElement("div", { className: "text-center py-16 text-zinc-400" },
+                React.createElement("div", { className: "text-center py-16 text-zinc-400" },
                     React.createElement(Sparkles, { size: 48, className: "mx-auto mb-4 opacity-20" }),
-                    React.createElement("p", { className: "font-medium" }, "Add a few goals above and let AI find your next reads.")
+                    React.createElement("p", { className: "font-medium" }, "AI recommendations are coming back soon.")
                 )
             );
         };
 
         const BrainDumpView = ({ dumps, onAddDump, onDeleteDump, onUpdateDump }) => {
             const [text, setText] = useState("");
-            
+
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 min-h-[calc(100vh-6rem)] flex flex-col max-w-full w-full relative overflow-hidden" },
                 React.createElement("div", { className: "mb-6 text-center shrink-0 relative z-30" },
                     React.createElement("h2", { className: "text-4xl md:text-5xl font-black text-zinc-900 dark:text-white flex items-center justify-center gap-4" }, React.createElement(Brain, { className: "text-rose-500", size: 40 }), "Brain Dump"),
                     React.createElement("p", { className: "text-zinc-500 text-lg mt-3 font-medium" }, "Extract worries from your mind.")
                 ),
-                
+
                 React.createElement("div", { className: "absolute inset-0 z-0 flex items-center justify-center pointer-events-none" },
                     React.createElement("svg", { className: "absolute inset-0 w-full h-full z-0 overflow-visible" },
                         dumps.map((d, i) => {
-                            const angle = i * 2.39996; // Fermat's spiral golden angle
+                            const angle = i * 2.39996;
                             const isMobile = window.innerWidth < 768;
-                            const r = (isMobile ? 100 : 160) + Math.sqrt(i) * (isMobile ? 45 : 100);
+                            const r = (isMobile ? 140 : 220) + Math.sqrt(i) * (isMobile ? 65 : 130);
                             const x = Math.cos(angle) * r;
                             const y = Math.sin(angle) * r;
                             return React.createElement("line", { key: `line-${d.id}`, x1: "50%", y1: "50%", x2: `calc(50% + ${x}px)`, y2: `calc(50% + ${y}px)`, className: "stroke-rose-500/30 dark:stroke-rose-500/20", strokeWidth: "2", strokeDasharray: "4 4" });
                         })
                     ),
-                    
+
                     React.createElement("div", { className: "absolute z-10 w-16 h-16 md:w-24 md:h-24 bg-gradient-to-br from-rose-400 to-pink-600 rounded-full flex items-center justify-center shadow-[0_0_80px_rgba(244,63,94,0.4)] animate-brain pointer-events-auto" },
                         React.createElement(Brain, { size: window.innerWidth < 768 ? 32 : 48, className: "text-white" })
                     ),
-                    
+
                     dumps.map((d, i) => {
                         const angle = i * 2.39996;
                         const isMobile = window.innerWidth < 768;
-                        const r = (isMobile ? 100 : 160) + Math.sqrt(i) * (isMobile ? 45 : 100);
+                        const r = (isMobile ? 140 : 220) + Math.sqrt(i) * (isMobile ? 65 : 130);
                         const x = Math.cos(angle) * r;
                         const y = Math.sin(angle) * r;
                         return React.createElement("div", { key: d.id, className: "absolute z-20 group transition-all duration-500 ease-out hover:z-30 pointer-events-auto", style: { left: '50%', top: '50%', transform: `translate(-50%, -50%) translate(${x}px, ${y}px)` } },
@@ -1122,7 +980,7 @@
                         );
                     })
                 ),
-                
+
                 React.createElement("div", { className: "mt-auto pt-10 flex gap-3 max-w-4xl mx-auto w-full z-30 relative shrink-0" },
                     React.createElement("input", { value: text, onChange: e => setText(e.target.value), onKeyDown: e => { if (e.key === 'Enter' && text.trim()) { onAddDump(text.trim()); setText(""); } }, placeholder: "What's weighing on your mind?", className: "flex-1 p-5 md:p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 backdrop-blur text-zinc-900 dark:text-white focus:border-rose-500 focus:ring-4 focus:ring-rose-500/20 outline-none shadow-xl transition-all text-base md:text-xl font-medium placeholder:text-zinc-400 dark:placeholder:text-zinc-600" }),
                     React.createElement("button", { onClick: () => { if (text.trim()) { onAddDump(text.trim()); setText(""); } }, className: "px-8 md:px-10 bg-rose-600 text-white rounded-3xl hover:bg-rose-500 font-bold active:scale-95 transition-all shadow-glow flex items-center gap-3 shrink-0 text-lg md:text-xl" }, React.createElement(Plus, { size: 28 }), React.createElement("span", { className: "hidden md:inline" }, "Extract"))
@@ -1130,9 +988,10 @@
             );
         };
 
+
         const FocusView = ({ activeSound, isPlayingSound, toggleSound, timerState, toggleTimer, resetTimer }) => {
             const [objective, setObjective] = useState(() => localStorage.getItem('lifeos_focus_objective') || "");
-            
+
             useEffect(() => {
                 localStorage.setItem('lifeos_focus_objective', objective);
             }, [objective]);
@@ -1147,8 +1006,8 @@
             return React.createElement("div", { className: "p-4 md:p-8 h-[calc(100vh-6rem)] flex flex-col items-center justify-center max-w-4xl mx-auto w-full overflow-y-auto no-scrollbar" },
                 React.createElement("div", { className: "w-full max-w-xl mb-8 text-center relative group shrink-0" },
                     React.createElement("div", { className: "absolute -inset-2 bg-indigo-500/10 dark:bg-indigo-500/5 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" }),
-                    React.createElement("input", { 
-                        value: objective, 
+                    React.createElement("input", {
+                        value: objective,
                         onChange: (e) => setObjective(e.target.value),
                         placeholder: "What is your main objective for this session?",
                         className: "relative w-full bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md px-6 py-4 text-center text-lg md:text-xl font-bold text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800/80 rounded-2xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600 transition-all shadow-sm"
@@ -1156,7 +1015,7 @@
                 ),
                 React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[3rem] p-8 md:p-16 w-full shadow-sm flex flex-col items-center relative overflow-hidden" },
                     React.createElement("div", { className: "flex gap-2 bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-full mb-12 z-10 flex-wrap justify-center" },
-                        [{l: 'Pomodoro', t: 1500, m: 'FOCUS'}, {l: 'Short Break', t: 300, m: 'SHORT_BREAK'}, {l: 'Long Break', t: 900, m: 'LONG_BREAK'}, {l: '1 Hour', t: 3600, m: 'ONE_HOUR'}].map(mode => 
+                        [{l: 'Pomodoro', t: 1500, m: 'FOCUS'}, {l: 'Short Break', t: 300, m: 'SHORT_BREAK'}, {l: 'Long Break', t: 900, m: 'LONG_BREAK'}, {l: '1 Hour', t: 3600, m: 'ONE_HOUR'}].map(mode =>
                             React.createElement("button", { key: mode.m, onClick: () => resetTimer(mode.t, mode.m), className: `px-6 py-2 rounded-full text-sm font-bold transition-colors ${timerState.mode === mode.m ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}` }, mode.l)
                         )
                     ),
@@ -1168,7 +1027,7 @@
                         React.createElement("div", { className: "text-6xl md:text-8xl font-black font-mono tracking-tighter text-zinc-900 dark:text-white drop-shadow-sm" }, formatTime(timerState.timeLeft))
                     ),
                     React.createElement("div", { className: "flex gap-4 z-10 mb-12" },
-                        React.createElement("button", { onClick: toggleTimer, className: `w-20 h-20 rounded-full flex items-center justify-center text-white shadow-xl hover:scale-105 active:scale-95 transition-all ${timerState.isActive ? 'bg-rose-500 hover:bg-rose-400' : 'bg-indigo-600 hover:bg-indigo-500'}` }, 
+                        React.createElement("button", { onClick: toggleTimer, className: `w-20 h-20 rounded-full flex items-center justify-center text-white shadow-xl hover:scale-105 active:scale-95 transition-all ${timerState.isActive ? 'bg-rose-500 hover:bg-rose-400' : 'bg-indigo-600 hover:bg-indigo-500'}` },
                             timerState.isActive ? React.createElement(Pause, { size: 32, fill: "currentColor" }) : React.createElement(Play, { size: 32, fill: "currentColor", className: "ml-1" })
                         ),
                         React.createElement("button", { onClick: () => resetTimer(), className: "w-20 h-20 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors active:scale-95" }, React.createElement(RotateCcw, { size: 28 }))
@@ -1180,7 +1039,8 @@
             );
         };
 
-        const FoodView = ({ meals, onUpdateMeal, onAIGenerate }) => {
+
+        const FoodView = ({ meals, onUpdateMeal }) => {
             const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
             const types = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
             const currentDay = new Date().toLocaleDateString('en-US', { weekday: 'long' });
@@ -1192,8 +1052,7 @@
 
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 max-w-7xl mx-auto h-full overflow-y-auto no-scrollbar" },
                 React.createElement("div", { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4" },
-                    React.createElement("div", null, React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(Utensils, { className: "text-indigo-500" }), "Nutrition Plan"), React.createElement("p", { className: "text-zinc-500 text-sm mt-1" }, "Fuel your body for optimal performance.")),
-                    React.createElement("button", { onClick: onAIGenerate, className: "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors" }, React.createElement(Sparkles, { size: 16 }), "AI Generate Plan")
+                    React.createElement("div", null, React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(Utensils, { className: "text-indigo-500" }), "Nutrition Plan"), React.createElement("p", { className: "text-zinc-500 text-sm mt-1" }, "Fuel your body for optimal performance."))
                 ),
                 React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" },
                     days.map(day => {
@@ -1216,7 +1075,7 @@
         const CountdownView = ({ countdowns, onAdd, onDelete, onUpdate }) => {
             const [title, setTitle] = useState('');
             const [date, setDate] = useState('');
-            
+
             const handleAdd = () => {
                 if(title.trim() && date) {
                     onAdd({ title, date, id: generateUUID() });
@@ -1257,119 +1116,33 @@
             );
         };
 
-        const OvertimeView = ({ target, entries, onAddEntry, onDeleteEntry, onUpdateTarget }) => {
-            const [currentMonth, setCurrentMonth] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; });
-            const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
-            const [startTime, setStartTime] = useState('');
-            const [endTime, setEndTime] = useState('');
-            const [isEditingTarget, setIsEditingTarget] = useState(false);
-
-            const calculateHours = (start, end) => {
-                if (!start || !end) return 0;
-                const [startH, startM] = start.split(':').map(Number);
-                const [endH, endM] = end.split(':').map(Number);
-                let diff = (endH + endM / 60) - (startH + startM / 60);
-                if (diff < 0) diff += 24; 
-                return Math.round(diff * 100) / 100;
-            };
-
-            const entriesThisMonth = (entries || []).filter(e => e.date.startsWith(currentMonth));
-            const totalHours = entriesThisMonth.reduce((sum, e) => sum + e.hours, 0);
-            const progress = Math.min(100, (totalHours / (target || 1)) * 100) || 0;
-
-            const handleAdd = () => {
-                const hours = calculateHours(startTime, endTime);
-                if (date && startTime && endTime && hours > 0) {
-                    onAddEntry({ date, startTime, endTime, hours });
-                    setStartTime(''); setEndTime('');
-                }
-            };
-
-            return React.createElement("div", { className: "p-4 md:p-8 pb-32 max-w-4xl mx-auto h-full overflow-y-auto no-scrollbar" },
-                React.createElement("div", { className: "mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4" },
-                    React.createElement("div", null,
-                        React.createElement("h2", { className: "text-3xl font-bold text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(Clock, { className: "text-indigo-500" }), "Overtime Tracker"),
-                        React.createElement("p", { className: "text-zinc-500 text-sm mt-1" }, "Log your extra hours and hit your targets.")
-                    ),
-                    React.createElement("input", { type: "month", value: currentMonth, onChange: (e) => setCurrentMonth(e.target.value), className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2 text-sm font-bold text-zinc-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 [color-scheme:dark]" })
-                ),
-                
-                React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-8 shadow-sm mb-8 flex flex-col md:flex-row items-center justify-around gap-8" },
-                    React.createElement("div", { className: "relative w-48 h-48 flex items-center justify-center shrink-0" },
-                        React.createElement("svg", { className: "absolute inset-0 w-full h-full -rotate-90", viewBox: "0 0 100 100" },
-                            React.createElement("circle", { cx: "50", cy: "50", r: "45", fill: "none", stroke: "currentColor", strokeWidth: "8", className: "text-zinc-100 dark:text-zinc-800" }),
-                            React.createElement("circle", { cx: "50", cy: "50", r: "45", fill: "none", stroke: "currentColor", strokeWidth: "8", strokeDasharray: "282.74", strokeDashoffset: 282.74 - (282.74 * progress) / 100, strokeLinecap: "round", className: "text-indigo-500 transition-all duration-1000 ease-out" })
-                        ),
-                        React.createElement("div", { className: "absolute flex flex-col items-center justify-center text-center" },
-                            React.createElement("span", { className: "text-4xl font-black text-indigo-600 dark:text-indigo-400 leading-none" }, totalHours.toFixed(1)),
-                            React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-widest text-zinc-400 mt-1" }, "Hours Done")
-                        )
-                    ),
-                    React.createElement("div", { className: "flex flex-col items-center md:items-start text-center md:text-left space-y-4" },
-                        React.createElement("div", null,
-                            React.createElement("div", { className: "text-sm text-zinc-500 font-bold uppercase tracking-widest mb-1" }, "Monthly Target"),
-                            isEditingTarget ?
-                                React.createElement("input", { type: "number", autoFocus: true, defaultValue: target, onKeyDown: (e) => { if(e.key === 'Enter') { onUpdateTarget(parseFloat(e.target.value) || 0); setIsEditingTarget(false); } if(e.key === 'Escape') setIsEditingTarget(false); }, onBlur: (e) => { onUpdateTarget(parseFloat(e.target.value) || 0); setIsEditingTarget(false); }, className: "w-24 bg-zinc-50 dark:bg-black/50 border border-indigo-500 rounded-lg p-2 text-2xl font-black text-zinc-900 dark:text-white outline-none" })
-                                :
-                                React.createElement("div", { onClick: () => setIsEditingTarget(true), className: "text-4xl font-black text-zinc-900 dark:text-white cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" }, target, React.createElement("span", { className: "text-lg text-zinc-400 ml-1" }, "hrs"))
-                        ),
-                        React.createElement("p", { className: "text-sm font-medium text-zinc-500" }, progress >= 100 ? "🎉 Monthly target reached!" : `${(Math.max(0, target - totalHours)).toFixed(1)} hours left to reach target.`)
-                    )
-                ),
-                
-                React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-6 shadow-sm mb-8 flex flex-col sm:flex-row gap-4 items-end" },
-                    React.createElement("div", { className: "flex-1 w-full" }, React.createElement("label", { className: "block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2" }, "Date"), React.createElement("input", { type: "date", value: date, onChange: e => setDate(e.target.value), className: "w-full bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 text-sm font-bold text-zinc-900 dark:text-white outline-none focus:border-indigo-500 [color-scheme:dark]" })),
-                    React.createElement("div", { className: "flex-1 w-full" }, React.createElement("label", { className: "block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2" }, "Start Time"), React.createElement("input", { type: "time", value: startTime, onChange: e => setStartTime(e.target.value), className: "w-full bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 text-sm font-bold text-zinc-900 dark:text-white outline-none focus:border-indigo-500 [color-scheme:dark]" })),
-                    React.createElement("div", { className: "flex-1 w-full" }, React.createElement("label", { className: "block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2" }, "End Time"), React.createElement("input", { type: "time", value: endTime, onChange: e => setEndTime(e.target.value), className: "w-full bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 text-sm font-bold text-zinc-900 dark:text-white outline-none focus:border-indigo-500 [color-scheme:dark]" })),
-                    React.createElement("div", { className: "w-full sm:w-auto" }, React.createElement("button", { onClick: handleAdd, disabled: !date || !startTime || !endTime || calculateHours(startTime, endTime) <= 0, className: "w-full sm:w-auto bg-indigo-600 disabled:bg-zinc-300 dark:disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed text-white font-bold px-6 py-3 rounded-xl hover:bg-indigo-500 transition-colors active:scale-95 flex items-center justify-center gap-2 shadow-sm" }, React.createElement(Plus, { size: 18 }), "Add Entry"))
-                ),
-                
-                React.createElement("div", { className: "space-y-3" },
-                    entriesThisMonth.length === 0 ?
-                        React.createElement("div", { className: "text-center py-12 text-zinc-500 bg-white/50 dark:bg-zinc-900/50 rounded-[2rem] border border-dashed border-zinc-200 dark:border-zinc-800" }, "No overtime logged this month.")
-                    :
-                        [...entriesThisMonth].sort((a,b) => new Date(b.date) - new Date(a.date)).map(entry =>
-                            React.createElement("div", { key: entry.id, className: "flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm hover:border-indigo-500/50 transition-colors group" },
-                                React.createElement("div", { className: "flex items-center gap-4" },
-                                    React.createElement("div", { className: "w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black text-lg" }, entry.hours),
-                                    React.createElement("div", null,
-                                        React.createElement("div", { className: "font-bold text-zinc-900 dark:text-white text-sm" }, new Date(entry.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })),
-                                        React.createElement("div", { className: "text-xs font-medium text-zinc-500 flex items-center gap-1 mt-1" }, React.createElement(Clock, { size: 12 }), `${entry.startTime} - ${entry.endTime}`)
-                                    )
-                                ),
-                                React.createElement("button", { onClick: () => onDeleteEntry(entry.id), className: "p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100" }, React.createElement(Trash2, { size: 18 }))
-                            )
-                        )
-                )
-            );
-        };
 
         const App = () => {
-            const tabConfig = { 
-                dashboard: { label: "Dashboard", icon: Layout }, 
+            const tabConfig = {
+                dashboard: { label: "Dashboard", icon: Layout },
                 tasks: { label: "Tasks", icon: CheckSquare },
-                goals2026: { label: "Yearly Vision", icon: Flag }, 
-                monthlyPlan: { label: "Monthly Vision", icon: CalendarRange }, 
-                ideaBoard: { label: "Idea Board", icon: Lightbulb }, 
-                braindump: { label: "Brain Dump", icon: Brain }, 
-                focus: { label: "Focus Timer", icon: Timer }, 
+                goals2026: { label: "Yearly Vision", icon: Flag },
+                monthlyPlan: { label: "Monthly Vision", icon: CalendarRange },
+                ideaBoard: { label: "Idea Board", icon: Lightbulb },
+                braindump: { label: "Brain Dump", icon: Brain },
+                focus: { label: "Focus Timer", icon: Timer },
                 library: { label: "Library", icon: Book },
                 bookPlanner: { label: "Book Planner", icon: Sparkles },
-                food: { label: "Nutrition", icon: Utensils }, 
+                food: { label: "Nutrition", icon: Utensils },
                 countdown: { label: "Countdown", icon: Hourglass },
-                overtime: { label: "Overtime", icon: Clock },
-                profile: { label: "Profile", icon: User } 
+                profile: { label: "Profile", icon: User }
             };
             const VALID_TABS = Object.keys(tabConfig);
             const [activeTab, setActiveTab] = useState(() => { const saved = localStorage.getItem('lifeos_active_tab'); return (saved && VALID_TABS.includes(saved)) ? saved : "dashboard"; });
             const [darkMode, setDarkMode] = useState(() => { const saved = localStorage.getItem('lifeos_dark_mode'); return saved !== null ? JSON.parse(saved) : true; });
             const [isDataLoaded, setIsDataLoaded] = useState(false);
-            
+
             useEffect(() => { localStorage.setItem('lifeos_active_tab', activeTab); }, [activeTab]);
             useEffect(() => { localStorage.setItem('lifeos_dark_mode', JSON.stringify(darkMode)); if (darkMode) { document.documentElement.classList.add('dark'); } else { document.documentElement.classList.remove('dark'); } }, [darkMode]);
-            
+
             const [user, setUser] = useState(null);
             const [showSettings, setShowSettings] = useState(false);
+            const cloudRefs = useRef({ dumps: [], meals: [], books: [], tasks: [] });
             const [dumps, setDumps] = useState([]);
             const [countdowns, setCountdowns] = useState([]);
             const [ideaNotes, setIdeaNotes] = useState([]);
@@ -1382,39 +1155,27 @@
             const [bookPlannerData, setBookPlannerData] = useState({ goals: [], recommendations: [], lastGeneratedAt: null });
             const [dailyPlan, setDailyPlan] = useState({ priorities: ['', '', ''], schedule: {}, notes: '', minorTasks: [] });
             const [monthlyPlan, setMonthlyPlan] = useState({ weeks: { week1: [], week2: [], week3: [], week4: [] } });
-            
-            const [overtimeEntries, setOvertimeEntries] = useState([]);
-            const [overtimeTarget, setOvertimeTarget] = useState(20);
-            
-            const ideaTabs = dashboardData.ideaTabs || ['Main Board'];
-            const [activeIdeaTab, setActiveIdeaTab] = useState(ideaTabs[0] || 'Main Board');
 
-            useEffect(() => {
-                if (ideaTabs.length > 0 && !ideaTabs.includes(activeIdeaTab)) {
-                    setActiveIdeaTab(ideaTabs[0]);
-                }
-            }, [ideaTabs, activeIdeaTab]);
-            
             const [activeSound, setActiveSound] = useState(null);
             const [isPlayingSound, setIsPlayingSound] = useState(false);
             const audioRef = useRef(new Audio());
             const [focusState, setFocusState] = useState({ timeLeft: 1500, isActive: false, initialTime: 1500, mode: 'FOCUS' });
             const [showTimerAlert, setShowTimerAlert] = useState(false);
-            
-            useEffect(() => { 
-                let interval = null; 
-                if (focusState.isActive && focusState.timeLeft > 0) { 
-                    interval = setInterval(() => { setFocusState(prev => ({ ...prev, timeLeft: prev.timeLeft - 1 })); }, 1000); 
-                } else if (focusState.isActive && focusState.timeLeft === 0) { 
-                    setFocusState(prev => ({ ...prev, isActive: false })); 
+
+            useEffect(() => {
+                let interval = null;
+                if (focusState.isActive && focusState.timeLeft > 0) {
+                    interval = setInterval(() => { setFocusState(prev => ({ ...prev, timeLeft: prev.timeLeft - 1 })); }, 1000);
+                } else if (focusState.isActive && focusState.timeLeft === 0) {
+                    setFocusState(prev => ({ ...prev, isActive: false }));
                     setShowTimerAlert(true);
                     if ('Notification' in window && Notification.permission === 'granted') {
                         new Notification("Time's up!", { body: "Your focus session is complete." });
                     }
-                } 
-                return () => clearInterval(interval); 
+                }
+                return () => clearInterval(interval);
             }, [focusState.isActive, focusState.timeLeft]);
-            
+
             const handleTimerToggle = () => {
                 if (!focusState.isActive && 'Notification' in window && Notification.permission === 'default') {
                     Notification.requestPermission();
@@ -1426,36 +1187,16 @@
 
             useEffect(() => {
                 let mounted = true;
-                const initAuth = async () => {
-                    if (isSupabaseConfigured) {
-                        const { data: { session } } = await supabase.auth.getSession();
-                        if (mounted) {
-                            if (session) {
-                                setUser({ ...session.user, isLocal: false });
-                            } else {
-                                const localU = JSON.parse(localStorage.getItem('lifeos_user_session'));
-                                if (localU && localU.isLocal) setUser(localU);
-                            }
-                        }
-                    } else {
-                        const sessionUser = JSON.parse(localStorage.getItem('lifeos_user_session'));
-                        if (sessionUser && mounted) setUser(sessionUser);
-                    }
-                };
-                initAuth();
-
-                if (isSupabaseConfigured) {
-                    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-                        if (session) setUser({ ...session.user, isLocal: false });
-                        else {
-                            const localU = JSON.parse(localStorage.getItem('lifeos_user_session'));
-                            if (!localU || !localU.isLocal) setUser(null);
-                        }
+                const sessionUser = JSON.parse(localStorage.getItem('lifeos_user_session'));
+                const supabase = getSupabase();
+                if (sessionUser && sessionUser.isCloud && supabase) {
+                    supabase.auth.getSession().then(({ data }) => {
+                        if (!mounted) return;
+                        if (data.session) setUser(sessionUser);
+                        else localStorage.removeItem('lifeos_user_session');
                     });
-                    return () => {
-                        mounted = false;
-                        subscription.unsubscribe();
-                    };
+                } else if (sessionUser && mounted) {
+                    setUser(sessionUser);
                 }
                 return () => { mounted = false; };
             }, []);
@@ -1466,58 +1207,14 @@
                     return;
                 }
                 let mounted = true;
+                const supabase = getSupabase();
+                const isCloud = !!(user.isCloud && supabase);
 
-                if (!user.isLocal && isSupabaseConfigured) {
-                    const fetchData = async () => {
-                        try {
-                            const [bRes, mRes, aRes, lRes, tRes, oRes] = await Promise.all([
-                                supabase.from('brain_dumps').select('*').eq('user_id', user.id),
-                                supabase.from('meals').select('*').eq('user_id', user.id),
-                                supabase.from('app_data').select('*').eq('user_id', user.id).maybeSingle(),
-                                supabase.from('library').select('*').eq('user_id', user.id),
-                                supabase.from('tasks').select('*').eq('user_id', user.id).order('order_index', { ascending: true, nullsFirst: false }),
-                                supabase.from('overtime_logs').select('*').eq('user_id', user.id)
-                            ]);
-                            
-                            if (!mounted) return;
-
-                            if(bRes.data) setDumps(bRes.data);
-                            if(mRes.data && mRes.data.length > 0) setMeals(mRes.data);
-                            if(lRes.data && lRes.data.length > 0) setBooks(lRes.data);
-                            if(tRes.data) setTasks(tRes.data.sort((a,b) => (a.order_index || 0) - (b.order_index || 0)));
-                            if(oRes.data) setOvertimeEntries(oRes.data);
-
-                            if(aRes.data) { 
-                                if(aRes.data.goals_2026) {
-                                    const gData = aRes.data.goals_2026;
-                                    if (gData.mission !== undefined || gData.mainFocus !== undefined) {
-                                        setGoalsData({ [new Date().getFullYear()]: gData });
-                                    } else {
-                                        setGoalsData(gData);
-                                    }
-                                }
-                                if(aRes.data.dashboard_config) {
-                                    setDashboardData(aRes.data.dashboard_config); 
-                                }
-                                if(aRes.data.book_categories) setBookCategories(aRes.data.book_categories);
-                                if(aRes.data.book_planner) setBookPlannerData(aRes.data.book_planner);
-                                if(aRes.data.daily_plan) setDailyPlan(aRes.data.daily_plan);
-                                if(aRes.data.monthly_plan) setMonthlyPlan(aRes.data.monthly_plan);
-                                if(aRes.data.countdowns) setCountdowns(aRes.data.countdowns);
-                                if(aRes.data.idea_notes) setIdeaNotes(aRes.data.idea_notes);
-                                if(aRes.data.overtime_target) setOvertimeTarget(aRes.data.overtime_target);
-                            }
-                            setIsDataLoaded(true);
-                        } catch (err) {
-                            console.error("Fetch interrupted. Safeguarding database sync.", err);
-                        }
-                    };
-                    fetchData();
-                } else {
+                const loadLocal = () => {
                     const prefix = `lifeos_data_${user.id}_`;
                     setDumps(JSON.parse(localStorage.getItem(`${prefix}dumps`) || '[]'));
                     setMeals(JSON.parse(localStorage.getItem(`${prefix}meals`) || JSON.stringify(DEFAULT_MEALS)));
-                    
+
                     const localGoals = JSON.parse(localStorage.getItem(`${prefix}goals_2026`));
                     if (localGoals) {
                         if (localGoals.mission !== undefined || localGoals.mainFocus !== undefined) {
@@ -1538,9 +1235,48 @@
                     setCountdowns(JSON.parse(localStorage.getItem(`${prefix}countdowns`) || '[]'));
                     setIdeaNotes(JSON.parse(localStorage.getItem(`${prefix}idea_notes`) || '[]'));
                     setTasks(JSON.parse(localStorage.getItem(`${prefix}tasks`) || '[]'));
-                    setOvertimeEntries(JSON.parse(localStorage.getItem(`${prefix}overtime_entries`) || '[]'));
-                    setOvertimeTarget(JSON.parse(localStorage.getItem(`${prefix}overtime_target`) || '20'));
-                    
+                };
+
+                if (isCloud) {
+                    (async () => {
+                        try {
+                            const [dumpsRes, mealsRes, booksRes, tasksRes, appDataRes] = await Promise.all([
+                                supabase.from('brain_dumps').select('*').eq('user_id', user.id),
+                                supabase.from('meals').select('*').eq('user_id', user.id),
+                                supabase.from('library').select('*').eq('user_id', user.id),
+                                supabase.from('tasks').select('*').eq('user_id', user.id).order('order_index'),
+                                supabase.from('app_data').select('*').eq('user_id', user.id).maybeSingle()
+                            ]);
+                            if (!mounted) return;
+                            if (dumpsRes.error || mealsRes.error || booksRes.error || tasksRes.error || appDataRes.error) {
+                                throw dumpsRes.error || mealsRes.error || booksRes.error || tasksRes.error || appDataRes.error;
+                            }
+                            const loadedDumps = dumpsRes.data || [];
+                            const loadedMeals = (mealsRes.data && mealsRes.data.length) ? mealsRes.data : DEFAULT_MEALS;
+                            const loadedBooks = booksRes.data || [];
+                            const loadedTasks = tasksRes.data || [];
+                            const appData = appDataRes.data || {};
+                            setDumps(loadedDumps);
+                            setMeals(loadedMeals);
+                            setBooks(loadedBooks);
+                            setTasks(loadedTasks);
+                            setGoalsData(appData.goals_2026 || { [new Date().getFullYear()]: DEFAULT_SINGLE_YEAR_GOALS });
+                            setDashboardData(appData.dashboard_config || {});
+                            setBookCategories(appData.book_categories || DEFAULT_BOOK_CATEGORIES);
+                            setBookPlannerData(appData.book_planner || { goals: [], recommendations: [], lastGeneratedAt: null });
+                            setDailyPlan(appData.daily_plan || { priorities: ['', '', ''], schedule: {}, notes: '', minorTasks: [] });
+                            setMonthlyPlan(appData.monthly_plan || { weeks: { week1: [], week2: [], week3: [], week4: [] } });
+                            setCountdowns(appData.countdowns || []);
+                            setIdeaNotes(appData.idea_notes || []);
+                            cloudRefs.current = { dumps: loadedDumps, meals: loadedMeals, books: loadedBooks, tasks: loadedTasks };
+                            setIsDataLoaded(true);
+                        } catch (err) {
+                            console.error("Cloud load failed, falling back to local data:", err);
+                            if (mounted) { loadLocal(); setIsDataLoaded(true); }
+                        }
+                    })();
+                } else {
+                    loadLocal();
                     setIsDataLoaded(true);
                 }
                 return () => { mounted = false; };
@@ -1548,8 +1284,35 @@
 
             useEffect(() => {
                 if (!user || !isDataLoaded) return;
+                const supabase = getSupabase();
+                const isCloud = !!(user.isCloud && supabase);
 
-                if (user.isLocal) {
+                if (isCloud) {
+                    (async () => {
+                        const prev = cloudRefs.current;
+                        await Promise.all([
+                            syncListToSupabase(supabase, 'brain_dumps', user.id, prev.dumps, dumps),
+                            syncListToSupabase(supabase, 'meals', user.id, prev.meals, meals),
+                            syncListToSupabase(supabase, 'library', user.id, prev.books, books),
+                            syncListToSupabase(supabase, 'tasks', user.id, prev.tasks, tasks),
+                        ]);
+                        try {
+                            await supabase.from('app_data').upsert({
+                                user_id: user.id,
+                                goals_2026: goalsData,
+                                dashboard_config: dashboardData,
+                                book_categories: bookCategories,
+                                book_planner: bookPlannerData,
+                                daily_plan: dailyPlan,
+                                monthly_plan: monthlyPlan,
+                                countdowns,
+                                idea_notes: ideaNotes,
+                                updated_at: new Date().toISOString()
+                            });
+                        } catch (err) { console.error("Cloud sync failed for app_data:", err); }
+                        cloudRefs.current = { dumps, meals, books, tasks };
+                    })();
+                } else {
                     const prefix = `lifeos_data_${user.id}_`;
                     localStorage.setItem(`${prefix}dumps`, JSON.stringify(dumps));
                     localStorage.setItem(`${prefix}meals`, JSON.stringify(meals));
@@ -1563,82 +1326,21 @@
                     localStorage.setItem(`${prefix}countdowns`, JSON.stringify(countdowns));
                     localStorage.setItem(`${prefix}idea_notes`, JSON.stringify(ideaNotes));
                     localStorage.setItem(`${prefix}tasks`, JSON.stringify(tasks));
-                    localStorage.setItem(`${prefix}overtime_entries`, JSON.stringify(overtimeEntries));
-                    localStorage.setItem(`${prefix}overtime_target`, JSON.stringify(overtimeTarget));
-                } else if (isSupabaseConfigured) {
-                    const syncAppData = async () => {
-                        try {
-                            await supabase.from('app_data').upsert({
-                                user_id: user.id,
-                                goals_2026: goalsData,
-                                dashboard_config: { ...dashboardData },
-                                book_categories: bookCategories,
-                                book_planner: bookPlannerData,
-                                daily_plan: dailyPlan,
-                                monthly_plan: monthlyPlan,
-                                countdowns: countdowns,
-                                idea_notes: ideaNotes,
-                                overtime_target: overtimeTarget,
-                                updated_at: new Date().toISOString()
-                            }, { onConflict: 'user_id' });
-                        } catch(e) { console.error("Cloud sync failed:", e); }
-                    };
-                    const timeoutId = setTimeout(syncAppData, 1500);
-                    return () => clearTimeout(timeoutId);
                 }
-            }, [dumps, meals, goalsData, dashboardData, books, bookCategories, bookPlannerData, dailyPlan, monthlyPlan, countdowns, ideaNotes, overtimeTarget, overtimeEntries, tasks, user, isDataLoaded]);
-
-            const generateAIMealPlan = async () => {
-                const apiKey = localStorage.getItem('lifeos_gemini_key') || "";
-                if (!apiKey) throw new Error("Add your Gemini API key in Settings first.");
-                const mission = goalsData.mission || "Be healthy and disciplined.";
-                const prompt = `You are a performance nutritionist. Based on this mission: "${mission}", generate a weekly meal plan covering all 7 days with at least Breakfast, Lunch, and Dinner each day. Respond with ONLY a raw JSON array, no markdown code fences, no commentary, where each item has this exact shape: {"day": string, "type": string, "text": string}.`;
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/interactions`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-                    body: JSON.stringify({ model: 'gemini-3.6-flash', input: prompt })
-                });
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.error?.message || `Gemini request failed (${response.status})`);
-                const modelStep = (result.steps || []).find(s => s.type === 'model_output');
-                const rawText = (modelStep?.content || []).filter(c => c.type === 'text').map(c => c.text).join('');
-                const jsonMatch = rawText.match(/\[[\s\S]*\]/);
-                if (!jsonMatch) throw new Error("No meal plan returned");
-                const plan = JSON.parse(jsonMatch[0]);
-                const planWithUser = plan.map(item => ({ ...item, id: generateUUID(), user_id: user.id }));
-                setMeals(planWithUser);
-                if (!user.isLocal && isSupabaseConfigured) {
-                    await supabase.from('meals').delete().eq('user_id', user.id);
-                    await supabase.from('meals').insert(planWithUser);
-                }
-            };
-
-            const generateBookRecommendations = async (goals) => {
-                const apiKey = localStorage.getItem('lifeos_gemini_key') || "";
-                if (!apiKey) throw new Error("Add your Gemini API key in Settings first.");
-                const goalsText = goals.map(g => g.text).join('; ');
-                const prompt = `Search the internet for real, currently available books (a mix of well-known classics and recent releases) that would help someone achieve these personal growth goals for the year: ${goalsText}. Recommend 6 to 9 diverse books, covering all of the goals listed. Respond with ONLY a raw JSON array, no markdown code fences, no commentary, in this exact shape: [{"title": string, "author": string, "year": string, "goalMatch": string, "reason": string, "category": string}]. "goalMatch" must exactly match one of the goals provided above. "category" must be one of: Fiction, Non-Fiction, Self-Help, Technical, General. "reason" must be a specific 1-2 sentence explanation of why this exact book helps with that goal.`;
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/interactions`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-                    body: JSON.stringify({ model: 'gemini-3.6-flash', input: prompt, tools: [{ type: 'google_search' }] })
-                });
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.error?.message || `Gemini request failed (${response.status})`);
-                const modelStep = (result.steps || []).find(s => s.type === 'model_output');
-                const rawText = (modelStep?.content || []).filter(c => c.type === 'text').map(c => c.text).join('');
-                const jsonMatch = rawText.match(/\[[\s\S]*\]/);
-                if (!jsonMatch) throw new Error("No recommendations returned");
-                return JSON.parse(jsonMatch[0]).map(r => ({ ...r, id: generateUUID() }));
-            };
+            }, [dumps, meals, goalsData, dashboardData, books, bookCategories, bookPlannerData, dailyPlan, monthlyPlan, countdowns, ideaNotes, tasks, user, isDataLoaded]);
 
             const handleLoginSuccess = (u) => { setUser(u); localStorage.setItem('lifeos_user_session', JSON.stringify(u)); };
-            const handleLogout = async () => { if (isSupabaseConfigured) await supabase.auth.signOut(); localStorage.removeItem('lifeos_user_session'); setUser(null); };
-            
-            const handleAddDump = (text) => { const newItem = { text, id: generateUUID(), user_id: user?.id }; setDumps(prev => [...prev, newItem]); if (!user.isLocal && isSupabaseConfigured) supabase.from('brain_dumps').insert(newItem).then(); };
-            const handleDeleteDump = (id) => { setDumps(prev => prev.filter(d => d.id !== id)); if (!user.isLocal && isSupabaseConfigured) supabase.from('brain_dumps').delete().eq('id', id).then(); };
-            const handleUpdateDump = (item) => { setDumps(prev => prev.map(d => d.id === item.id ? item : d)); if (!user.isLocal && isSupabaseConfigured) supabase.from('brain_dumps').update(item).eq('id', item.id).then(); };
-            
+            const handleLogout = async () => {
+                const supabase = getSupabase();
+                if (user?.isCloud && supabase) { try { await supabase.auth.signOut(); } catch (e) {} }
+                localStorage.removeItem('lifeos_user_session');
+                setUser(null);
+            };
+
+            const handleAddDump = (text) => { const newItem = { text, id: generateUUID(), user_id: user?.id }; setDumps(prev => [...prev, newItem]); };
+            const handleDeleteDump = (id) => { setDumps(prev => prev.filter(d => d.id !== id)); };
+            const handleUpdateDump = (item) => { setDumps(prev => prev.map(d => d.id === item.id ? item : d)); };
+
             const handleAddBookCategory = (cat) => setBookCategories([...bookCategories, cat]);
             const handleUpdateBookPlanner = (newData) => setBookPlannerData(newData);
             const handleUpdateMeal = (day, type, text) => {
@@ -1646,58 +1348,19 @@
                     const exists = prev.find(m => m.day === day && m.type === type);
                     const id = exists ? exists.id : generateUUID();
                     const newItem = { id, day, type, text, user_id: user?.id };
-                    if (!user.isLocal && isSupabaseConfigured) supabase.from('meals').upsert(newItem).then();
                     if(exists) return prev.map(m => m.id === id ? newItem : m);
                     return [...prev, newItem];
                 });
             };
-            
-            const handleAddBook = (book) => { const newItem = { ...book, id: generateUUID(), user_id: user?.id }; setBooks(prev => [...prev, newItem]); if (!user.isLocal && isSupabaseConfigured) supabase.from('library').insert(newItem).then(); };
-            const handleDeleteBook = (id) => { setBooks(prev => prev.filter(b => b.id !== id)); if (!user.isLocal && isSupabaseConfigured) supabase.from('library').delete().eq('id', id).then(); };
-            const handleUpdateBook = (item) => { setBooks(prev => prev.map(b => b.id === item.id ? item : b)); if (!user.isLocal && isSupabaseConfigured) supabase.from('library').update(item).eq('id', item.id).then(); };
+
+            const handleAddBook = (book) => { const newItem = { ...book, id: generateUUID(), user_id: user?.id }; setBooks(prev => [...prev, newItem]); };
+            const handleDeleteBook = (id) => { setBooks(prev => prev.filter(b => b.id !== id)); };
+            const handleUpdateBook = (item) => { setBooks(prev => prev.map(b => b.id === item.id ? item : b)); };
 
             const handleUpdateDashboard = (newData) => setDashboardData(newData);
             const handleUpdateDailyPlan = (newData) => setDailyPlan(newData);
             const handleUpdateGoals2026 = (newData) => setGoalsData(newData);
             const handleUpdateMonthlyPlan = (newData) => setMonthlyPlan(newData);
-            
-            const handleAddIdeaTab = (name) => {
-                if (name && !ideaTabs.includes(name)) {
-                    handleUpdateDashboard({ ...dashboardData, ideaTabs: [...ideaTabs, name] });
-                    setActiveIdeaTab(name);
-                }
-            };
-            const handleRenameIdeaTab = (oldName, newName) => {
-                if (!newName || newName === oldName || ideaTabs.includes(newName)) return;
-                const newTabs = ideaTabs.map(t => t === oldName ? newName : t);
-                handleUpdateDashboard({ ...dashboardData, ideaTabs: newTabs });
-                if (activeIdeaTab === oldName) setActiveIdeaTab(newName);
-                
-                const updatedNotes = ideaNotes.map(n => (n.tabId || 'Main Board') === oldName ? { ...n, tabId: newName } : n);
-                setIdeaNotes(updatedNotes);
-                
-                if (!user.isLocal && isSupabaseConfigured) {
-                    const notesToUpdate = updatedNotes.filter(n => n.tabId === newName);
-                    if (notesToUpdate.length > 0) {
-                        supabase.from('app_data').upsert({
-                            user_id: user.id,
-                            idea_notes: updatedNotes,
-                            dashboard_config: { ...dashboardData, ideaTabs: newTabs },
-                            updated_at: new Date().toISOString()
-                        }, { onConflict: 'user_id' }).then();
-                    }
-                }
-            };
-            const handleDeleteIdeaTab = (name) => {
-                if (ideaTabs.length <= 1) return;
-                const newTabs = ideaTabs.filter(t => t !== name);
-                handleUpdateDashboard({ ...dashboardData, ideaTabs: newTabs });
-                if (activeIdeaTab === name) setActiveIdeaTab(newTabs[0]);
-                const idsToDelete = ideaNotes.filter(n => (n.tabId || 'Main Board') === name).map(n => n.id);
-                if (idsToDelete.length > 0) {
-                    setIdeaNotes(prev => prev.filter(n => (n.tabId || 'Main Board') !== name));
-                }
-            };
 
             const handleDeleteBookCategory = (cat) => setBookCategories(bookCategories.filter(c => c !== cat));
             const handleRenameBookCategory = (oldN, newN) => setBookCategories(bookCategories.map(c => c === oldN ? newN : c));
@@ -1709,55 +1372,26 @@
             const handleAddIdeaNote = (note) => setIdeaNotes(prev => [...prev, { ...note, id: note.id || generateUUID() }]);
             const handleUpdateIdeaNote = (note) => setIdeaNotes(prev => prev.map(n => n.id === note.id ? note : n));
             const handleDeleteIdeaNote = (id) => setIdeaNotes(prev => prev.filter(n => n.id !== id));
-            
-            const handleAddTask = (text) => { 
+
+            const handleAddTask = (text) => {
                 const newItem = { id: generateUUID(), user_id: user?.id, text, completed: false, order_index: tasks.length };
-                setTasks(prev => [...prev, newItem]); 
-                if (!user.isLocal && isSupabaseConfigured) supabase.from('tasks').insert(newItem).then(); 
+                setTasks(prev => [...prev, newItem]);
             };
-            const handleToggleTask = (id) => { 
-                setTasks(prev => {
-                    const newTasks = prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
-                    const updatedTask = newTasks.find(t => t.id === id);
-                    if (!user.isLocal && isSupabaseConfigured && updatedTask) supabase.from('tasks').update({ completed: updatedTask.completed }).eq('id', id).then();
-                    return newTasks;
-                }); 
+            const handleToggleTask = (id) => {
+                setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
             };
-            const handleDeleteTask = (id) => { 
-                setTasks(prev => prev.filter(t => t.id !== id)); 
-                if (!user.isLocal && isSupabaseConfigured) supabase.from('tasks').delete().eq('id', id).then(); 
+            const handleDeleteTask = (id) => {
+                setTasks(prev => prev.filter(t => t.id !== id));
             };
-            const handleEditTask = (id, text) => { 
-                setTasks(prev => prev.map(t => t.id === id ? { ...t, text } : t)); 
-                if (!user.isLocal && isSupabaseConfigured) supabase.from('tasks').update({ text }).eq('id', id).then(); 
+            const handleEditTask = (id, text) => {
+                setTasks(prev => prev.map(t => t.id === id ? { ...t, text } : t));
             };
-            const handleReorderTasks = (newTasks) => { 
+            const handleReorderTasks = (newTasks) => {
                 const orderedTasks = newTasks.map((t, idx) => ({ ...t, order_index: idx }));
-                setTasks(orderedTasks); 
-                if (!user.isLocal && isSupabaseConfigured) {
-                    const updates = orderedTasks.map(t => ({ id: t.id, user_id: user.id, text: t.text, completed: t.completed, order_index: t.order_index }));
-                    supabase.from('tasks').upsert(updates).then();
-                }
+                setTasks(orderedTasks);
             };
-            const handleClearCompletedTasks = () => { 
-                const toDelete = tasks.filter(t => t.completed).map(t => t.id);
-                setTasks(prev => prev.filter(t => !t.completed)); 
-                if (!user.isLocal && isSupabaseConfigured && toDelete.length > 0) supabase.from('tasks').delete().in('id', toDelete).then(); 
-            };
-
-            const handleAddOvertimeEntry = (entry) => {
-                const newEntry = { ...entry, id: generateUUID(), user_id: user?.id };
-                setOvertimeEntries(prev => [...prev, newEntry]);
-                if (!user.isLocal && isSupabaseConfigured) supabase.from('overtime_logs').insert(newEntry).then();
-            };
-            
-            const handleDeleteOvertimeEntry = (id) => {
-                setOvertimeEntries(prev => prev.filter(e => e.id !== id));
-                if (!user.isLocal && isSupabaseConfigured) supabase.from('overtime_logs').delete().eq('id', id).then();
-            };
-
-            const handleUpdateOvertimeTarget = (target) => {
-                setOvertimeTarget(target);
+            const handleClearCompletedTasks = () => {
+                setTasks(prev => prev.filter(t => !t.completed));
             };
 
             if (!user) return React.createElement(React.Fragment, null,
@@ -1766,22 +1400,21 @@
             );
 
             return React.createElement("div", { className: "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300" },
-                React.createElement("aside", { className: "fixed left-0 top-0 h-full w-64 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 hidden md:flex flex-col z-20" }, React.createElement("h1", { className: "text-2xl font-bold mb-8" }, "LifeOS"), React.createElement("nav", { className: "space-y-2 flex-1 overflow-y-auto no-scrollbar" }, Object.keys(tabConfig).filter(t => t !== 'profile').map(t => React.createElement(NavItem, { key: t, icon: tabConfig[t].icon, label: tabConfig[t].label, active: activeTab === t, onClick: () => setActiveTab(t) }))), React.createElement("div", { className: "pt-6 border-t border-zinc-200 dark:border-zinc-800 space-y-2" }, React.createElement("button", { onClick: () => setShowSettings(true), className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 mb-2 transition-colors" }, React.createElement(Settings, { size: 20 }), "Cloud Sync"), React.createElement("button", { onClick: () => setDarkMode(!darkMode), className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 mb-2 transition-colors" }, darkMode ? React.createElement(Sun, { size: 20 }) : React.createElement(Moon, { size: 20 }), darkMode ? "Light Mode" : "Dark Mode"), React.createElement("button", { onClick: () => setActiveTab('profile'), className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors" }, React.createElement("div", { className: "w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white uppercase" }, (user.displayName || user.email)[0]), React.createElement("span", { className: "font-medium text-sm truncate" }, "My Profile")))),
+                React.createElement("aside", { className: "fixed left-0 top-0 h-full w-64 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 hidden md:flex flex-col z-20" }, React.createElement("h1", { className: "text-2xl font-bold mb-8" }, "LifeOS"), React.createElement("nav", { className: "space-y-2 flex-1 overflow-y-auto no-scrollbar" }, Object.keys(tabConfig).filter(t => t !== 'profile').map(t => React.createElement(NavItem, { key: t, icon: tabConfig[t].icon, label: tabConfig[t].label, active: activeTab === t, onClick: () => setActiveTab(t) }))), React.createElement("div", { className: "pt-6 border-t border-zinc-200 dark:border-zinc-800 space-y-2" }, React.createElement("button", { onClick: () => setShowSettings(true), className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 mb-2 transition-colors" }, React.createElement(Settings, { size: 20 }), "Settings"), React.createElement("button", { onClick: () => setDarkMode(!darkMode), className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 mb-2 transition-colors" }, darkMode ? React.createElement(Sun, { size: 20 }) : React.createElement(Moon, { size: 20 }), darkMode ? "Light Mode" : "Dark Mode"), React.createElement("button", { onClick: () => setActiveTab('profile'), className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors" }, React.createElement("div", { className: "w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white uppercase" }, (user.displayName || user.email)[0]), React.createElement("span", { className: "font-medium text-sm truncate" }, "My Profile")))),
                 React.createElement(MobileTopBar, { handleLogout, user, darkMode, toggleDarkMode: () => setDarkMode(!darkMode), onProfileClick: () => setActiveTab('profile') }),
                 React.createElement(MobileNavBar, { activeTab, setActiveTab, tabConfig }),
                 React.createElement("main", { className: "md:ml-64 p-4 md:p-8 pb-28 md:pb-8 pt-20 md:pt-8 min-h-screen box-border overflow-x-hidden" },
-                    activeTab === 'dashboard' && React.createElement(DashboardView, { onNavigate: setActiveTab, dashboardData, onUpdateDashboard: handleUpdateDashboard, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset, meals, goalsData, dumps, books }),
+                    activeTab === 'dashboard' && React.createElement(DashboardView, { onNavigate: setActiveTab, dashboardData, onUpdateDashboard: handleUpdateDashboard, meals, goalsData, dumps, books }),
                     activeTab === 'tasks' && React.createElement(TasksView, { tasks, onAdd: handleAddTask, onToggle: handleToggleTask, onDelete: handleDeleteTask, onEdit: handleEditTask, onReorder: handleReorderTasks, onClearCompleted: handleClearCompletedTasks }),
                     activeTab === 'goals2026' && React.createElement(YearlyGoalsView, { goalsData, onUpdateGoals: handleUpdateGoals2026 }),
                     activeTab === 'monthlyPlan' && React.createElement(MonthlyPlanView, { plan: monthlyPlan, onUpdate: handleUpdateMonthlyPlan }),
-                    activeTab === 'ideaBoard' && React.createElement(IdeaBoardView, { notes: ideaNotes, onAdd: handleAddIdeaNote, onUpdate: handleUpdateIdeaNote, onDelete: handleDeleteIdeaNote, tabs: ideaTabs, activeTab: activeIdeaTab, setActiveTab: setActiveIdeaTab, onAddTab: handleAddIdeaTab, onDeleteTab: handleDeleteIdeaTab, onRenameTab: handleRenameIdeaTab }),
+                    activeTab === 'ideaBoard' && React.createElement(IdeaBoardView, { notes: ideaNotes, onAdd: handleAddIdeaNote, onUpdate: handleUpdateIdeaNote, onDelete: handleDeleteIdeaNote }),
                     activeTab === 'braindump' && React.createElement(BrainDumpView, { dumps, onAddDump: handleAddDump, onDeleteDump: handleDeleteDump, onUpdateDump: handleUpdateDump }),
                     activeTab === 'focus' && React.createElement(FocusView, { activeSound, isPlayingSound, toggleSound, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset }),
                     activeTab === 'library' && React.createElement(LibraryView, { books, categories: bookCategories, onAddBook: handleAddBook, onDeleteBook: handleDeleteBook, onUpdateBook: handleUpdateBook, onAddCategory: handleAddBookCategory, onDeleteCategory: handleDeleteBookCategory, onRenameCategory: handleRenameBookCategory }),
-                    activeTab === 'bookPlanner' && React.createElement(BookPlannerView, { bookPlannerData, onUpdateBookPlanner: handleUpdateBookPlanner, onGenerate: generateBookRecommendations, books, categories: bookCategories, onAddBook: handleAddBook }),
-                    activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal, onAIGenerate: generateAIMealPlan }),
+                    activeTab === 'bookPlanner' && React.createElement(BookPlannerView, { bookPlannerData, onUpdateBookPlanner: handleUpdateBookPlanner }),
+                    activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal }),
                     activeTab === 'countdown' && React.createElement(CountdownView, { countdowns, onAdd: handleAddCountdown, onDelete: handleDeleteCountdown, onToggle: handleToggleCountdown, onUpdate: handleUpdateCountdown }),
-                    activeTab === 'overtime' && React.createElement(OvertimeView, { target: overtimeTarget, entries: overtimeEntries, onAddEntry: handleAddOvertimeEntry, onDeleteEntry: handleDeleteOvertimeEntry, onUpdateTarget: handleUpdateOvertimeTarget }),
                     activeTab === 'profile' && React.createElement(ProfileView, { user, onLogout: handleLogout, onUpdateProfile: handleUpdateProfile })
                 ),
                 showSettings && React.createElement(SettingsView, { onClose: () => setShowSettings(false), onSave: () => window.location.reload() }),
