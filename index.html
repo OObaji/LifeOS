@@ -1133,9 +1133,18 @@
         };
 
 
-        const FOOD_BANK_CATEGORIES = ['Protein', 'Carbs', 'Vegetables', 'Fats & Extras'];
+        const FOOD_BANK_CATEGORIES = ['Protein', 'Carbs', 'Vegetables', 'Fats & Extras', 'Fruit', 'Snacks & Quick Foods'];
 
-        const FoodView = ({ meals, onUpdateMeal, foodBank, onAddFoodBankItem, onDeleteFoodBankItem, onAutoAddFoodItems, onGeneratePlan, supplements, onGenerateSupplements, onDeleteSupplement }) => {
+        const DEFAULT_FOOD_BANK_LIBRARY = [
+            ...['Chicken breast', 'Chicken thighs', 'Eggs', 'Beef', 'Minced beef', 'Steak', 'Turkey', 'Salmon', 'Tuna', 'Mackerel', 'Sardines', 'Greek yoghurt', 'Milk', 'Cheese', 'Baked beans', 'Black-eyed beans'].map(name => ({ name, category: 'Protein' })),
+            ...['Jollof rice', 'White rice', 'Fried rice', 'Pasta', 'Spaghetti', 'Indomie noodles', 'Yam', 'Plantain', 'Potatoes', 'Sweet potatoes', 'Bread', 'Oats', 'Cereal', 'Wraps', 'Garri', 'Eba', 'Semolina'].map(name => ({ name, category: 'Carbs' })),
+            ...['Broccoli', 'Spinach', 'Mixed vegetables', 'Carrots', 'Bell peppers', 'Onions', 'Tomatoes', 'Cucumber', 'Lettuce', 'Green beans', 'Sweetcorn'].map(name => ({ name, category: 'Vegetables' })),
+            ...['Avocado', 'Peanut butter', 'Peanuts', 'Cashew nuts', 'Olive oil', 'Butter', 'Mayonnaise', 'Tomato stew', 'Pepper sauce'].map(name => ({ name, category: 'Fats & Extras' })),
+            ...['Bananas', 'Apples', 'Oranges', 'Grapes', 'Strawberries', 'Blueberries', 'Pineapple', 'Mango'].map(name => ({ name, category: 'Fruit' })),
+            ...['Yoghurt + granola', 'Peanut butter toast', 'Boiled eggs', 'Cereal + milk', 'Banana + peanut butter', 'Protein shake', 'Smoothie', 'Toast', 'Indomie + eggs'].map(name => ({ name, category: 'Snacks & Quick Foods' }))
+        ];
+
+        const FoodView = ({ meals, onUpdateMeal, foodBank, onAddFoodBankItem, onDeleteFoodBankItem, onAutoAddFoodItems, onLoadStarterFoods, onGeneratePlan, supplements, onGenerateSupplements, onDeleteSupplement }) => {
             const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
             const types = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
             const currentDay = new Date().toLocaleDateString('en-US', { weekday: 'long' });
@@ -1209,7 +1218,10 @@
                 ),
 
                 React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-sm" },
-                    React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4 flex items-center gap-2" }, React.createElement(Bookmark, { size: 14 }), "Food Bank — foods you like"),
+                    React.createElement("div", { className: "flex justify-between items-center flex-wrap gap-2 mb-4" },
+                        React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest flex items-center gap-2" }, React.createElement(Bookmark, { size: 14 }), "Food Bank — foods you like"),
+                        React.createElement("button", { onClick: onLoadStarterFoods, className: "text-xs font-bold text-indigo-500 hover:text-indigo-400 flex items-center gap-1.5" }, React.createElement(Plus, { size: 12 }), "Load Starter Foods")
+                    ),
                     React.createElement("div", { className: "flex flex-col sm:flex-row gap-2 mb-2" },
                         React.createElement("input", { value: foodInput, onChange: e => setFoodInput(e.target.value), onKeyDown: e => { if (e.key === 'Enter') addFood(); }, placeholder: "e.g. Chicken thighs, salmon, avocado, broccoli", className: "flex-1 p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl outline-none text-zinc-900 dark:text-white focus:border-indigo-500 transition-colors text-base md:text-sm" }),
                         React.createElement("select", { value: foodCategory, onChange: e => setFoodCategory(e.target.value), className: "p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl outline-none text-zinc-900 dark:text-white text-sm focus:border-indigo-500" },
@@ -1225,7 +1237,7 @@
                         React.createElement("span", { className: "text-xs text-zinc-400" }, "Type one or several foods above and let AI sort them into the right category.")
                     ),
                     autoAddError && React.createElement("p", { className: "text-red-500 text-sm mb-4" }, autoAddError),
-                    React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" },
+                    React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" },
                         FOOD_BANK_CATEGORIES.map(cat => React.createElement("div", { key: cat },
                             React.createElement("h4", { className: "text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2" }, cat),
                             React.createElement("div", { className: "flex flex-wrap gap-2 min-h-[2rem]" },
@@ -1925,7 +1937,7 @@
 
             const generateFoodBankItems = async (rawText) => {
                 const existing = foodBank.map(f => f.name.toLowerCase());
-                const prompt = `The user wants to add foods to their personal "food bank" — a list of foods they like, grouped by category for meal planning. Pull out each distinct food item they mention from this text, cleaning up the name (e.g. "chicken thighs" not "some chicken thighs I love"), and classify each into exactly one of these categories: "Protein", "Carbs", "Vegetables", "Fats & Extras". If something could fit more than one, pick whichever is its main role in a meal. Text: "${rawText}". Respond with ONLY a raw JSON array, no markdown code fences, no commentary, in this exact shape: [{"name": string, "category": "Protein"|"Carbs"|"Vegetables"|"Fats & Extras"}].`;
+                const prompt = `The user wants to add foods to their personal "food bank" — a list of foods they like, grouped by category for meal planning. Pull out each distinct food item they mention from this text, cleaning up the name (e.g. "chicken thighs" not "some chicken thighs I love"), and classify each into exactly one of these categories: "Protein", "Carbs", "Vegetables", "Fats & Extras", "Fruit", "Snacks & Quick Foods". "Snacks & Quick Foods" is for quick low-effort combos or on-the-go items (e.g. "boiled eggs", "protein shake", "peanut butter toast") rather than a raw ingredient — use it only when the item reads that way, otherwise classify by its main food group. If something could fit more than one group, pick whichever is its main role in a meal. Text: "${rawText}". Respond with ONLY a raw JSON array, no markdown code fences, no commentary, in this exact shape: [{"name": string, "category": "Protein"|"Carbs"|"Vegetables"|"Fats & Extras"|"Fruit"|"Snacks & Quick Foods"}].`;
                 const items = await callGemini(prompt, false);
                 const newItems = items.filter(item => item.name && !existing.includes(item.name.toLowerCase()));
                 newItems.forEach(item => handleAddFoodBankItem({ name: item.name, category: FOOD_BANK_CATEGORIES.includes(item.category) ? item.category : 'Fats & Extras' }));
@@ -1940,6 +1952,11 @@
             };
 
             const handleAddFoodBankItem = (item) => setFoodBank(prev => [...prev, { ...item, id: generateUUID() }]);
+            const handleLoadStarterFoods = () => setFoodBank(prev => {
+                const existing = new Set(prev.map(f => f.name.toLowerCase()));
+                const toAdd = DEFAULT_FOOD_BANK_LIBRARY.filter(f => !existing.has(f.name.toLowerCase()));
+                return [...prev, ...toAdd.map(f => ({ ...f, id: generateUUID() }))];
+            });
             const handleDeleteFoodBankItem = (id) => setFoodBank(prev => prev.filter(f => f.id !== id));
             const handleDeleteSupplement = (id) => setSupplements(prev => prev.filter(s => s.id !== id));
 
@@ -2107,7 +2124,7 @@ Respond with ONLY raw JSON, no markdown fences, no commentary, in this exact sha
                     activeTab === 'focus' && React.createElement(FocusView, { activeSound, isPlayingSound, toggleSound, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset }),
                     activeTab === 'library' && React.createElement(LibraryView, { books, categories: bookCategories, onAddBook: handleAddBook, onDeleteBook: handleDeleteBook, onUpdateBook: handleUpdateBook, onAddCategory: handleAddBookCategory, onDeleteCategory: handleDeleteBookCategory, onRenameCategory: handleRenameBookCategory }),
                     activeTab === 'bookPlanner' && React.createElement(BookPlannerView, { bookPlannerData, onUpdateBookPlanner: handleUpdateBookPlanner, onGenerate: generateBookRecommendations, books, categories: bookCategories, onAddBook: handleAddBook }),
-                    activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal, foodBank, onAddFoodBankItem: handleAddFoodBankItem, onDeleteFoodBankItem: handleDeleteFoodBankItem, onAutoAddFoodItems: generateFoodBankItems, onGeneratePlan: generateNutritionPlan, supplements, onGenerateSupplements: generateSupplements, onDeleteSupplement: handleDeleteSupplement }),
+                    activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal, foodBank, onAddFoodBankItem: handleAddFoodBankItem, onDeleteFoodBankItem: handleDeleteFoodBankItem, onAutoAddFoodItems: generateFoodBankItems, onLoadStarterFoods: handleLoadStarterFoods, onGeneratePlan: generateNutritionPlan, supplements, onGenerateSupplements: generateSupplements, onDeleteSupplement: handleDeleteSupplement }),
                     activeTab === 'countdown' && React.createElement(CountdownView, { countdowns, onAdd: handleAddCountdown, onDelete: handleDeleteCountdown, onToggle: handleToggleCountdown, onUpdate: handleUpdateCountdown }),
                     activeTab === 'biblePlan' && React.createElement(BiblePlanView, { bibleBookNotes, onGenerateBookInsights: generateBibleBookInsights, bibleTopicSearches, onGenerateTopicRecommendation: generateBibleTopicRecommendation, biblePlan, onGeneratePlanDays: generateBiblePlanDays, onMarkDayDone: handleMarkBibleDayDone }),
                     activeTab === 'profile' && React.createElement(ProfileView, { user, onLogout: handleLogout, onUpdateProfile: handleUpdateProfile })
