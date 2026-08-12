@@ -380,8 +380,8 @@
                         isEditingRules ? (
                             React.createElement("div", { className: "flex flex-col gap-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-2" },
                                 rulesConfig.map(rule => React.createElement("div", { key: rule.id, className: "flex items-center gap-2" },
-                                    React.createElement("input", { value: rule.letter, onChange: e => handleRuleChange(rule.id, 'letter', e.target.value.substring(0, 2)), className: "w-12 text-center p-2 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm font-bold text-zinc-900 dark:text-white outline-none focus:border-indigo-500 uppercase" }),
-                                    React.createElement("input", { value: rule.label, onChange: e => handleRuleChange(rule.id, 'label', e.target.value), className: "flex-1 p-2 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm text-zinc-900 dark:text-white outline-none focus:border-indigo-500" }),
+                                    React.createElement("input", { value: rule.letter, onChange: e => handleRuleChange(rule.id, 'letter', e.target.value.substring(0, 2)), className: "w-12 text-center p-2 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg text-base md:text-sm font-bold text-zinc-900 dark:text-white outline-none focus:border-indigo-500 uppercase" }),
+                                    React.createElement("input", { value: rule.label, onChange: e => handleRuleChange(rule.id, 'label', e.target.value), className: "flex-1 p-2 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg text-base md:text-sm text-zinc-900 dark:text-white outline-none focus:border-indigo-500" }),
                                     React.createElement("button", { onClick: () => handleDeleteRule(rule.id), className: "p-2 text-zinc-400 hover:text-red-500 rounded-lg transition-colors active:scale-90" }, React.createElement(Trash2, { size: 16 }))
                                 )),
                                 React.createElement("button", { onClick: handleAddRule, className: "flex items-center justify-center gap-2 p-2 mt-1 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg text-sm text-zinc-500 hover:text-indigo-500 hover:border-indigo-500 transition-colors active:scale-95" }, React.createElement(Plus, { size: 16 }), "Add Rule")
@@ -864,7 +864,7 @@
                         ),
                         React.createElement("div", { className: "relative w-full md:w-48 lg:w-64" },
                             React.createElement(Search, { size: 16, className: "absolute left-3 top-2.5 text-zinc-400" }),
-                            React.createElement("input", { placeholder: "Search books...", value: searchQuery, onChange: e => setSearchQuery(e.target.value), className: "w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 h-full" })
+                            React.createElement("input", { placeholder: "Search books...", value: searchQuery, onChange: e => setSearchQuery(e.target.value), className: "w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base md:text-sm outline-none focus:ring-2 focus:ring-indigo-500 h-full" })
                         ),
                         viewMode === 'library' ?
                             React.createElement("button", { onClick: () => setIsAdding(!isAdding), className: "bg-indigo-600 text-white p-2.5 rounded-xl hover:bg-indigo-500 shadow-glow-sm transition-all active:scale-95 shrink-0" }, React.createElement(Plus, { size: 20 }))
@@ -1129,13 +1129,13 @@
                         className: "relative w-full bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md px-6 py-4 text-center text-lg md:text-xl font-bold text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800/80 rounded-2xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600 transition-all shadow-sm"
                     })
                 ),
-                React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[3rem] p-8 md:p-16 w-full shadow-sm flex flex-col items-center relative overflow-hidden" },
+                React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[3rem] p-5 sm:p-8 md:p-16 w-full shadow-sm flex flex-col items-center relative overflow-hidden" },
                     React.createElement("div", { className: "flex gap-2 bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-full mb-12 z-10 flex-wrap justify-center" },
                         [{l: 'Pomodoro', t: 1500, m: 'FOCUS'}, {l: 'Short Break', t: 300, m: 'SHORT_BREAK'}, {l: 'Long Break', t: 900, m: 'LONG_BREAK'}, {l: '1 Hour', t: 3600, m: 'ONE_HOUR'}].map(mode =>
                             React.createElement("button", { key: mode.m, onClick: () => resetTimer(mode.t, mode.m), className: `px-6 py-2 rounded-full text-sm font-bold transition-colors ${timerState.mode === mode.m ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}` }, mode.l)
                         )
                     ),
-                    React.createElement("div", { className: "relative w-64 h-64 md:w-80 md:h-80 flex items-center justify-center mb-12 z-10" },
+                    React.createElement("div", { className: "relative w-52 h-52 sm:w-64 sm:h-64 md:w-80 md:h-80 flex items-center justify-center mb-12 z-10" },
                         React.createElement("svg", { className: "absolute inset-0 w-full h-full -rotate-90", viewBox: "0 0 100 100" },
                             React.createElement("circle", { cx: "50", cy: "50", r: "48", fill: "none", stroke: "currentColor", strokeWidth: "4", className: "text-zinc-100 dark:text-zinc-800" }),
                             React.createElement("circle", { cx: "50", cy: "50", r: "48", fill: "none", stroke: "currentColor", strokeWidth: "4", strokeDasharray: "301.59", strokeDashoffset: 301.59 - (301.59 * progress) / 100, strokeLinecap: "round", className: "text-indigo-500 transition-all duration-1000 ease-linear" })
@@ -1247,7 +1247,7 @@
                     ),
                     React.createElement("div", { className: "flex flex-col sm:flex-row gap-2 mb-2" },
                         React.createElement("input", { value: foodInput, onChange: e => setFoodInput(e.target.value), onKeyDown: e => { if (e.key === 'Enter') addFood(); }, placeholder: "e.g. Chicken thighs, salmon, avocado, broccoli", className: "flex-1 p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl outline-none text-zinc-900 dark:text-white focus:border-indigo-500 transition-colors text-base md:text-sm" }),
-                        React.createElement("select", { value: foodCategory, onChange: e => setFoodCategory(e.target.value), className: "p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl outline-none text-zinc-900 dark:text-white text-sm focus:border-indigo-500" },
+                        React.createElement("select", { value: foodCategory, onChange: e => setFoodCategory(e.target.value), className: "p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl outline-none text-zinc-900 dark:text-white text-base md:text-sm focus:border-indigo-500" },
                             FOOD_BANK_CATEGORIES.map(c => React.createElement("option", { key: c, value: c }, c))
                         ),
                         React.createElement("button", { onClick: addFood, className: "px-5 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-xl font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors active:scale-95 shrink-0 flex items-center justify-center gap-2" }, React.createElement(Plus, { size: 18 }), "Add")
@@ -1349,8 +1349,8 @@
                     React.createElement("p", { className: "text-zinc-500 text-sm mt-1" }, "Anticipate what's coming.")
                 ),
                 React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-6 shadow-sm mb-8 flex flex-col sm:flex-row gap-4" },
-                    React.createElement("input", { type: "text", value: title, onChange: e => setTitle(e.target.value), placeholder: "Event Name", className: "flex-1 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 text-sm text-zinc-900 dark:text-white outline-none focus:border-indigo-500" }),
-                    React.createElement("input", { type: "date", value: date, onChange: e => setDate(e.target.value), className: "bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 text-sm text-zinc-900 dark:text-white outline-none focus:border-indigo-500 [color-scheme:dark]" }),
+                    React.createElement("input", { type: "text", value: title, onChange: e => setTitle(e.target.value), placeholder: "Event Name", className: "flex-1 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 text-base md:text-sm text-zinc-900 dark:text-white outline-none focus:border-indigo-500" }),
+                    React.createElement("input", { type: "date", value: date, onChange: e => setDate(e.target.value), className: "bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 text-base md:text-sm text-zinc-900 dark:text-white outline-none focus:border-indigo-500 [color-scheme:dark]" }),
                     React.createElement("button", { onClick: handleAdd, className: "bg-indigo-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-indigo-500 transition-colors active:scale-95" }, "Add")
                 ),
                 React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
