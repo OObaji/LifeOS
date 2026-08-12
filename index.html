@@ -1652,6 +1652,8 @@
             const [activeTab, setActiveTab] = useState(() => { const saved = localStorage.getItem('lifeos_active_tab'); return (saved && VALID_TABS.includes(saved)) ? saved : "dashboard"; });
             const [darkMode, setDarkMode] = useState(() => { const saved = localStorage.getItem('lifeos_dark_mode'); return saved !== null ? JSON.parse(saved) : true; });
             const [isDataLoaded, setIsDataLoaded] = useState(false);
+            const [cloudLoadError, setCloudLoadError] = useState(null);
+            const [cloudLoadRetryCount, setCloudLoadRetryCount] = useState(0);
 
             useEffect(() => { localStorage.setItem('lifeos_active_tab', activeTab); }, [activeTab]);
             useEffect(() => { localStorage.setItem('lifeos_dark_mode', JSON.stringify(darkMode)); if (darkMode) { document.documentElement.classList.add('dark'); } else { document.documentElement.classList.remove('dark'); } }, [darkMode]);
@@ -1733,6 +1735,7 @@
                 let mounted = true;
                 const supabase = getSupabase();
                 const isCloud = !!(user.isCloud && supabase);
+                setCloudLoadError(null);
 
                 const loadLocal = () => {
                     const prefix = `lifeos_data_${user.id}_`;
@@ -1805,8 +1808,8 @@
                             cloudRefs.current = { dumps: loadedDumps, meals: loadedMeals, books: loadedBooks, tasks: loadedTasks };
                             setIsDataLoaded(true);
                         } catch (err) {
-                            console.error("Cloud load failed, falling back to local data:", err);
-                            if (mounted) { loadLocal(); setIsDataLoaded(true); }
+                            console.error("Cloud load failed:", err);
+                            if (mounted) { setCloudLoadError(err.message || "Couldn't load your data from the cloud."); }
                         }
                     })();
                 } else {
@@ -1814,7 +1817,7 @@
                     setIsDataLoaded(true);
                 }
                 return () => { mounted = false; };
-            }, [user]);
+            }, [user, cloudLoadRetryCount]);
 
             useEffect(() => {
                 if (!user || !isDataLoaded) return;
@@ -2131,6 +2134,19 @@ Respond with ONLY raw JSON, no markdown fences, no commentary, in this exact sha
             if (!user) return React.createElement(React.Fragment, null,
                 React.createElement(LandingPage, { onLoginSuccess: handleLoginSuccess, onGuestLogin: handleLoginSuccess, onOpenSettings: () => setShowSettings(true) }),
                 showSettings && React.createElement(SettingsView, { onClose: () => setShowSettings(false), onSave: () => setShowSettings(false) })
+            );
+
+            if (cloudLoadError && !isDataLoaded) return React.createElement("div", { className: "min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-4" },
+                React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 max-w-md w-full text-center shadow-xl" },
+                    React.createElement("div", { className: "w-16 h-16 bg-rose-100 dark:bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6" }, React.createElement(AlertCircle, { size: 28 })),
+                    React.createElement("h2", { className: "text-xl font-bold text-zinc-900 dark:text-white mb-2" }, "Couldn't load your data"),
+                    React.createElement("p", { className: "text-zinc-500 text-sm mb-2" }, cloudLoadError),
+                    React.createElement("p", { className: "text-zinc-400 text-xs mb-6" }, "Your data is safe in the cloud — nothing will be changed here until it loads successfully, so it's safe to retry."),
+                    React.createElement("div", { className: "flex flex-col gap-2" },
+                        React.createElement("button", { onClick: () => setCloudLoadRetryCount(c => c + 1), className: "w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 active:scale-95 transition-all" }, "Retry"),
+                        React.createElement("button", { onClick: handleLogout, className: "w-full py-3 text-zinc-500 hover:text-zinc-800 dark:hover:text-white font-bold rounded-xl active:scale-95" }, "Log Out")
+                    )
+                )
             );
 
             return React.createElement("div", { className: "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300" },
