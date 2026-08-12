@@ -122,6 +122,16 @@
 
         const DEFAULT_SINGLE_YEAR_GOALS = { mission: "Reshape my life by achieving financial stability, building iron discipline, and gaining clear direction for my future.", mainFocus: [{id: '1', text: 'Financial Freedom'}, {id: '2', text: 'Improved Fitness'}, {id: '3', text: 'Skill Mastery'}], dos: [], donts: [], milestones: [], quarters: { q1: [], q2: [], q3: [], q4: [] }, phases: { phase1: [], phase2: [], phase3: [] } };
         const DEFAULT_MEALS = [{ day: 'Monday', type: 'Breakfast', text: 'Oats + milk\n1 banana\n1 scoop protein powder' }];
+        const DAILY_HABITS = [
+            { emoji: '💧', habit: 'Drink water', trigger: 'When I wake up', minimum: '1 glass' },
+            { emoji: '🍳', habit: 'First proper meal', trigger: 'After getting ready', minimum: 'Eat something protein-rich' },
+            { emoji: '📚', habit: 'Study / Agentic AI', trigger: '3 PM', minimum: '30 mins minimum' },
+            { emoji: '🏋🏾', habit: 'Gym', trigger: 'After waking', minimum: 'Just get to the gym' },
+            { emoji: '📖', habit: 'Read', trigger: 'Before work / downtime', minimum: '5 pages' },
+            { emoji: '🙏🏾', habit: 'Prayer/Bible', trigger: 'Before sleep', minimum: '5 mins' },
+            { emoji: '📝', habit: 'Journal', trigger: 'End of day', minimum: '3 sentences' },
+            { emoji: '🧹', habit: 'Reset room', trigger: 'Before work', minimum: '5 mins' }
+        ];
         const DEFAULT_BOOK_CATEGORIES = ['General', 'Fiction', 'Non-Fiction', 'Self-Help', 'Technical'];
         const FOCUS_SOUNDS = [
             { id: 'rain', label: 'Heavy Rain', icon: CloudRain, url: 'https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg' },
@@ -404,6 +414,19 @@
                      React.createElement(Card, { className: "lg:col-span-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 dark:from-emerald-900/10 dark:via-teal-900/10 dark:to-emerald-900/10 border-emerald-200 dark:border-emerald-500/20" },
                         React.createElement("div", { className: "flex items-center gap-3 mb-3" }, iconBadge(Quote, "from-emerald-500 to-teal-600"), React.createElement("h3", { className: "text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest" }, "Daily affirmations")),
                         React.createElement("textarea", { value: positiveNote, onChange: (e) => onUpdateDashboard({ ...dashboardData, positiveNote: e.target.value }), className: "w-full h-16 bg-transparent text-emerald-800 dark:text-emerald-100/90 text-lg font-hand resize-none focus:outline-none placeholder:text-emerald-500/30 leading-relaxed", placeholder: "Write something kind to yourself..." })
+                     ),
+                     React.createElement(Card, { className: "lg:col-span-4" },
+                        React.createElement("div", { className: "flex items-center gap-3 mb-4" }, iconBadge(CheckCircle2, "from-violet-500 to-purple-600"), React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest" }, "Daily Habits")),
+                        React.createElement("div", { className: "divide-y divide-zinc-100 dark:divide-zinc-800" },
+                            DAILY_HABITS.map((h, i) => React.createElement("div", { key: i, className: "flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-4 py-3" },
+                                React.createElement("div", { className: "flex items-center gap-3 sm:w-56 shrink-0" },
+                                    React.createElement("span", { className: "text-xl shrink-0" }, h.emoji),
+                                    React.createElement("span", { className: "font-bold text-sm text-zinc-800 dark:text-zinc-200" }, h.habit)
+                                ),
+                                React.createElement("span", { className: "text-xs text-zinc-500 dark:text-zinc-400 sm:flex-1" }, h.trigger),
+                                React.createElement("span", { className: "text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-3 py-1 rounded-full whitespace-nowrap self-start sm:self-auto" }, h.minimum)
+                            ))
+                        )
                      )
                 )
             );
@@ -1043,7 +1066,7 @@
                     React.createElement("p", { className: "text-zinc-500 text-lg mt-3 font-medium" }, "Extract worries from your mind.")
                 ),
 
-                React.createElement("div", { className: "absolute inset-0 z-0 flex items-center justify-center pointer-events-none" },
+                React.createElement("div", { className: "absolute inset-0 z-0 flex items-center justify-center pointer-events-none", style: { transform: 'scale(0.6)' } },
                     React.createElement("svg", { className: "absolute inset-0 w-full h-full z-0 overflow-visible" },
                         dumps.map((d, i) => {
                             const angle = i * 2.39996;
