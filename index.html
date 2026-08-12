@@ -1135,12 +1135,14 @@
 
         const FOOD_BANK_CATEGORIES = ['Protein', 'Carbs', 'Vegetables', 'Fats & Extras'];
 
-        const FoodView = ({ meals, onUpdateMeal, foodBank, onAddFoodBankItem, onDeleteFoodBankItem, onGeneratePlan, supplements, onGenerateSupplements, onDeleteSupplement }) => {
+        const FoodView = ({ meals, onUpdateMeal, foodBank, onAddFoodBankItem, onDeleteFoodBankItem, onAutoAddFoodItems, onGeneratePlan, supplements, onGenerateSupplements, onDeleteSupplement }) => {
             const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
             const types = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
             const currentDay = new Date().toLocaleDateString('en-US', { weekday: 'long' });
             const [foodInput, setFoodInput] = useState("");
             const [foodCategory, setFoodCategory] = useState(FOOD_BANK_CATEGORIES[0]);
+            const [isAutoAdding, setIsAutoAdding] = useState(false);
+            const [autoAddError, setAutoAddError] = useState(null);
             const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
             const [planError, setPlanError] = useState(null);
             const [isGeneratingSupps, setIsGeneratingSupps] = useState(false);
@@ -1155,6 +1157,21 @@
                 if (!foodInput.trim()) return;
                 onAddFoodBankItem({ name: foodInput.trim(), category: foodCategory });
                 setFoodInput("");
+            };
+
+            const handleAutoAdd = async () => {
+                if (!foodInput.trim() || isAutoAdding) return;
+                setIsAutoAdding(true);
+                setAutoAddError(null);
+                try {
+                    await onAutoAddFoodItems(foodInput.trim());
+                    setFoodInput("");
+                } catch (err) {
+                    console.error(err);
+                    setAutoAddError(err.message || "Couldn't categorize that right now. Please try again.");
+                } finally {
+                    setIsAutoAdding(false);
+                }
             };
 
             const handleGeneratePlan = async () => {
@@ -1193,13 +1210,21 @@
 
                 React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-sm" },
                     React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4 flex items-center gap-2" }, React.createElement(Bookmark, { size: 14 }), "Food Bank — foods you like"),
-                    React.createElement("div", { className: "flex flex-col sm:flex-row gap-2 mb-6" },
-                        React.createElement("input", { value: foodInput, onChange: e => setFoodInput(e.target.value), onKeyDown: e => { if (e.key === 'Enter') addFood(); }, placeholder: "e.g. Chicken thighs", className: "flex-1 p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl outline-none text-zinc-900 dark:text-white focus:border-indigo-500 transition-colors text-base md:text-sm" }),
+                    React.createElement("div", { className: "flex flex-col sm:flex-row gap-2 mb-2" },
+                        React.createElement("input", { value: foodInput, onChange: e => setFoodInput(e.target.value), onKeyDown: e => { if (e.key === 'Enter') addFood(); }, placeholder: "e.g. Chicken thighs, salmon, avocado, broccoli", className: "flex-1 p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl outline-none text-zinc-900 dark:text-white focus:border-indigo-500 transition-colors text-base md:text-sm" }),
                         React.createElement("select", { value: foodCategory, onChange: e => setFoodCategory(e.target.value), className: "p-3 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl outline-none text-zinc-900 dark:text-white text-sm focus:border-indigo-500" },
                             FOOD_BANK_CATEGORIES.map(c => React.createElement("option", { key: c, value: c }, c))
                         ),
-                        React.createElement("button", { onClick: addFood, className: "px-5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl font-bold hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors active:scale-95 shrink-0 flex items-center justify-center gap-2" }, React.createElement(Plus, { size: 18 }), "Add")
+                        React.createElement("button", { onClick: addFood, className: "px-5 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-xl font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors active:scale-95 shrink-0 flex items-center justify-center gap-2" }, React.createElement(Plus, { size: 18 }), "Add")
                     ),
+                    React.createElement("div", { className: "flex items-center gap-2 mb-6" },
+                        React.createElement("button", { onClick: handleAutoAdd, disabled: isAutoAdding || !foodInput.trim(), className: "flex items-center justify-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl text-sm font-bold hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed" },
+                            isAutoAdding ? React.createElement(Loader2, { size: 16, className: "animate-spin" }) : React.createElement(Sparkles, { size: 16 }),
+                            isAutoAdding ? "Categorizing..." : "Auto-Add with AI"
+                        ),
+                        React.createElement("span", { className: "text-xs text-zinc-400" }, "Type one or several foods above and let AI sort them into the right category.")
+                    ),
+                    autoAddError && React.createElement("p", { className: "text-red-500 text-sm mb-4" }, autoAddError),
                     React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" },
                         FOOD_BANK_CATEGORIES.map(cat => React.createElement("div", { key: cat },
                             React.createElement("h4", { className: "text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2" }, cat),
@@ -1305,6 +1330,59 @@
                             React.createElement("div", { className: "mt-4 text-xs text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-1.5 rounded-full" }, new Date(c.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }))
                         )
                     })
+                )
+            );
+        };
+
+        const ASSISTANT_ACTION_LABELS = {
+            yearlyVision: 'Yearly Vision', monthlyVision: 'Monthly Vision', ideaNote: 'Idea Board note',
+            brainDump: 'Brain Dump', libraryBook: 'Library book', foodBankItem: 'Food Bank item', countdown: 'Countdown'
+        };
+
+        const AIAssistantModal = ({ onClose, onSubmit }) => {
+            const [text, setText] = useState("");
+            const [isLoading, setIsLoading] = useState(false);
+            const [error, setError] = useState(null);
+            const [result, setResult] = useState(null);
+
+            useEffect(() => { const handleEsc = (e) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', handleEsc); return () => window.removeEventListener('keydown', handleEsc); }, [onClose]);
+
+            const handleSubmit = async () => {
+                if (!text.trim() || isLoading) return;
+                setIsLoading(true); setError(null); setResult(null);
+                try {
+                    const actions = await onSubmit(text.trim());
+                    setResult(actions);
+                    setText("");
+                } catch (err) {
+                    console.error(err);
+                    setError(err.message || "Couldn't process that. Please try again.");
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            return React.createElement("div", { className: "fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm overflow-y-auto" },
+                React.createElement("div", { className: "flex min-h-full items-start justify-center p-4 sm:p-8" },
+                    React.createElement("div", { className: "my-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-xl p-6 md:p-8 shadow-2xl shrink-0" },
+                        React.createElement("div", { className: "flex justify-between items-start mb-2" },
+                            React.createElement("h2", { className: "text-2xl font-bold text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(Sparkles, { className: "text-indigo-500", size: 24 }), "AI Assistant"),
+                            React.createElement("button", { onClick: onClose, className: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 -m-2 active:scale-90" }, React.createElement(X, { size: 24 }))
+                        ),
+                        React.createElement("p", { className: "text-sm text-zinc-500 mb-4" }, "Describe what you want added — it can fill in your Yearly Vision, Monthly Vision, Idea Board, Brain Dump, Library, Food Bank, and Countdowns, all from one prompt."),
+                        React.createElement("textarea", { value: text, onChange: e => setText(e.target.value), placeholder: "e.g. Add 'Atomic Habits' to my library, jot an idea about a morning routine app, and set a countdown for my exam on July 4th", className: "w-full min-h-[120px] p-4 rounded-xl bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-base md:text-sm focus:outline-none focus:border-indigo-500 resize-none mb-4" }),
+                        error && React.createElement("p", { className: "text-red-500 text-sm mb-4" }, error),
+                        result && React.createElement("div", { className: "mb-4 p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl" },
+                            React.createElement("p", { className: "text-sm font-bold text-emerald-700 dark:text-emerald-400 mb-2" }, result.length === 0 ? "Nothing to add — try rephrasing." : `Added ${result.length} item${result.length === 1 ? '' : 's'}:`),
+                            result.length > 0 && React.createElement("ul", { className: "text-sm text-emerald-700 dark:text-emerald-300 space-y-1 list-disc pl-4" },
+                                result.map((a, i) => React.createElement("li", { key: i }, ASSISTANT_ACTION_LABELS[a.type] || a.type, ": ", a.text || a.title || a.name))
+                            )
+                        ),
+                        React.createElement("button", { onClick: handleSubmit, disabled: isLoading || !text.trim(), className: "w-full flex items-center justify-center gap-2 py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 shadow-glow-sm transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed" },
+                            isLoading ? React.createElement(Loader2, { size: 18, className: "animate-spin" }) : React.createElement(Sparkles, { size: 18 }),
+                            isLoading ? "Working..." : "Fill it in"
+                        )
+                    )
                 )
             );
         };
@@ -1545,6 +1623,7 @@
 
             const [user, setUser] = useState(null);
             const [showSettings, setShowSettings] = useState(false);
+            const [showAssistant, setShowAssistant] = useState(false);
             const cloudRefs = useRef({ dumps: [], meals: [], books: [], tasks: [] });
             const suppressRealtimeRef = useRef(false);
             const saveTimerRef = useRef(null);
@@ -1844,6 +1923,15 @@
                 setSupplements(list.map(s => ({ ...s, id: generateUUID() })));
             };
 
+            const generateFoodBankItems = async (rawText) => {
+                const existing = foodBank.map(f => f.name.toLowerCase());
+                const prompt = `The user wants to add foods to their personal "food bank" — a list of foods they like, grouped by category for meal planning. Pull out each distinct food item they mention from this text, cleaning up the name (e.g. "chicken thighs" not "some chicken thighs I love"), and classify each into exactly one of these categories: "Protein", "Carbs", "Vegetables", "Fats & Extras". If something could fit more than one, pick whichever is its main role in a meal. Text: "${rawText}". Respond with ONLY a raw JSON array, no markdown code fences, no commentary, in this exact shape: [{"name": string, "category": "Protein"|"Carbs"|"Vegetables"|"Fats & Extras"}].`;
+                const items = await callGemini(prompt, false);
+                const newItems = items.filter(item => item.name && !existing.includes(item.name.toLowerCase()));
+                newItems.forEach(item => handleAddFoodBankItem({ name: item.name, category: FOOD_BANK_CATEGORIES.includes(item.category) ? item.category : 'Fats & Extras' }));
+                return newItems;
+            };
+
             const generateBookRecommendations = async (goals) => {
                 const goalsText = goals.map(g => g.text).join('; ');
                 const prompt = `Search the internet for real, currently available books (a mix of well-known classics and recent releases) that would help someone achieve these personal growth goals for the year: ${goalsText}. Recommend 6 to 9 diverse books, covering all of the goals listed. Respond with ONLY a raw JSON array, no markdown code fences, no commentary, in this exact shape: [{"title": string, "author": string, "year": string, "goalMatch": string, "reason": string, "category": string}]. "goalMatch" must exactly match one of the goals provided above. "category" must be one of: Fiction, Non-Fiction, Self-Help, Technical, General. "reason" must be a specific 1-2 sentence explanation of why this exact book helps with that goal.`;
@@ -1876,6 +1964,64 @@
             };
 
             const handleMarkBibleDayDone = (day) => setBiblePlan(prev => prev.completedDays.includes(day) ? prev : { ...prev, completedDays: [...prev.completedDays, day] });
+
+            const applyGoalsAction = (action) => {
+                const year = new Date().getFullYear();
+                setGoalsData(prev => {
+                    const yearData = prev[year] || { ...DEFAULT_SINGLE_YEAR_GOALS };
+                    const newYearData = { ...yearData };
+                    if (action.field === 'mission') {
+                        newYearData.mission = action.text;
+                    } else if (action.field === 'dos' || action.field === 'donts' || action.field === 'milestones') {
+                        newYearData[action.field] = [...(yearData[action.field] || []), { id: generateUUID(), text: action.text, completed: false }];
+                    } else if (typeof action.field === 'string' && action.field.startsWith('quarters.')) {
+                        const q = action.field.split('.')[1];
+                        newYearData.quarters = { ...yearData.quarters, [q]: [...(yearData.quarters?.[q] || []), { id: generateUUID(), text: action.text, completed: false }] };
+                    }
+                    return { ...prev, [year]: newYearData };
+                });
+            };
+
+            const applyMonthlyAction = (action) => {
+                setMonthlyPlan(prev => {
+                    const weeks = { ...prev.weeks };
+                    weeks[action.week] = [...(weeks[action.week] || []), { id: generateUUID(), text: action.text, completed: false }];
+                    return { ...prev, weeks };
+                });
+            };
+
+            const applyAssistantAction = (action) => {
+                switch (action.type) {
+                    case 'yearlyVision': applyGoalsAction(action); break;
+                    case 'monthlyVision': applyMonthlyAction(action); break;
+                    case 'ideaNote': handleAddIdeaNote({ text: action.text, x: 40 + Math.random() * 200, y: 40 + Math.random() * 200, width: 256, height: 256, color: IDEA_COLORS[ideaNotes.length % IDEA_COLORS.length] }); break;
+                    case 'brainDump': handleAddDump(action.text); break;
+                    case 'libraryBook': handleAddBook({ title: action.title, author: action.author || '', category: bookCategories.includes(action.category) ? action.category : (bookCategories[0] || 'General'), status: action.status || 'To Read' }); break;
+                    case 'foodBankItem': handleAddFoodBankItem({ name: action.name, category: FOOD_BANK_CATEGORIES.includes(action.category) ? action.category : FOOD_BANK_CATEGORIES[0] }); break;
+                    case 'countdown': handleAddCountdown({ title: action.title, date: action.date, id: generateUUID() }); break;
+                    default: break;
+                }
+            };
+
+            const runAssistantPrompt = async (promptText) => {
+                const today = new Date().toISOString().split('T')[0];
+                const prompt = `You are a quick-capture assistant for a personal productivity app. Today's date is ${today}. The user will describe things they want added to their app in plain language, possibly several things at once. Convert their request into a JSON list of actions. Only include an action for something the user actually asked for — never invent extra items they didn't mention. Valid action types and their exact shape:
+- Yearly vision: {"type": "yearlyVision", "field": "mission" | "dos" | "donts" | "milestones" | "quarters.q1" | "quarters.q2" | "quarters.q3" | "quarters.q4", "text": string} — "mission" replaces their yearly mission statement, "dos"/"donts" are identity/habit statements ("I am someone who...", "I refuse to..."), "milestones" are big yearly checkpoints, "quarters.qN" are objectives for that quarter.
+- Monthly vision: {"type": "monthlyVision", "week": "week1"|"week2"|"week3"|"week4", "text": string} — a goal/task for that week of the current month.
+- Idea board note: {"type": "ideaNote", "text": string}
+- Brain dump: {"type": "brainDump", "text": string}
+- Library book: {"type": "libraryBook", "title": string, "author": string, "category": "General"|"Fiction"|"Non-Fiction"|"Self-Help"|"Technical", "status": "To Read"}
+- Food bank item: {"type": "foodBankItem", "name": string, "category": "Protein"|"Carbs"|"Vegetables"|"Fats & Extras"}
+- Countdown: {"type": "countdown", "title": string, "date": "YYYY-MM-DD"} — resolve relative dates (like "next month", "in 3 weeks") against today's date.
+
+The user's request: "${promptText}"
+
+Respond with ONLY raw JSON, no markdown fences, no commentary, in this exact shape: {"actions": [...]}.`;
+                const result = await callGemini(prompt, false);
+                const actions = result.actions || [];
+                actions.forEach(applyAssistantAction);
+                return actions;
+            };
 
             const handleLoginSuccess = (u) => { setUser(u); localStorage.setItem('lifeos_user_session', JSON.stringify(u)); };
             const handleLogout = async () => {
@@ -1961,12 +2107,14 @@
                     activeTab === 'focus' && React.createElement(FocusView, { activeSound, isPlayingSound, toggleSound, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset }),
                     activeTab === 'library' && React.createElement(LibraryView, { books, categories: bookCategories, onAddBook: handleAddBook, onDeleteBook: handleDeleteBook, onUpdateBook: handleUpdateBook, onAddCategory: handleAddBookCategory, onDeleteCategory: handleDeleteBookCategory, onRenameCategory: handleRenameBookCategory }),
                     activeTab === 'bookPlanner' && React.createElement(BookPlannerView, { bookPlannerData, onUpdateBookPlanner: handleUpdateBookPlanner, onGenerate: generateBookRecommendations, books, categories: bookCategories, onAddBook: handleAddBook }),
-                    activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal, foodBank, onAddFoodBankItem: handleAddFoodBankItem, onDeleteFoodBankItem: handleDeleteFoodBankItem, onGeneratePlan: generateNutritionPlan, supplements, onGenerateSupplements: generateSupplements, onDeleteSupplement: handleDeleteSupplement }),
+                    activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal, foodBank, onAddFoodBankItem: handleAddFoodBankItem, onDeleteFoodBankItem: handleDeleteFoodBankItem, onAutoAddFoodItems: generateFoodBankItems, onGeneratePlan: generateNutritionPlan, supplements, onGenerateSupplements: generateSupplements, onDeleteSupplement: handleDeleteSupplement }),
                     activeTab === 'countdown' && React.createElement(CountdownView, { countdowns, onAdd: handleAddCountdown, onDelete: handleDeleteCountdown, onToggle: handleToggleCountdown, onUpdate: handleUpdateCountdown }),
                     activeTab === 'biblePlan' && React.createElement(BiblePlanView, { bibleBookNotes, onGenerateBookInsights: generateBibleBookInsights, bibleTopicSearches, onGenerateTopicRecommendation: generateBibleTopicRecommendation, biblePlan, onGeneratePlanDays: generateBiblePlanDays, onMarkDayDone: handleMarkBibleDayDone }),
                     activeTab === 'profile' && React.createElement(ProfileView, { user, onLogout: handleLogout, onUpdateProfile: handleUpdateProfile })
                 ),
                 showSettings && React.createElement(SettingsView, { onClose: () => setShowSettings(false), onSave: () => setShowSettings(false) }),
+                React.createElement("button", { onClick: () => setShowAssistant(true), className: "fixed bottom-24 left-6 md:bottom-8 md:left-72 z-40 p-4 bg-indigo-600 text-white rounded-full shadow-2xl hover:bg-indigo-500 hover:scale-110 transition-all active:scale-95 flex items-center gap-2" }, React.createElement(Sparkles, { size: 22 }), React.createElement("span", { className: "hidden md:inline text-sm font-bold pr-1" }, "Assistant")),
+                showAssistant && React.createElement(AIAssistantModal, { onClose: () => setShowAssistant(false), onSubmit: runAssistantPrompt }),
                 showTimerAlert && React.createElement("div", { className: "fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" },
                     React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-300" },
                         React.createElement("div", { className: "w-20 h-20 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-6" }, React.createElement(Timer, { size: 40 })),
