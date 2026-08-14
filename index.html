@@ -1167,7 +1167,7 @@
             ...['Yoghurt + granola', 'Peanut butter toast', 'Boiled eggs', 'Cereal + milk', 'Banana + peanut butter', 'Protein shake', 'Smoothie', 'Toast', 'Indomie + eggs'].map(name => ({ name, category: 'Snacks & Quick Foods' }))
         ];
 
-        const FoodView = ({ meals, onUpdateMeal, foodBank, onAddFoodBankItem, onDeleteFoodBankItem, onAutoAddFoodItems, onLoadStarterFoods, onGeneratePlan, supplements, onGenerateSupplements, onDeleteSupplement }) => {
+        const FoodView = ({ meals, onUpdateMeal, foodBank, onAddFoodBankItem, onDeleteFoodBankItem, onAutoAddFoodItems, onLoadStarterFoods, onGeneratePlan, supplements, onGenerateSupplements, onDeleteSupplement, shoppingList, onAddShoppingItem, onToggleShoppingItem, onDeleteShoppingItem, onEditShoppingItem, onGenerateShoppingList, batchCookList, onAddBatchCookItem, onToggleBatchCookItem, onDeleteBatchCookItem, onEditBatchCookItem, onGenerateBatchCookList }) => {
             const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
             const types = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
             const currentDay = new Date().toLocaleDateString('en-US', { weekday: 'long' });
@@ -1179,6 +1179,10 @@
             const [planError, setPlanError] = useState(null);
             const [isGeneratingSupps, setIsGeneratingSupps] = useState(false);
             const [suppError, setSuppError] = useState(null);
+            const [isGeneratingShopping, setIsGeneratingShopping] = useState(false);
+            const [shoppingError, setShoppingError] = useState(null);
+            const [isGeneratingBatchCook, setIsGeneratingBatchCook] = useState(false);
+            const [batchCookError, setBatchCookError] = useState(null);
 
             const getMealText = (day, type) => {
                 const m = meals.find(m => m.day === day && m.type === type);
@@ -1231,6 +1235,34 @@
                     setSuppError(err.message || "Couldn't generate recommendations right now. Please try again.");
                 } finally {
                     setIsGeneratingSupps(false);
+                }
+            };
+
+            const handleGenerateShoppingList = async () => {
+                if (isGeneratingShopping) return;
+                setIsGeneratingShopping(true);
+                setShoppingError(null);
+                try {
+                    await onGenerateShoppingList();
+                } catch (err) {
+                    console.error(err);
+                    setShoppingError(err.message || "Couldn't generate a shopping list right now. Please try again.");
+                } finally {
+                    setIsGeneratingShopping(false);
+                }
+            };
+
+            const handleGenerateBatchCookList = async () => {
+                if (isGeneratingBatchCook) return;
+                setIsGeneratingBatchCook(true);
+                setBatchCookError(null);
+                try {
+                    await onGenerateBatchCookList();
+                } catch (err) {
+                    console.error(err);
+                    setBatchCookError(err.message || "Couldn't generate a batch cook list right now. Please try again.");
+                } finally {
+                    setIsGeneratingBatchCook(false);
                 }
             };
 
@@ -1321,6 +1353,33 @@
                                 React.createElement("p", { className: "text-sm text-emerald-800/80 dark:text-emerald-200/70 mt-2 leading-relaxed" }, s.reason)
                             ))
                         )
+                ),
+
+                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-6" },
+                    React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col" },
+                        React.createElement("div", { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3" },
+                            React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest flex items-center gap-2" }, React.createElement(ListTodo, { size: 14 }), "Shopping List"),
+                            React.createElement("button", { onClick: handleGenerateShoppingList, disabled: isGeneratingShopping, className: "flex items-center justify-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shrink-0" },
+                                isGeneratingShopping ? React.createElement(Loader2, { size: 14, className: "animate-spin" }) : React.createElement(Sparkles, { size: 14 }),
+                                isGeneratingShopping ? "Building..." : "Generate from Weekly Plan"
+                            )
+                        ),
+                        React.createElement("p", { className: "text-xs text-zinc-400 mb-4" }, "What to buy this week — auto-built from your meal plan above, or add your own."),
+                        shoppingError && React.createElement("p", { className: "text-red-500 text-sm mb-4" }, shoppingError),
+                        React.createElement(EditableList, { items: shoppingList, onAdd: onAddShoppingItem, onToggle: onToggleShoppingItem, onDelete: onDeleteShoppingItem, onEdit: onEditShoppingItem, placeholder: "Add an item..." })
+                    ),
+                    React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col" },
+                        React.createElement("div", { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3" },
+                            React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest flex items-center gap-2" }, React.createElement(CalendarIcon, { size: 14 }), "Batch Cook List"),
+                            React.createElement("button", { onClick: handleGenerateBatchCookList, disabled: isGeneratingBatchCook, className: "flex items-center justify-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shrink-0" },
+                                isGeneratingBatchCook ? React.createElement(Loader2, { size: 14, className: "animate-spin" }) : React.createElement(Sparkles, { size: 14 }),
+                                isGeneratingBatchCook ? "Building..." : "Generate from Weekly Plan"
+                            )
+                        ),
+                        React.createElement("p", { className: "text-xs text-zinc-400 mb-4" }, "What to cook in each session this week — auto-built from your meal plan above, or add your own."),
+                        batchCookError && React.createElement("p", { className: "text-red-500 text-sm mb-4" }, batchCookError),
+                        React.createElement(EditableList, { items: batchCookList, onAdd: onAddBatchCookItem, onToggle: onToggleBatchCookItem, onDelete: onDeleteBatchCookItem, onEdit: onEditBatchCookItem, placeholder: "Add a batch..." })
+                    )
                 )
             );
         };
@@ -1678,6 +1737,8 @@
             const [monthlyPlan, setMonthlyPlan] = useState({ weeks: { week1: [], week2: [], week3: [], week4: [] } });
             const [foodBank, setFoodBank] = useState([]);
             const [supplements, setSupplements] = useState([]);
+            const [shoppingList, setShoppingList] = useState([]);
+            const [batchCookList, setBatchCookList] = useState([]);
             const [bibleBookNotes, setBibleBookNotes] = useState({});
             const [bibleTopicSearches, setBibleTopicSearches] = useState([]);
             const [biblePlan, setBiblePlan] = useState({ days: [], completedDays: [] });
@@ -1764,6 +1825,8 @@
                     setTasks(JSON.parse(localStorage.getItem(`${prefix}tasks`) || '[]'));
                     setFoodBank(JSON.parse(localStorage.getItem(`${prefix}food_bank`) || '[]'));
                     setSupplements(JSON.parse(localStorage.getItem(`${prefix}supplements`) || '[]'));
+                    setShoppingList(JSON.parse(localStorage.getItem(`${prefix}shopping_list`) || '[]'));
+                    setBatchCookList(JSON.parse(localStorage.getItem(`${prefix}batch_cook_list`) || '[]'));
                     setBibleBookNotes(JSON.parse(localStorage.getItem(`${prefix}bible_book_notes`) || '{}'));
                     setBibleTopicSearches(JSON.parse(localStorage.getItem(`${prefix}bible_topic_searches`) || '[]'));
                     setBiblePlan(JSON.parse(localStorage.getItem(`${prefix}bible_plan`) || JSON.stringify({ days: [], completedDays: [] })));
@@ -1802,6 +1865,8 @@
                             setIdeaNotes(appData.idea_notes || []);
                             setFoodBank(appData.food_bank || []);
                             setSupplements(appData.supplements || []);
+                            setShoppingList(appData.shopping_list || []);
+                            setBatchCookList(appData.batch_cook_list || []);
                             setBibleBookNotes(appData.bible_book_notes || {});
                             setBibleTopicSearches(appData.bible_topic_searches || []);
                             setBiblePlan(appData.bible_plan || { days: [], completedDays: [] });
@@ -1852,6 +1917,8 @@
                                     bible_book_notes: bibleBookNotes,
                                     bible_topic_searches: bibleTopicSearches,
                                     bible_plan: biblePlan,
+                                    shopping_list: shoppingList,
+                                    batch_cook_list: batchCookList,
                                     updated_at: new Date().toISOString()
                                 });
                             } catch (err) { console.error("Cloud sync failed for app_data:", err); }
@@ -1878,8 +1945,10 @@
                     localStorage.setItem(`${prefix}bible_book_notes`, JSON.stringify(bibleBookNotes));
                     localStorage.setItem(`${prefix}bible_topic_searches`, JSON.stringify(bibleTopicSearches));
                     localStorage.setItem(`${prefix}bible_plan`, JSON.stringify(biblePlan));
+                    localStorage.setItem(`${prefix}shopping_list`, JSON.stringify(shoppingList));
+                    localStorage.setItem(`${prefix}batch_cook_list`, JSON.stringify(batchCookList));
                 }
-            }, [dumps, meals, goalsData, dashboardData, books, bookCategories, bookPlannerData, dailyPlan, monthlyPlan, countdowns, ideaNotes, tasks, foodBank, supplements, bibleBookNotes, bibleTopicSearches, biblePlan, user, isDataLoaded]);
+            }, [dumps, meals, goalsData, dashboardData, books, bookCategories, bookPlannerData, dailyPlan, monthlyPlan, countdowns, ideaNotes, tasks, foodBank, supplements, bibleBookNotes, bibleTopicSearches, biblePlan, shoppingList, batchCookList, user, isDataLoaded]);
 
             useEffect(() => {
                 if (!user || !isDataLoaded) return;
@@ -1920,6 +1989,8 @@
                         applyIfChanged(setBibleBookNotes)(row.bible_book_notes || {});
                         applyIfChanged(setBibleTopicSearches)(row.bible_topic_searches || []);
                         applyIfChanged(setBiblePlan)(row.bible_plan || { days: [], completedDays: [] });
+                        applyIfChanged(setShoppingList)(row.shopping_list || []);
+                        applyIfChanged(setBatchCookList)(row.batch_cook_list || []);
                     })
                     .subscribe();
 
@@ -1969,6 +2040,32 @@
                 newItems.forEach(item => handleAddFoodBankItem({ name: item.name, category: FOOD_BANK_CATEGORIES.includes(item.category) ? item.category : 'Fats & Extras' }));
                 return newItems;
             };
+
+            const generateShoppingList = async () => {
+                if (meals.length === 0) throw new Error("Add a weekly meal plan first.");
+                const mealsText = meals.map(m => `${m.day} ${m.type}: ${m.text}`).join('\n');
+                const prompt = `Here is someone's weekly meal plan:\n${mealsText}\n\nBuild a consolidated shopping list of every distinct ingredient or item they need to buy to cook this week's meals, combining duplicates (e.g. if rice appears in several meals, list "Rice" once). Keep each item short and buyable (e.g. "Chicken thighs", "Broccoli", "Rice"), not a recipe step or instruction. Respond with ONLY a raw JSON array of strings, no markdown code fences, no commentary, e.g. ["Chicken thighs", "Rice", "Broccoli"].`;
+                const items = await callGemini(prompt, false);
+                setShoppingList(items.filter(t => typeof t === 'string' && t.trim()).map(t => ({ id: generateUUID(), text: t.trim(), completed: false })));
+            };
+
+            const generateBatchCookList = async () => {
+                if (meals.length === 0) throw new Error("Add a weekly meal plan first.");
+                const mealsText = meals.map(m => `${m.day} ${m.type}: ${m.text}`).join('\n');
+                const prompt = `Here is someone's weekly meal plan, built around batch cooking:\n${mealsText}\n\nIdentify each distinct batch-cook session in this plan (they're often labeled like "Batch 1"/"Batch 2" in the text) and summarize what needs to be cooked in that session and which days/meals it covers. If the plan isn't explicitly labeled by batch, group it into sensible batch-cook sessions yourself. Respond with ONLY a raw JSON array of strings, no markdown code fences, no commentary, e.g. ["Batch 1: Chicken thighs, rice, broccoli — covers Mon-Wed", "Batch 2: Beef stew, sweet potato — covers Thu-Sun"].`;
+                const items = await callGemini(prompt, false);
+                setBatchCookList(items.filter(t => typeof t === 'string' && t.trim()).map(t => ({ id: generateUUID(), text: t.trim(), completed: false })));
+            };
+
+            const handleAddShoppingItem = (text) => setShoppingList(prev => [...prev, { id: generateUUID(), text, completed: false }]);
+            const handleToggleShoppingItem = (id) => setShoppingList(prev => prev.map(i => i.id === id ? { ...i, completed: !i.completed } : i));
+            const handleDeleteShoppingItem = (id) => setShoppingList(prev => prev.filter(i => i.id !== id));
+            const handleEditShoppingItem = (id, text) => setShoppingList(prev => prev.map(i => i.id === id ? { ...i, text } : i));
+
+            const handleAddBatchCookItem = (text) => setBatchCookList(prev => [...prev, { id: generateUUID(), text, completed: false }]);
+            const handleToggleBatchCookItem = (id) => setBatchCookList(prev => prev.map(i => i.id === id ? { ...i, completed: !i.completed } : i));
+            const handleDeleteBatchCookItem = (id) => setBatchCookList(prev => prev.filter(i => i.id !== id));
+            const handleEditBatchCookItem = (id, text) => setBatchCookList(prev => prev.map(i => i.id === id ? { ...i, text } : i));
 
             const generateBookRecommendations = async (goals) => {
                 const goalsText = goals.map(g => g.text).join('; ');
@@ -2163,7 +2260,7 @@ Respond with ONLY raw JSON, no markdown fences, no commentary, in this exact sha
                     activeTab === 'focus' && React.createElement(FocusView, { activeSound, isPlayingSound, toggleSound, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset }),
                     activeTab === 'library' && React.createElement(LibraryView, { books, categories: bookCategories, onAddBook: handleAddBook, onDeleteBook: handleDeleteBook, onUpdateBook: handleUpdateBook, onAddCategory: handleAddBookCategory, onDeleteCategory: handleDeleteBookCategory, onRenameCategory: handleRenameBookCategory }),
                     activeTab === 'bookPlanner' && React.createElement(BookPlannerView, { bookPlannerData, onUpdateBookPlanner: handleUpdateBookPlanner, onGenerate: generateBookRecommendations, books, categories: bookCategories, onAddBook: handleAddBook }),
-                    activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal, foodBank, onAddFoodBankItem: handleAddFoodBankItem, onDeleteFoodBankItem: handleDeleteFoodBankItem, onAutoAddFoodItems: generateFoodBankItems, onLoadStarterFoods: handleLoadStarterFoods, onGeneratePlan: generateNutritionPlan, supplements, onGenerateSupplements: generateSupplements, onDeleteSupplement: handleDeleteSupplement }),
+                    activeTab === 'food' && React.createElement(FoodView, { meals, onUpdateMeal: handleUpdateMeal, foodBank, onAddFoodBankItem: handleAddFoodBankItem, onDeleteFoodBankItem: handleDeleteFoodBankItem, onAutoAddFoodItems: generateFoodBankItems, onLoadStarterFoods: handleLoadStarterFoods, onGeneratePlan: generateNutritionPlan, supplements, onGenerateSupplements: generateSupplements, onDeleteSupplement: handleDeleteSupplement, shoppingList, onAddShoppingItem: handleAddShoppingItem, onToggleShoppingItem: handleToggleShoppingItem, onDeleteShoppingItem: handleDeleteShoppingItem, onEditShoppingItem: handleEditShoppingItem, onGenerateShoppingList: generateShoppingList, batchCookList, onAddBatchCookItem: handleAddBatchCookItem, onToggleBatchCookItem: handleToggleBatchCookItem, onDeleteBatchCookItem: handleDeleteBatchCookItem, onEditBatchCookItem: handleEditBatchCookItem, onGenerateBatchCookList: generateBatchCookList }),
                     activeTab === 'countdown' && React.createElement(CountdownView, { countdowns, onAdd: handleAddCountdown, onDelete: handleDeleteCountdown, onToggle: handleToggleCountdown, onUpdate: handleUpdateCountdown }),
                     activeTab === 'biblePlan' && React.createElement(BiblePlanView, { bibleBookNotes, onGenerateBookInsights: generateBibleBookInsights, bibleTopicSearches, onGenerateTopicRecommendation: generateBibleTopicRecommendation, biblePlan, onGeneratePlanDays: generateBiblePlanDays, onMarkDayDone: handleMarkBibleDayDone }),
                     activeTab === 'profile' && React.createElement(ProfileView, { user, onLogout: handleLogout, onUpdateProfile: handleUpdateProfile })
