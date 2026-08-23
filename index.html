@@ -1386,12 +1386,30 @@
 
         const CountdownView = ({ countdowns, onAdd, onDelete, onUpdate }) => {
             const [title, setTitle] = useState('');
-            const [date, setDate] = useState('');
+            const [dateText, setDateText] = useState('');
+
+            const formatDateTyping = (raw) => {
+                const digits = raw.replace(/\D/g, '').slice(0, 8);
+                if (digits.length > 4) return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+                if (digits.length > 2) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+                return digits;
+            };
+
+            const dmyToISO = (dmy) => {
+                const match = dmy.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+                if (!match) return '';
+                const [, day, month, year] = match;
+                const iso = `${year}-${month}-${day}`;
+                const d = new Date(iso);
+                if (Number.isNaN(d.getTime()) || d.getDate() !== Number(day) || d.getMonth() + 1 !== Number(month)) return '';
+                return iso;
+            };
 
             const handleAdd = () => {
-                if(title.trim() && date) {
-                    onAdd({ title, date, id: generateUUID() });
-                    setTitle(''); setDate('');
+                const isoDate = dmyToISO(dateText);
+                if (title.trim() && isoDate) {
+                    onAdd({ title, date: isoDate, id: generateUUID() });
+                    setTitle(''); setDateText('');
                 }
             };
 
@@ -1428,7 +1446,7 @@
                 ),
                 React.createElement("div", { className: "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-6 shadow-sm mb-8 flex flex-col sm:flex-row gap-4" },
                     React.createElement("input", { type: "text", value: title, onChange: e => setTitle(e.target.value), placeholder: "Event Name", className: "flex-1 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 text-base md:text-sm text-zinc-900 dark:text-white outline-none focus:border-indigo-500" }),
-                    React.createElement("input", { type: "date", lang: "en-GB", value: date, onChange: e => setDate(e.target.value), className: "bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 text-base md:text-sm text-zinc-900 dark:text-white outline-none focus:border-indigo-500 [color-scheme:dark]" }),
+                    React.createElement("input", { type: "text", inputMode: "numeric", value: dateText, onChange: e => setDateText(formatDateTyping(e.target.value)), placeholder: "dd/mm/yyyy", maxLength: 10, className: "bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 text-base md:text-sm text-zinc-900 dark:text-white outline-none focus:border-indigo-500 [color-scheme:dark]" }),
                     React.createElement("button", { onClick: handleAdd, className: "bg-indigo-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-indigo-500 transition-colors active:scale-95" }, "Add")
                 ),
                 React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
