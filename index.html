@@ -1400,6 +1400,25 @@
                 return Math.ceil(diff / (1000 * 60 * 60 * 24));
             };
 
+            const MONTHS_THRESHOLD_DAYS = 60;
+
+            const getCountdownDisplay = (daysLeft) => {
+                const isPast = daysLeft < 0;
+                const absDays = Math.abs(daysLeft);
+                if (absDays >= MONTHS_THRESHOLD_DAYS) {
+                    const months = Math.round(absDays / 30.44);
+                    return { value: months, label: `${months === 1 ? 'Month' : 'Months'} ${isPast ? 'Ago' : 'Left'}` };
+                }
+                return { value: absDays, label: `${isPast ? 'Days Ago' : 'Days Left'}` };
+            };
+
+            const formatDateDMY = (dateStr) => {
+                const d = new Date(dateStr);
+                const day = String(d.getDate()).padStart(2, '0');
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                return `${day}/${month}/${d.getFullYear()}`;
+            };
+
             const sortedCountdowns = [...countdowns].sort((a,b) => new Date(a.date) - new Date(b.date));
 
             return React.createElement("div", { className: "p-4 md:p-8 pb-32 max-w-4xl mx-auto h-full overflow-y-auto no-scrollbar" },
@@ -1416,12 +1435,13 @@
                     sortedCountdowns.map(c => {
                         const daysLeft = calculateDaysLeft(c.date);
                         const isPast = daysLeft < 0;
+                        const { value, label } = getCountdownDisplay(daysLeft);
                         return React.createElement("div", { key: c.id, className: `relative overflow-hidden border rounded-[2rem] p-6 flex flex-col justify-center items-center text-center transition-all ${isPast ? 'bg-zinc-100 dark:bg-zinc-800/30 border-zinc-200 dark:border-zinc-800 opacity-60' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-indigo-500/50'}` },
                             React.createElement("button", { onClick: () => onDelete(c.id), className: "absolute top-4 right-4 text-zinc-400 hover:text-red-500 transition-colors active:scale-90" }, React.createElement(Trash2, { size: 16 })),
                             React.createElement("h3", { className: "text-lg font-bold text-zinc-900 dark:text-white mb-2" }, c.title),
-                            React.createElement("div", { className: "text-5xl font-black font-mono tracking-tighter text-indigo-600 dark:text-indigo-400 my-2" }, Math.abs(daysLeft)),
-                            React.createElement("div", { className: "text-xs font-bold uppercase tracking-widest text-zinc-500" }, isPast ? "Days Ago" : "Days Left"),
-                            React.createElement("div", { className: "mt-4 text-xs text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-1.5 rounded-full" }, new Date(c.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }))
+                            React.createElement("div", { className: "text-5xl font-black font-mono tracking-tighter text-indigo-600 dark:text-indigo-400 my-2" }, value),
+                            React.createElement("div", { className: "text-xs font-bold uppercase tracking-widest text-zinc-500" }, label),
+                            React.createElement("div", { className: "mt-4 text-xs text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-1.5 rounded-full" }, formatDateDMY(c.date))
                         )
                     })
                 )
