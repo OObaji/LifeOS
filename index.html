@@ -62,7 +62,7 @@
             Layout, BookOpen, Target, Settings, Plus, CheckCircle2, ArrowRight, Brain,
             Calendar as CalendarIcon, ChevronRight, ChevronLeft, Sun, Moon, Music, Trash2,
             Edit3, Timer, Play, Pause, RotateCcw, X, CloudRain, Utensils, Trash,
-            ListTodo, CheckSquare, AlertCircle, Book, Hourglass, Check, Gift,
+            ListTodo, CheckSquare, Square, AlertCircle, Book, Hourglass, Check, Gift,
             Chrome, Calendar, CalendarRange, GripVertical, ArrowUp, ArrowDown, Scale,
             Lightbulb, Flag, Activity, Ban, Bookmark, Eye, EyeOff, User, LogOut, LinkIcon, Globe, Search, Star, Sparkles, Coffee, Wind,
             Quote, Loader2, ExternalLink, Pill
@@ -606,6 +606,7 @@
         const IdeaBoardView = ({ notes, onAdd, onUpdate, onDelete }) => {
             const boardRef = useRef(null);
             const [draggingId, setDraggingId] = useState(null);
+            const [editingId, setEditingId] = useState(null);
             const offsetRef = useRef({ x: 0, y: 0 });
             const noteRefs = useRef({});
 
@@ -648,39 +649,76 @@
                 }
             };
 
+            const toggleStrike = (note, lineIndex) => {
+                const strikes = note.strikes || [];
+                const newStrikes = strikes.includes(lineIndex)
+                    ? strikes.filter(i => i !== lineIndex)
+                    : [...strikes, lineIndex];
+                onUpdate({ ...note, strikes: newStrikes });
+            };
+
             const handleAddNote = () => {
                 const color = IDEA_COLORS[notes.length % IDEA_COLORS.length];
                 const boardW = boardRef.current ? boardRef.current.clientWidth : 800;
                 const boardH = boardRef.current ? boardRef.current.clientHeight : 600;
                 const x = Math.max(20, Math.random() * (boardW - 280));
                 const y = Math.max(20, Math.random() * (boardH - 280));
-                onAdd({ text: '', x, y, width: 256, height: 256, color });
+                const id = generateUUID();
+                onAdd({ id, text: '', strikes: [], x, y, width: 256, height: 256, color });
+                setEditingId(id);
             };
 
             return React.createElement("div", { className: "h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)] relative" },
                 React.createElement("div", { ref: boardRef, className: "idea-board-bg absolute inset-0 overflow-hidden" },
-                    notes.map(note => React.createElement("div", {
-                        key: note.id,
-                        ref: (el) => { noteRefs.current[note.id] = el; },
-                        onMouseUp: () => handleNoteMouseUp(note),
-                        className: `sticky-note absolute flex flex-col text-slate-800 ${note.color} ${draggingId === note.id ? 'dragging' : ''}`,
-                        style: { left: note.x, top: note.y, width: note.width || 256, height: note.height || 256 }
-                    },
-                        React.createElement("div", {
-                            onMouseDown: (e) => handleDragStart(e, note),
-                            onTouchStart: (e) => handleDragStart(e, note),
-                            className: "flex justify-between items-center px-3 py-2 border-b border-black/10 cursor-grab active:cursor-grabbing shrink-0"
+                    notes.map(note => {
+                        const isEditing = editingId === note.id;
+                        const lines = (note.text || '').split('\n');
+                        const strikes = note.strikes || [];
+                        return React.createElement("div", {
+                            key: note.id,
+                            ref: (el) => { noteRefs.current[note.id] = el; },
+                            onMouseUp: () => handleNoteMouseUp(note),
+                            className: `sticky-note absolute flex flex-col text-slate-800 ${note.color} ${draggingId === note.id ? 'dragging' : ''}`,
+                            style: { left: note.x, top: note.y, width: note.width || 256, height: note.height || 256 }
                         },
-                            React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider opacity-50" }, "Note"),
-                            React.createElement("button", { onClick: () => onDelete(note.id), className: "opacity-50 hover:opacity-100" }, React.createElement(X, { size: 14 }))
-                        ),
-                        React.createElement("textarea", {
-                            value: note.text,
-                            onChange: (e) => onUpdate({ ...note, text: e.target.value }),
-                            placeholder: "Write idea...",
-                            className: "flex-1 bg-transparent resize-none outline-none p-3 text-sm font-medium placeholder-black/30"
-                        })
-                    ))
+                            React.createElement("div", {
+                                onMouseDown: (e) => handleDragStart(e, note),
+                                onTouchStart: (e) => handleDragStart(e, note),
+                                className: "flex justify-between items-center px-3 py-2 border-b border-black/10 cursor-grab active:cursor-grabbing shrink-0"
+                            },
+                                React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider opacity-50" }, "Note"),
+                                React.createElement("button", { onClick: () => onDelete(note.id), className: "opacity-50 hover:opacity-100" }, React.createElement(X, { size: 14 }))
+                            ),
+                            isEditing
+                                ? React.createElement("textarea", {
+                                    autoFocus: true,
+                                    value: note.text,
+                                    onChange: (e) => onUpdate({ ...note, text: e.target.value }),
+                                    onBlur: () => setEditingId(null),
+                                    placeholder: "Write idea... (each line becomes a checkable item)",
+                                    className: "flex-1 bg-transparent resize-none outline-none p-3 text-sm font-medium placeholder-black/30"
+                                })
+                                : React.createElement("div", {
+                                    onClick: () => setEditingId(note.id),
+                                    className: "flex-1 overflow-auto p-3 text-sm font-medium cursor-text"
+                                },
+                                    note.text
+                                        ? lines.map((line, i) => React.createElement("div", {
+                                            key: i,
+                                            className: "flex items-start gap-2 py-0.5"
+                                        },
+                                            React.createElement("button", {
+                                                onClick: (e) => { e.stopPropagation(); toggleStrike(note, i); },
+                                                className: "mt-0.5 shrink-0 opacity-60 hover:opacity-100"
+                                            }, React.createElement(strikes.includes(i) ? CheckSquare : Square, { size: 14 })),
+                                            React.createElement("span", {
+                                                className: strikes.includes(i) ? "line-through opacity-40" : ""
+                                            }, line || " ")
+                                        ))
+                                        : React.createElement("span", { className: "text-black/30" }, "Write idea...")
+                                )
+                        );
+                    })
                 ),
                 React.createElement("button", { onClick: handleAddNote, className: "absolute bottom-8 right-8 px-6 py-4 bg-yellow-400 text-yellow-900 font-bold rounded-full shadow-2xl hover:bg-yellow-300 hover:scale-110 transition-all z-20 flex items-center gap-2" },
                     React.createElement(Plus, { size: 24 }), React.createElement("span", { className: "hidden md:inline" }, "Add Note")
