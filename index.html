@@ -44,10 +44,6 @@
         .cursor-move { cursor: move; cursor: grab; cursor: -webkit-grabbing; }
         .cursor-grabbing { cursor: grabbing !important; }
         .touch-none { touch-action: none; }
-        @keyframes task-pop { 0% { transform: scale(1); } 40% { transform: scale(1.3); } 100% { transform: scale(1); } }
-        .task-pop { animation: task-pop .35s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        @keyframes confetti-fall { 0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg); opacity: 0.6; } }
-        .confetti-piece { position: absolute; top: 0; width: 9px; height: 14px; border-radius: 2px; animation-name: confetti-fall; animation-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94); animation-fill-mode: forwards; }
         @supports (padding-bottom: env(safe-area-inset-bottom)) {
             .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem) !important; }
         }
@@ -69,8 +65,7 @@
             ListTodo, CheckSquare, Square, AlertCircle, Book, Hourglass, Check, Gift,
             Chrome, Calendar, CalendarRange, GripVertical, ArrowUp, ArrowDown, Scale,
             Lightbulb, Flag, Activity, Ban, Bookmark, Eye, EyeOff, User, LogOut, LinkIcon, Globe, Search, Star, Sparkles, Coffee, Wind,
-            Quote, Loader2, ExternalLink, Pill, Flame, Trophy, Zap,
-            Landmark, Crop, Scissors, Upload, Download, Keyboard, MapPin, Undo2, Maximize, Wand2, SkipForward
+            Quote, Loader2, ExternalLink, Pill
         } from "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0";
 
         const generateUUID = () => { if (typeof crypto !== 'undefined' && crypto.randomUUID) { return crypto.randomUUID(); } return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) { var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); };
@@ -246,7 +241,7 @@
             );
         };
 
-        const DashboardView = ({ onNavigate, dashboardData = {}, onUpdateDashboard, meals = [], dumps = [], books = [], todayTarget }) => {
+        const DashboardView = ({ onNavigate, dashboardData = {}, onUpdateDashboard, meals = [], dumps = [], books = [] }) => {
             const dailyFocus = dashboardData?.focus || "";
             const positiveNote = dashboardData?.positiveNote || "";
             const dailyRules = dashboardData?.dailyRules || { p: false, j: false, l: false, r: false, t: false };
@@ -263,8 +258,6 @@
             const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
             const todaysBreakfast = meals.find(m => m.day === todayName && m.type === 'Breakfast')?.text || "No breakfast planned";
             const rulesDoneCount = rulesConfig.filter(r => dailyRules[r.id]).length;
-            const targetTasks = todayTarget?.tasks || [];
-            const targetDone = targetTasks.filter(t => t.completed).length;
 
             const iconBadge = (Icon, gradient) => React.createElement("div", { className: `w-9 h-9 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white shadow-sm shrink-0` }, React.createElement(Icon, { size: 16 }));
 
@@ -285,19 +278,6 @@
                     )
                 ),
                 React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" },
-                     React.createElement(Card, { className: "lg:col-span-2 border-indigo-200 dark:border-indigo-500/20 bg-gradient-to-br from-indigo-50/80 to-white dark:from-indigo-900/10 dark:to-zinc-900/60" },
-                        React.createElement("div", { className: "flex items-center justify-between mb-4" },
-                            React.createElement("div", { className: "flex items-center gap-3" }, iconBadge(Target, "from-indigo-500 to-violet-600"), React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest" }, "Daily target")),
-                            React.createElement("button", { onClick: () => onNavigate('dailyTarget'), className: "text-zinc-400 hover:text-indigo-500 dark:hover:text-indigo-400 p-2 rounded-lg hover:bg-indigo-100/50 dark:hover:bg-indigo-500/10 transition-colors" }, React.createElement(ArrowRight, { size: 16 }))
-                        ),
-                        React.createElement("p", { className: `text-lg font-medium leading-relaxed mb-3 ${todayTarget?.goal ? 'text-zinc-800 dark:text-zinc-200' : 'text-zinc-400 italic'}` }, todayTarget?.goal || "Set a goal for today."),
-                        targetTasks.length > 0
-                            ? React.createElement("div", null,
-                                React.createElement("div", { className: "flex justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-1.5" }, React.createElement("span", null, `${targetDone}/${targetTasks.length} tasks done`), React.createElement("span", null, `${Math.round((targetDone / targetTasks.length) * 100)}%`)),
-                                React.createElement("div", { className: "h-2 rounded-full bg-indigo-100 dark:bg-indigo-500/10 overflow-hidden" }, React.createElement("div", { className: "h-full bg-indigo-500 rounded-full transition-all duration-500", style: { width: `${(targetDone / targetTasks.length) * 100}%` } }))
-                            )
-                            : React.createElement("button", { onClick: () => onNavigate('dailyTarget'), className: "text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline" }, "Plan today's tasks →")
-                     ),
                      React.createElement(Card, { className: "lg:col-span-2" },
                         React.createElement("div", { className: "flex items-center justify-between mb-4" },
                             React.createElement("div", { className: "flex items-center gap-3" }, iconBadge(CheckCircle2, "from-indigo-500 to-blue-600"), React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest" }, "Daily non-negotiables")),
@@ -387,618 +367,6 @@
                         React.createElement("p", { className: "text-sm text-zinc-500 mb-4" }, "Powers the smart nutrition plan, supplement recommendations, and book planner. Get a free key at ", React.createElement("a", { href: "https://aistudio.google.com/apikey", target: "_blank", rel: "noopener noreferrer", className: "text-indigo-500 hover:underline" }, "aistudio.google.com/apikey"), "."),
                         React.createElement("input", { value: geminiKey, onChange: e => setGeminiKey(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), type: "password", placeholder: "Gemini API Key", className: "w-full mb-6 p-4 rounded-xl bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-base md:text-sm focus:outline-none focus:border-indigo-500" }),
                         React.createElement("div", { className: "flex justify-end gap-3 mt-2" }, React.createElement("button", { onClick: onClose, className: "px-6 py-3 md:py-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-white font-bold rounded-xl active:scale-95" }, "Cancel"), React.createElement("button", { onClick: handleSave, className: "px-8 py-3 md:py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 shadow-glow-sm active:scale-95" }, "Save"))
-                    )
-                )
-            );
-        };
-
-        const toDateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        const shiftDateKey = (key, days) => { const [y, m, d] = key.split('-').map(Number); return toDateKey(new Date(y, m - 1, d + days)); };
-        const formatDateKey = (key, opts) => { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('en-US', opts); };
-        const EMPTY_DAY_TARGET = { goal: '', tasks: [] };
-
-        const TARGET_MESSAGES = [
-            { min: 0, text: "Every big day starts with one small win." },
-            { min: 1, text: "You've started. Momentum is on your side." },
-            { min: 34, text: "Look at you go. Keep stacking wins." },
-            { min: 67, text: "So close. Finish strong." },
-            { min: 100, text: "Target hit. You showed up for yourself today." }
-        ];
-        const CONFETTI_COLORS = ['#818cf8', '#c084fc', '#f472b6', '#34d399', '#fbbf24', '#38bdf8'];
-
-        const ProgressRing = ({ percent, size = 112, stroke = 10, complete }) => {
-            const r = (size - stroke) / 2;
-            const c = 2 * Math.PI * r;
-            return React.createElement("svg", { width: size, height: size, className: "-rotate-90 shrink-0" },
-                React.createElement("circle", { cx: size / 2, cy: size / 2, r, fill: "none", stroke: "rgba(255,255,255,0.18)", strokeWidth: stroke }),
-                React.createElement("circle", { cx: size / 2, cy: size / 2, r, fill: "none", stroke: complete ? "#6ee7b7" : "#ffffff", strokeWidth: stroke, strokeLinecap: "round", strokeDasharray: c, strokeDashoffset: c * (1 - percent / 100), style: { transition: "stroke-dashoffset 0.7s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s" } })
-            );
-        };
-
-        const DailyTargetView = ({ targets = {}, onUpdateDay }) => {
-            const [now, setNow] = useState(new Date());
-            const todayKey = toDateKey(now);
-            const [dateKey, setDateKey] = useState(todayKey);
-            const [newTask, setNewTask] = useState("");
-            const [editingId, setEditingId] = useState(null);
-            const [editValue, setEditValue] = useState("");
-            const [showDone, setShowDone] = useState(true);
-            const [celebrate, setCelebrate] = useState(false);
-            const [poppedId, setPoppedId] = useState(null);
-
-            useEffect(() => { const t = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(t); }, []);
-
-            const day = targets[dateKey] || EMPTY_DAY_TARGET;
-            const tasks = day.tasks || [];
-            const openTasks = tasks.filter(t => !t.completed);
-            const doneTasks = tasks.filter(t => t.completed);
-            const progress = tasks.length ? Math.round((doneTasks.length / tasks.length) * 100) : 0;
-            const allDone = tasks.length > 0 && openTasks.length === 0;
-            const isToday = dateKey === todayKey;
-            const update = (fn) => onUpdateDay(dateKey, fn);
-            const message = [...TARGET_MESSAGES].reverse().find(m => progress >= m.min).text;
-
-            // Streak: consecutive days (ending today, or yesterday if today isn't finished yet) where every task was completed
-            const isDayComplete = (k) => { const ts = targets[k]?.tasks || []; return ts.length > 0 && ts.every(t => t.completed); };
-            let streak = 0;
-            for (let k = isDayComplete(todayKey) ? todayKey : shiftDateKey(todayKey, -1); isDayComplete(k); k = shiftDateKey(k, -1)) streak++;
-
-            const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-            const minsLeft = Math.max(0, Math.floor((endOfDay - now) / 60000));
-            const hour = now.getHours();
-            const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-
-            // Most recent earlier day that still has unfinished tasks, offered as a carry-over
-            const carryKey = Object.keys(targets).filter(k => k < dateKey && (targets[k].tasks || []).some(t => !t.completed)).sort().pop();
-            const carryTasks = carryKey ? targets[carryKey].tasks.filter(t => !t.completed && !tasks.some(x => x.text === t.text)) : [];
-
-            // Celebrate only when the viewed day flips to complete, not when navigating onto an already-complete day
-            const prevStateRef = useRef({ dateKey, allDone });
-            useEffect(() => {
-                const prev = prevStateRef.current;
-                prevStateRef.current = { dateKey, allDone };
-                if (prev.dateKey !== dateKey) { setEditingId(null); return; }
-                if (allDone && !prev.allDone) { setCelebrate(true); const t = setTimeout(() => setCelebrate(false), 2600); return () => clearTimeout(t); }
-            }, [dateKey, allDone]);
-
-            const addTask = () => {
-                const text = newTask.trim();
-                if (!text) return;
-                update(d => ({ ...d, tasks: [...(d.tasks || []), { id: generateUUID(), text, completed: false }] }));
-                setNewTask("");
-            };
-            const toggleTask = (id) => {
-                setPoppedId(id); setTimeout(() => setPoppedId(p => p === id ? null : p), 400);
-                update(d => ({ ...d, tasks: d.tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t) }));
-            };
-            const deleteTask = (id) => update(d => ({ ...d, tasks: d.tasks.filter(t => t.id !== id) }));
-            const saveEdit = () => {
-                const text = editValue.trim();
-                if (text) update(d => ({ ...d, tasks: d.tasks.map(t => t.id === editingId ? { ...t, text } : t) }));
-                setEditingId(null);
-            };
-            const carryOver = () => update(d => ({ ...d, tasks: [...(d.tasks || []), ...carryTasks.map(t => ({ id: generateUUID(), text: t.text, completed: false }))] }));
-
-            const dayLabel = isToday ? "Today" : dateKey === shiftDateKey(todayKey, -1) ? "Yesterday" : dateKey === shiftDateKey(todayKey, 1) ? "Tomorrow" : formatDateKey(dateKey, { weekday: 'short' });
-            const upNext = openTasks[0];
-
-            const renderTask = (task, index) => React.createElement("div", { key: task.id, className: `group flex items-center gap-3 px-3 py-3 rounded-2xl border transition-all ${task.completed ? 'border-transparent bg-zinc-50/60 dark:bg-white/[0.02]' : 'border-zinc-100 dark:border-white/5 bg-white dark:bg-zinc-900/40 hover:border-indigo-200 dark:hover:border-indigo-500/30 hover:shadow-sm'}` },
-                React.createElement("button", { onClick: () => toggleTask(task.id), title: task.completed ? "Mark as not done" : "Mark as done", className: `shrink-0 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all active:scale-90 ${poppedId === task.id ? 'task-pop' : ''} ${task.completed ? 'bg-gradient-to-br from-emerald-400 to-teal-500 border-transparent text-white shadow-md shadow-emerald-500/30' : 'border-zinc-300 dark:border-zinc-600 text-transparent hover:border-indigo-500 hover:text-indigo-300'}` }, React.createElement(Check, { size: 15, strokeWidth: 3 })),
-                !task.completed && React.createElement("span", { className: "shrink-0 text-[11px] font-bold text-zinc-300 dark:text-zinc-600 w-4 text-center" }, index + 1),
-                editingId === task.id
-                    ? React.createElement("input", { autoFocus: true, value: editValue, onChange: e => setEditValue(e.target.value), onBlur: saveEdit, onKeyDown: e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null); }, className: "flex-1 min-w-0 bg-transparent border-b-2 border-indigo-500 text-base md:text-sm text-zinc-900 dark:text-white focus:outline-none py-0.5" })
-                    : React.createElement("span", { onClick: () => { setEditingId(task.id); setEditValue(task.text); }, className: `flex-1 min-w-0 break-words text-[15px] cursor-text transition-colors ${task.completed ? 'line-through text-zinc-400 dark:text-zinc-600' : 'text-zinc-800 dark:text-zinc-100 font-medium'}` }, task.text),
-                React.createElement("button", { onClick: () => deleteTask(task.id), className: "shrink-0 p-1.5 text-zinc-300 dark:text-zinc-600 hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 transition-all active:scale-90", title: "Delete task" }, React.createElement(Trash2, { size: 15 }))
-            );
-
-            return React.createElement("div", { className: "p-4 md:p-8 pb-32 max-w-3xl mx-auto space-y-5 relative" },
-                celebrate && React.createElement("div", { className: "pointer-events-none fixed inset-0 z-[60] overflow-hidden" },
-                    Array.from({ length: 36 }).map((_, i) => React.createElement("span", { key: i, className: "confetti-piece", style: { left: `${(i * 37) % 100}%`, background: CONFETTI_COLORS[i % CONFETTI_COLORS.length], animationDelay: `${(i % 9) * 0.07}s`, animationDuration: `${1.6 + (i % 5) * 0.2}s`, transform: `rotate(${i * 23}deg)` } }))
-                ),
-                // Header
-                React.createElement("div", { className: "flex items-end justify-between gap-3" },
-                    React.createElement("div", { className: "min-w-0" },
-                        React.createElement("p", { className: "text-sm text-zinc-500 dark:text-zinc-400 font-medium" }, isToday ? `${greeting} 👋` : formatDateKey(dateKey, { weekday: 'long' })),
-                        React.createElement("h2", { className: "text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 dark:text-white" }, "Daily Target"),
-                        React.createElement("p", { className: "text-xs font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400 mt-1" }, formatDateKey(dateKey, { day: 'numeric', month: 'long', year: 'numeric' }))
-                    ),
-                    React.createElement("div", { className: "flex items-center gap-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-1 shrink-0 shadow-sm" },
-                        React.createElement("button", { onClick: () => setDateKey(shiftDateKey(dateKey, -1)), className: "p-2 rounded-xl text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-90", title: "Previous day" }, React.createElement(ChevronLeft, { size: 18 })),
-                        React.createElement("button", { onClick: () => setDateKey(todayKey), disabled: isToday, className: `px-1 text-sm font-semibold min-w-[4.75rem] ${isToday ? 'text-zinc-900 dark:text-white' : 'text-indigo-600 dark:text-indigo-400 hover:underline'}`, title: isToday ? "" : "Back to today" }, dayLabel),
-                        React.createElement("button", { onClick: () => setDateKey(shiftDateKey(dateKey, 1)), className: "p-2 rounded-xl text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-90", title: "Next day" }, React.createElement(ChevronRight, { size: 18 }))
-                    )
-                ),
-                // Hero: goal + progress ring
-                React.createElement("div", { className: `relative overflow-hidden rounded-3xl p-6 md:p-8 shadow-xl transition-all duration-700 ${allDone ? 'bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-700 shadow-emerald-500/20' : 'bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-700 shadow-indigo-500/20 dark:shadow-indigo-900/30'}` },
-                    React.createElement("div", { className: "absolute -top-24 -right-16 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" }),
-                    React.createElement("div", { className: "absolute -bottom-20 -left-16 w-52 h-52 bg-fuchsia-400/20 rounded-full blur-3xl pointer-events-none" }),
-                    React.createElement("div", { className: "relative z-10 flex flex-col sm:flex-row sm:items-center gap-6" },
-                        React.createElement("div", { className: "flex-1 min-w-0" },
-                            React.createElement("div", { className: "flex items-center gap-2 mb-2 text-white/80 text-xs font-bold uppercase tracking-widest" }, React.createElement("div", { className: "w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center" }, React.createElement(Target, { size: 12 })), "Today I will..."),
-                            React.createElement("textarea", { value: day.goal || "", rows: 2, onChange: (e) => { const goal = e.target.value; update(d => ({ ...d, goal })); }, placeholder: "Name the one thing that makes today a win", className: "w-full bg-transparent resize-none text-2xl md:text-3xl font-bold leading-snug text-white placeholder:text-white/40 focus:outline-none" }),
-                            React.createElement("p", { className: "text-sm text-white/85 font-medium mt-2" }, message)
-                        ),
-                        React.createElement("div", { className: "relative self-center" },
-                            React.createElement(ProgressRing, { percent: progress, complete: allDone }),
-                            React.createElement("div", { className: "absolute inset-0 flex flex-col items-center justify-center text-white" },
-                                allDone ? React.createElement(Trophy, { size: 30, className: "text-white drop-shadow" }) : React.createElement("span", { className: "text-2xl font-bold leading-none" }, `${progress}%`),
-                                React.createElement("span", { className: "text-[11px] font-semibold text-white/75 mt-1" }, `${doneTasks.length}/${tasks.length} done`)
-                            )
-                        )
-                    ),
-                    React.createElement("div", { className: "relative z-10 flex flex-wrap gap-2 mt-5" },
-                        React.createElement("span", { className: "inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-white/15 backdrop-blur px-3 py-1.5 rounded-full" }, React.createElement(Flame, { size: 13, className: streak > 0 ? "text-amber-300" : "text-white/60" }), streak > 0 ? `${streak}-day streak` : "Start a streak today"),
-                        isToday && React.createElement("span", { className: "inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-white/15 backdrop-blur px-3 py-1.5 rounded-full" }, React.createElement(Hourglass, { size: 13 }), `${Math.floor(minsLeft / 60)}h ${minsLeft % 60}m left today`)
-                    )
-                ),
-                // Up next spotlight
-                upNext && React.createElement("div", { className: "flex items-center gap-4 p-4 md:p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-indigo-100 dark:border-indigo-500/20 shadow-sm" },
-                    React.createElement("div", { className: "w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-md shadow-orange-500/30 shrink-0" }, React.createElement(Zap, { size: 20 })),
-                    React.createElement("div", { className: "flex-1 min-w-0" },
-                        React.createElement("p", { className: "text-[10px] font-bold uppercase tracking-widest text-orange-500" }, "Up next"),
-                        React.createElement("p", { className: "text-base md:text-lg font-bold text-zinc-900 dark:text-white break-words leading-snug" }, upNext.text)
-                    ),
-                    React.createElement("button", { onClick: () => toggleTask(upNext.id), className: "shrink-0 px-4 py-2.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-bold active:scale-95 transition-all hover:opacity-90 flex items-center gap-1.5" }, React.createElement(Check, { size: 16, strokeWidth: 3 }), "Done")
-                ),
-                allDone && React.createElement("div", { className: "flex items-center gap-4 p-4 md:p-5 rounded-3xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20" },
-                    React.createElement("div", { className: "w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white shrink-0" }, React.createElement(Trophy, { size: 20 })),
-                    React.createElement("div", null,
-                        React.createElement("p", { className: "font-bold text-emerald-800 dark:text-emerald-300" }, "All tasks complete! 🎉"),
-                        React.createElement("p", { className: "text-sm text-emerald-700/80 dark:text-emerald-400/80" }, streak > 1 ? `That's ${streak} days in a row. Don't break the chain.` : "Come back tomorrow to build your streak.")
-                    )
-                ),
-                // Task list
-                React.createElement("div", { className: "rounded-3xl bg-white/80 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-200 dark:border-white/5 p-4 md:p-6 shadow-sm" },
-                    React.createElement("div", { className: "flex items-center justify-between mb-4 px-1" },
-                        React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest flex items-center gap-2" }, React.createElement(ListTodo, { size: 16, className: "text-indigo-500" }), "Today's tasks"),
-                        tasks.length > 0 && React.createElement("span", { className: "text-xs font-semibold text-zinc-400" }, openTasks.length ? `${openTasks.length} to go` : "All clear")
-                    ),
-                    React.createElement("div", { className: "flex gap-2 mb-4" },
-                        React.createElement("input", { value: newTask, onChange: e => setNewTask(e.target.value), onKeyDown: e => { if (e.key === 'Enter') addTask(); }, placeholder: tasks.length ? "Add another task..." : "What needs to get done today?", className: "flex-1 min-w-0 px-4 py-3 rounded-2xl bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-zinc-700 text-base md:text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all" }),
-                        React.createElement("button", { onClick: addTask, className: "px-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md shadow-indigo-500/30 active:scale-95 transition-all hover:opacity-90", title: "Add task" }, React.createElement(Plus, { size: 20 }))
-                    ),
-                    carryTasks.length > 0 && React.createElement("button", { onClick: carryOver, className: "w-full mb-4 flex items-center justify-center gap-2 p-3 rounded-2xl border border-dashed border-indigo-300 dark:border-indigo-500/40 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 active:scale-[0.99] transition-colors" },
-                        React.createElement(RotateCcw, { size: 14 }), `Bring over ${carryTasks.length} unfinished from ${formatDateKey(carryKey, { weekday: 'short', day: 'numeric', month: 'short' })}`
-                    ),
-                    tasks.length === 0 && React.createElement("div", { className: "text-center py-8" },
-                        React.createElement("div", { className: "text-4xl mb-2" }, "🎯"),
-                        React.createElement("p", { className: "font-semibold text-zinc-700 dark:text-zinc-300" }, "A clear plan beats a busy day."),
-                        React.createElement("p", { className: "text-sm text-zinc-400 mt-1" }, "Add 3–5 tasks that move you toward today's goal.")
-                    ),
-                    React.createElement("div", { className: "space-y-2" }, openTasks.map((t, i) => renderTask(t, i))),
-                    doneTasks.length > 0 && React.createElement("div", { className: "mt-5" },
-                        React.createElement("button", { onClick: () => setShowDone(!showDone), className: "flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 mb-2 px-1" },
-                            React.createElement(ChevronRight, { size: 14, className: `transition-transform ${showDone ? 'rotate-90' : ''}` }), `Completed · ${doneTasks.length}`
-                        ),
-                        showDone && React.createElement("div", { className: "space-y-1.5" }, doneTasks.map((t, i) => renderTask(t, i)))
-                    )
-                )
-            );
-        };
-
-        // ---------- Statement Analyzer ----------
-        const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-        const PDFJS_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        let pdfjsPromise = null;
-        const loadPdfJs = () => {
-            if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
-            if (!pdfjsPromise) {
-                pdfjsPromise = new Promise((resolve, reject) => {
-                    const s = document.createElement('script');
-                    s.src = PDFJS_URL;
-                    s.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL; resolve(window.pdfjsLib); };
-                    s.onerror = () => { pdfjsPromise = null; reject(new Error("Couldn't load the PDF reader. Check your connection.")); };
-                    document.head.appendChild(s);
-                });
-            }
-            return pdfjsPromise;
-        };
-        const loadImage = (src) => new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = reject; img.src = src; });
-        const readFileAsDataURL = (file) => new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = reject; r.readAsDataURL(file); });
-        const cropImage = async (src, rect) => {
-            const img = await loadImage(src);
-            const sx = Math.round(rect.x * img.naturalWidth), sy = Math.round(rect.y * img.naturalHeight);
-            const sw = Math.max(1, Math.round(rect.w * img.naturalWidth)), sh = Math.max(1, Math.round(rect.h * img.naturalHeight));
-            const canvas = document.createElement('canvas');
-            canvas.width = sw; canvas.height = sh;
-            canvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-            return canvas.toDataURL('image/jpeg', 0.92);
-        };
-        const normalizeArea = (a) => (a || '').trim().replace(/\s+/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) || 'Unknown';
-        const PRESENCE_CHANNELS = ['in-person', 'atm'];
-        const FULL_PAGE = { x: 0, y: 0, w: 1, h: 1 };
-        const STATEMENT_SHORTCUTS = [
-            ['Enter', 'Snip selection & go to next page'],
-            ['Shift + Enter', 'Snip the same area on every remaining page'],
-            ['F', 'Snip the whole page'],
-            ['→ / N', 'Next page'],
-            ['← / P', 'Previous page'],
-            ['Backspace / Ctrl+Z', 'Undo last snip'],
-            ['Esc', 'Clear selection'],
-            ['E', 'Extract transactions with AI'],
-            ['?', 'Show / hide shortcuts']
-        ];
-
-        // Pages, PDF documents and snips are large, so they live in memory only (kept while you switch tabs, cleared on reload)
-        const statementSession = { pages: [], captures: [], pageIndex: 0, selection: null, docs: {} };
-
-        const StatementAnalyzerView = ({ userId, onExtract, onAssess }) => {
-            const storageKey = `lifeos_statement_case_${userId}`;
-            const loadCase = () => { try { return JSON.parse(localStorage.getItem(storageKey)) || {}; } catch { return {}; } };
-            const [caseData, setCaseData] = useState(() => ({ subject: '', address: '', transactions: [], assessment: null, ...loadCase() }));
-            const [step, setStep] = useState(statementSession.pages.length ? 'capture' : (caseData.transactions.length ? 'transactions' : 'capture'));
-            const [pages, setPagesState] = useState(statementSession.pages);
-            const [captures, setCapturesState] = useState(statementSession.captures);
-            const [pageIndex, setPageIndexState] = useState(statementSession.pageIndex);
-            const [selection, setSelectionState] = useState(statementSession.selection);
-            const [autoAdvance, setAutoAdvance] = useState(true);
-            const [showHelp, setShowHelp] = useState(false);
-            const [busy, setBusy] = useState(null);
-            const [error, setError] = useState(null);
-            const [flash, setFlash] = useState(false);
-            const [areaFilter, setAreaFilter] = useState(null);
-            const imgBoxRef = useRef(null);
-            const dragRef = useRef(null);
-            const fileInputRef = useRef(null);
-
-            // Mirror into the session object synchronously so async loops (e.g. snipping every page) always see the latest list
-            const setPages = (fn) => { const next = typeof fn === 'function' ? fn(statementSession.pages) : fn; statementSession.pages = next; setPagesState(next); };
-            const setCaptures = (fn) => { const next = typeof fn === 'function' ? fn(statementSession.captures) : fn; statementSession.captures = next; setCapturesState(next); };
-            const setPageIndex = (i) => { statementSession.pageIndex = i; setPageIndexState(i); };
-            const setSelection = (s) => { statementSession.selection = s; setSelectionState(s); };
-            const updateCase = (patch) => setCaseData(prev => { const next = { ...prev, ...(typeof patch === 'function' ? patch(prev) : patch) }; try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch (e) { console.error(e); } return next; });
-
-            const page = pages[pageIndex];
-            const pendingCaptures = captures.filter(c => !c.extracted);
-            const snippedPages = new Set(captures.map(c => c.pageId));
-
-            // Render PDF pages on demand (current + next) so large statements stay responsive
-            const ensureRendered = async (idx) => {
-                const p = statementSession.pages[idx];
-                if (!p || p.src) return p?.src;
-                const doc = statementSession.docs[p.docId];
-                const pdfPage = await doc.getPage(p.pageNum);
-                const viewport = pdfPage.getViewport({ scale: 2 });
-                const canvas = document.createElement('canvas');
-                canvas.width = viewport.width; canvas.height = viewport.height;
-                await pdfPage.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-                const src = canvas.toDataURL('image/jpeg', 0.9);
-                setPages(prev => prev.map(x => x.id === p.id ? { ...x, src } : x));
-                return src;
-            };
-            useEffect(() => { if (pages.length) { ensureRendered(pageIndex).catch(e => setError(e.message)); ensureRendered(pageIndex + 1).catch(() => {}); } }, [pageIndex, pages.length]);
-
-            const handleFiles = async (fileList) => {
-                const files = Array.from(fileList || []);
-                if (!files.length) return;
-                setError(null); setBusy('Loading statement...');
-                try {
-                    const added = [];
-                    for (const file of files) {
-                        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-                            const pdfjs = await loadPdfJs();
-                            const doc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
-                            const docId = generateUUID();
-                            statementSession.docs[docId] = doc;
-                            for (let n = 1; n <= doc.numPages; n++) added.push({ id: generateUUID(), docId, pageNum: n, label: `${file.name} · p${n}`, src: null });
-                        } else if (file.type.startsWith('image/')) {
-                            added.push({ id: generateUUID(), label: file.name, src: await readFileAsDataURL(file) });
-                        }
-                    }
-                    if (!added.length) throw new Error("Upload a PDF or image of the bank statement.");
-                    const startIdx = statementSession.pages.length;
-                    setPages(prev => [...prev, ...added]);
-                    setPageIndex(startIdx);
-                    setStep('capture');
-                } catch (e) { setError(e.message || "Couldn't open that file."); }
-                finally { setBusy(null); }
-            };
-
-            const snip = async (rect, idx = statementSession.pageIndex) => {
-                const p = statementSession.pages[idx];
-                if (!p || !rect) return false;
-                const src = await ensureRendered(idx);
-                const crop = await cropImage(src, rect);
-                setCaptures(prev => [...prev, { id: generateUUID(), pageId: p.id, pageLabel: p.label, src: crop, extracted: false }]);
-                return true;
-            };
-            const goTo = (i) => { if (i >= 0 && i < statementSession.pages.length) setPageIndex(i); };
-            const snipAndAdvance = async (rect) => {
-                if (!rect) { setError("Drag a box around the transaction details first (or press F for the whole page)."); return; }
-                setError(null);
-                if (await snip(rect)) {
-                    setFlash(true); setTimeout(() => setFlash(false), 180);
-                    if (autoAdvance) goTo(statementSession.pageIndex + 1);
-                }
-            };
-            const snipAllRemaining = async () => {
-                if (!selection) { setError("Draw a selection first, then press Shift + Enter to repeat it on every remaining page."); return; }
-                setError(null);
-                const total = statementSession.pages.length;
-                for (let i = statementSession.pageIndex; i < total; i++) {
-                    setBusy(`Snipping page ${i + 1} of ${total}...`);
-                    try { await snip(selection, i); } catch (e) { setError(`Page ${i + 1}: ${e.message}`); }
-                }
-                setBusy(null);
-                goTo(total - 1);
-            };
-            const undoSnip = () => setCaptures(prev => prev.slice(0, -1));
-
-            const runExtract = async () => {
-                const todo = statementSession.captures.filter(c => !c.extracted);
-                if (!todo.length) { setError("No new snips to extract."); return; }
-                setError(null);
-                const BATCH = 3;
-                try {
-                    for (let i = 0; i < todo.length; i += BATCH) {
-                        const batch = todo.slice(i, i + BATCH);
-                        setBusy(`Reading snips ${i + 1}–${Math.min(i + BATCH, todo.length)} of ${todo.length} with AI...`);
-                        const rows = await onExtract(batch.map(c => c.src));
-                        const newTx = rows.map(r => ({ ...r, id: generateUUID(), captureId: batch[(r.image || 1) - 1]?.id, page: batch[(r.image || 1) - 1]?.pageLabel || '' }));
-                        updateCase(prev => ({ transactions: [...prev.transactions, ...newTx] }));
-                        const ids = new Set(batch.map(c => c.id));
-                        setCaptures(prev => prev.map(c => ids.has(c.id) ? { ...c, extracted: true } : c));
-                    }
-                    setStep('transactions');
-                } catch (e) { setError(e.message || "AI extraction failed."); }
-                finally { setBusy(null); }
-            };
-
-            // Keyboard shortcuts for fast snipping
-            useEffect(() => {
-                if (step !== 'capture') return;
-                const onKey = (e) => {
-                    const tag = (e.target.tagName || '').toLowerCase();
-                    if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return;
-                    if (busy) return;
-                    const k = e.key;
-                    if (k === 'Enter' && e.shiftKey) { e.preventDefault(); snipAllRemaining(); }
-                    else if (k === 'Enter') { e.preventDefault(); snipAndAdvance(statementSession.selection); }
-                    else if (k === 'f' || k === 'F') { e.preventDefault(); snipAndAdvance(FULL_PAGE); }
-                    else if (k === 'ArrowRight' || k === 'n' || k === 'N') { e.preventDefault(); goTo(statementSession.pageIndex + 1); }
-                    else if (k === 'ArrowLeft' || k === 'p' || k === 'P') { e.preventDefault(); goTo(statementSession.pageIndex - 1); }
-                    else if (k === 'Backspace' || ((e.ctrlKey || e.metaKey) && (k === 'z' || k === 'Z'))) { e.preventDefault(); undoSnip(); }
-                    else if (k === 'Escape') { setSelection(null); setShowHelp(false); }
-                    else if (k === 'e' || k === 'E') { e.preventDefault(); runExtract(); }
-                    else if (k === '?') { setShowHelp(h => !h); }
-                };
-                window.addEventListener('keydown', onKey);
-                return () => window.removeEventListener('keydown', onKey);
-            }, [step, busy, selection, autoAdvance, pages.length]);
-
-            // Selection drawing (mouse + touch via pointer events), stored as fractions of the page so it carries across pages
-            const toFrac = (e) => {
-                const r = imgBoxRef.current.getBoundingClientRect();
-                return { x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) };
-            };
-            const onPointerDown = (e) => { if (!page?.src) return; e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); dragRef.current = toFrac(e); };
-            const onPointerMove = (e) => {
-                if (!dragRef.current) return;
-                const a = dragRef.current, b = toFrac(e);
-                setSelection({ x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) });
-            };
-            const onPointerUp = () => {
-                dragRef.current = null;
-                if (statementSession.selection && (statementSession.selection.w < 0.01 || statementSession.selection.h < 0.01)) setSelection(null);
-            };
-
-            // ---- Analysis (computed locally from the extracted transactions) ----
-            const txs = caseData.transactions;
-            const areaStats = useMemo(() => {
-                const map = {};
-                txs.forEach(t => {
-                    const area = normalizeArea(t.area);
-                    const s = map[area] || (map[area] = { area, count: 0, presence: 0, spend: 0, days: new Set(), merchants: {}, first: null, last: null });
-                    s.count++;
-                    if (PRESENCE_CHANNELS.includes(t.channel)) s.presence++;
-                    if (t.direction !== 'in') s.spend += Math.abs(Number(t.amount) || 0);
-                    if (t.date) { s.days.add(t.date); if (!s.first || t.date < s.first) s.first = t.date; if (!s.last || t.date > s.last) s.last = t.date; }
-                    const m = (t.merchant || '').trim(); if (m) s.merchants[m] = (s.merchants[m] || 0) + 1;
-                });
-                return Object.values(map).map(s => ({ ...s, dayCount: s.days.size, topMerchants: Object.entries(s.merchants).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([m]) => m) }))
-                    .sort((a, b) => b.presence - a.presence || b.count - a.count);
-            }, [txs]);
-            const totalPresence = areaStats.reduce((n, s) => n + s.presence, 0);
-            const maxPresence = Math.max(1, ...areaStats.map(s => s.presence));
-
-            const runAssessment = async () => {
-                if (!txs.length) return;
-                setError(null); setBusy('Analysing spending pattern...');
-                try {
-                    const assessment = await onAssess({ subject: caseData.subject, address: caseData.address, areas: areaStats.slice(0, 40).map(s => ({ area: s.area, inPersonTransactions: s.presence, allTransactions: s.count, distinctDays: s.dayCount, totalSpend: Math.round(s.spend * 100) / 100, firstSeen: s.first, lastSeen: s.last, topMerchants: s.topMerchants })), transactions: txs.slice(0, 400).map(t => [t.date, t.merchant, normalizeArea(t.area), t.channel, t.amount]) });
-                    updateCase({ assessment: { ...assessment, generatedAt: new Date().toISOString() } });
-                } catch (e) { setError(e.message || "Analysis failed."); }
-                finally { setBusy(null); }
-            };
-
-            const exportCsv = () => {
-                const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-                const lines = [['Date', 'Description', 'Merchant', 'Area', 'Postcode', 'Channel', 'Direction', 'Amount', 'Page'].map(esc).join(',')]
-                    .concat(txs.map(t => [t.date, t.description, t.merchant, normalizeArea(t.area), t.postcode, t.channel, t.direction, t.amount, t.page].map(esc).join(',')));
-                const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = `${(caseData.subject || 'statement').replace(/[^\w-]+/g, '_')}_transactions.csv`;
-                a.click();
-                setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-            };
-            const updateTx = (id, patch) => updateCase(prev => ({ transactions: prev.transactions.map(t => t.id === id ? { ...t, ...patch } : t) }));
-            const deleteTx = (id) => updateCase(prev => ({ transactions: prev.transactions.filter(t => t.id !== id) }));
-            const resetCase = () => {
-                if (!window.confirm("Start a new case? This clears the loaded statement, snips, transactions and analysis.")) return;
-                statementSession.pages = []; statementSession.captures = []; statementSession.docs = {}; statementSession.pageIndex = 0; statementSession.selection = null;
-                setPagesState([]); setCapturesState([]); setPageIndexState(0); setSelectionState(null);
-                updateCase({ subject: '', address: '', transactions: [], assessment: null });
-                setStep('capture');
-            };
-
-            const kbd = (t) => React.createElement("kbd", { className: "px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-[11px] font-mono font-semibold text-zinc-700 dark:text-zinc-300 whitespace-nowrap" }, t);
-            const stepBtn = (id, label, num, count) => React.createElement("button", { onClick: () => setStep(id), className: `flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${step === id ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'}` },
-                React.createElement("span", { className: `w-5 h-5 rounded-full text-[11px] flex items-center justify-center ${step === id ? 'bg-indigo-600 text-white' : 'bg-zinc-200 dark:bg-zinc-700'}` }, num), React.createElement("span", { className: "hidden sm:inline" }, label), React.createElement("span", { className: "sm:hidden" }, label.split(' ')[0]),
-                count > 0 && React.createElement("span", { className: "text-[11px] font-bold text-indigo-600 dark:text-indigo-400" }, count));
-            const confidenceColor = { high: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300', medium: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300', low: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300' };
-            const a = caseData.assessment;
-
-            return React.createElement("div", { className: "p-4 md:p-8 pb-32 max-w-6xl mx-auto space-y-5" },
-                // Header + case details
-                React.createElement("div", { className: "flex flex-col md:flex-row md:items-end justify-between gap-4" },
-                    React.createElement("div", null,
-                        React.createElement("p", { className: "text-xs font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400 mb-1" }, "Residency evidence"),
-                        React.createElement("h2", { className: "text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 dark:text-white" }, "Statement Analyzer"),
-                        React.createElement("p", { className: "text-sm text-zinc-500 dark:text-zinc-400 mt-1" }, "Snip transaction details from a bank statement, let AI list where the money was spent, and see which areas dominate.")
-                    ),
-                    React.createElement("button", { onClick: resetCase, className: "self-start md:self-auto text-xs font-semibold text-zinc-500 hover:text-red-500 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" }, "New case")
-                ),
-                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3" },
-                    React.createElement("input", { value: caseData.subject, onChange: e => updateCase({ subject: e.target.value }), placeholder: "Case / account holder reference", className: "px-4 py-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-base md:text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500" }),
-                    React.createElement("div", { className: "relative" },
-                        React.createElement(MapPin, { size: 16, className: "absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" }),
-                        React.createElement("input", { value: caseData.address, onChange: e => updateCase({ address: e.target.value }), placeholder: "Address being checked (incl. postcode)", className: "w-full pl-10 pr-4 py-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-base md:text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500" })
-                    )
-                ),
-                React.createElement("div", { className: "flex gap-1 p-1 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800" },
-                    stepBtn('capture', 'Capture snips', 1, captures.length),
-                    stepBtn('transactions', 'Transactions', 2, txs.length),
-                    stepBtn('analysis', 'Area analysis', 3, 0)
-                ),
-                error && React.createElement("div", { className: "flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-sm text-red-700 dark:text-red-300" }, React.createElement(AlertCircle, { size: 16, className: "shrink-0 mt-0.5" }), React.createElement("span", { className: "flex-1" }, error), React.createElement("button", { onClick: () => setError(null) }, React.createElement(X, { size: 14 }))),
-                busy && React.createElement("div", { className: "flex items-center gap-2 p-3 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-sm font-medium text-indigo-700 dark:text-indigo-300" }, React.createElement(Loader2, { size: 16, className: "animate-spin" }), busy),
-                React.createElement("input", { ref: fileInputRef, type: "file", accept: "application/pdf,image/*", multiple: true, className: "hidden", onChange: e => { handleFiles(e.target.files); e.target.value = ''; } }),
-
-                // ---- Step 1: capture ----
-                step === 'capture' && (pages.length === 0
-                    ? React.createElement("div", { onDragOver: e => e.preventDefault(), onDrop: e => { e.preventDefault(); handleFiles(e.dataTransfer.files); }, onClick: () => fileInputRef.current?.click(), className: "cursor-pointer rounded-3xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-indigo-400 dark:hover:border-indigo-500 bg-white/60 dark:bg-zinc-900/40 p-10 md:p-16 text-center transition-colors" },
-                        React.createElement("div", { className: "w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30" }, React.createElement(Upload, { size: 24 })),
-                        React.createElement("p", { className: "text-lg font-bold text-zinc-900 dark:text-white" }, "Drop the bank statement here"),
-                        React.createElement("p", { className: "text-sm text-zinc-500 mt-1" }, "PDF or page images (PNG/JPG). Multiple files are fine."),
-                        React.createElement("p", { className: "text-xs text-zinc-400 mt-4 max-w-md mx-auto" }, "Pages and snips stay in this browser tab. Snips are sent to Google Gemini (using your API key from Settings) only when you run extraction.")
-                    )
-                    : React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5" },
-                        React.createElement("div", { className: "space-y-3 min-w-0" },
-                            React.createElement("div", { className: "flex flex-wrap items-center gap-2" },
-                                React.createElement("button", { onClick: () => goTo(pageIndex - 1), disabled: pageIndex === 0, className: "p-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 disabled:opacity-30 active:scale-95", title: "Previous page (←)" }, React.createElement(ChevronLeft, { size: 18 })),
-                                React.createElement("span", { className: "text-sm font-semibold text-zinc-700 dark:text-zinc-200 px-1" }, `Page ${pageIndex + 1} / ${pages.length}`),
-                                React.createElement("button", { onClick: () => goTo(pageIndex + 1), disabled: pageIndex >= pages.length - 1, className: "p-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 disabled:opacity-30 active:scale-95", title: "Next page (→)" }, React.createElement(ChevronRight, { size: 18 })),
-                                React.createElement("span", { className: "text-xs text-zinc-400 truncate max-w-[12rem] hidden sm:inline" }, page?.label),
-                                React.createElement("div", { className: "flex-1" }),
-                                React.createElement("label", { className: "flex items-center gap-2 text-xs font-medium text-zinc-500 cursor-pointer select-none" }, React.createElement("input", { type: "checkbox", checked: autoAdvance, onChange: e => setAutoAdvance(e.target.checked), className: "accent-indigo-600" }), "Auto next page"),
-                                React.createElement("button", { onClick: () => setShowHelp(!showHelp), className: "hidden md:flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-indigo-600 px-2 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-500/10", title: "Keyboard shortcuts (?)" }, React.createElement(Keyboard, { size: 14 }), "Shortcuts")
-                            ),
-                            showHelp && React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800" },
-                                STATEMENT_SHORTCUTS.map(([k, d]) => React.createElement("div", { key: k, className: "flex items-center justify-between gap-3 text-sm" }, React.createElement("span", { className: "text-zinc-600 dark:text-zinc-400" }, d), kbd(k)))
-                            ),
-                            React.createElement("div", { className: `relative rounded-2xl overflow-hidden border-2 transition-colors bg-zinc-100 dark:bg-zinc-900 ${flash ? 'border-emerald-400' : 'border-zinc-200 dark:border-zinc-800'}` },
-                                page?.src
-                                    ? React.createElement("div", { ref: imgBoxRef, className: "relative select-none cursor-crosshair touch-none", onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp },
-                                        React.createElement("img", { src: page.src, draggable: false, className: "w-full h-auto block pointer-events-none" }),
-                                        selection && React.createElement("div", { className: "absolute border-2 border-indigo-500 bg-indigo-500/10 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)] pointer-events-none", style: { left: `${selection.x * 100}%`, top: `${selection.y * 100}%`, width: `${selection.w * 100}%`, height: `${selection.h * 100}%` } },
-                                            React.createElement("span", { className: "absolute -top-7 left-0 text-[11px] font-bold text-white bg-indigo-600 px-2 py-1 rounded-md whitespace-nowrap" }, "Enter to snip")
-                                        ),
-                                        snippedPages.has(page.id) && React.createElement("span", { className: "absolute top-3 right-3 flex items-center gap-1 text-xs font-bold text-white bg-emerald-500 px-2.5 py-1 rounded-full shadow" }, React.createElement(Check, { size: 12, strokeWidth: 3 }), "Snipped")
-                                    )
-                                    : React.createElement("div", { className: "h-96 flex items-center justify-center text-zinc-400" }, React.createElement(Loader2, { className: "animate-spin" }))
-                            ),
-                            React.createElement("div", { className: "flex flex-wrap gap-2" },
-                                React.createElement("button", { onClick: () => snipAndAdvance(selection), disabled: !!busy, className: "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-sm font-bold shadow-md shadow-indigo-500/30 active:scale-95 disabled:opacity-50" }, React.createElement(Scissors, { size: 16 }), "Snip selection", React.createElement("span", { className: "hidden md:inline text-white/70 font-mono text-[11px]" }, "Enter")),
-                                React.createElement("button", { onClick: snipAllRemaining, disabled: !!busy || !selection, className: "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-200 text-sm font-semibold active:scale-95 disabled:opacity-40" }, React.createElement(SkipForward, { size: 16 }), "Same area, all remaining pages", React.createElement("span", { className: "hidden md:inline text-zinc-400 font-mono text-[11px]" }, "⇧Enter")),
-                                React.createElement("button", { onClick: () => snipAndAdvance(FULL_PAGE), disabled: !!busy, className: "flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-200 text-sm font-semibold active:scale-95 disabled:opacity-40" }, React.createElement(Maximize, { size: 16 }), "Whole page", React.createElement("span", { className: "hidden md:inline text-zinc-400 font-mono text-[11px]" }, "F")),
-                                React.createElement("button", { onClick: () => fileInputRef.current?.click(), className: "flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-zinc-500 hover:text-indigo-600 text-sm font-semibold" }, React.createElement(Plus, { size: 16 }), "Add pages")
-                            ),
-                            React.createElement("p", { className: "text-xs text-zinc-400" }, "Tip: drag a box around the transaction description column once. The box stays put, so on each page just press Enter (or Shift + Enter to do every remaining page in one go).")
-                        ),
-                        // Snips sidebar
-                        React.createElement("div", { className: "rounded-3xl bg-white/80 dark:bg-zinc-900/60 border border-zinc-200 dark:border-white/5 p-4 flex flex-col max-h-[80vh]" },
-                            React.createElement("div", { className: "flex items-center justify-between mb-3" },
-                                React.createElement("h3", { className: "text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2" }, React.createElement(Crop, { size: 14, className: "text-indigo-500" }), `Snips · ${captures.length}`),
-                                captures.length > 0 && React.createElement("button", { onClick: undoSnip, className: "flex items-center gap-1 text-xs font-semibold text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200", title: "Undo last snip (Backspace)" }, React.createElement(Undo2, { size: 13 }), "Undo")
-                            ),
-                            React.createElement("div", { className: "h-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden mb-3" }, React.createElement("div", { className: "h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all", style: { width: `${pages.length ? (snippedPages.size / pages.length) * 100 : 0}%` } })),
-                            React.createElement("p", { className: "text-[11px] text-zinc-400 mb-3" }, `${snippedPages.size} of ${pages.length} pages snipped`),
-                            React.createElement("div", { className: "flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1 min-h-[4rem]" },
-                                captures.length === 0 && React.createElement("p", { className: "text-sm text-zinc-400 italic" }, "No snips yet."),
-                                [...captures].reverse().map(c => React.createElement("div", { key: c.id, className: "group relative rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden bg-white dark:bg-black/30" },
-                                    React.createElement("img", { src: c.src, className: "w-full max-h-28 object-cover object-top" }),
-                                    React.createElement("div", { className: "flex items-center justify-between px-2 py-1 text-[10px] text-zinc-500" }, React.createElement("span", { className: "truncate" }, c.pageLabel), c.extracted ? React.createElement("span", { className: "text-emerald-600 font-bold shrink-0" }, "Extracted") : React.createElement("span", { className: "text-amber-600 font-bold shrink-0" }, "New")),
-                                    React.createElement("button", { onClick: () => setCaptures(prev => prev.filter(x => x.id !== c.id)), className: "absolute top-1.5 right-1.5 p-1 rounded-md bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity" }, React.createElement(X, { size: 12 }))
-                                ))
-                            ),
-                            React.createElement("button", { onClick: runExtract, disabled: !!busy || pendingCaptures.length === 0, className: "mt-3 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-bold active:scale-95 disabled:opacity-40" }, React.createElement(Wand2, { size: 16 }), `Extract ${pendingCaptures.length || ''} with AI`, React.createElement("span", { className: "hidden md:inline opacity-60 font-mono text-[11px]" }, "E"))
-                        )
-                    )
-                ),
-
-                // ---- Step 2: transactions ----
-                step === 'transactions' && React.createElement("div", { className: "rounded-3xl bg-white/80 dark:bg-zinc-900/60 border border-zinc-200 dark:border-white/5 p-4 md:p-6" },
-                    React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-3 mb-4" },
-                        React.createElement("div", null,
-                            React.createElement("h3", { className: "font-bold text-zinc-900 dark:text-white" }, `${txs.length} transactions`),
-                            React.createElement("p", { className: "text-xs text-zinc-500" }, "Check the AI's reading and fix any area. Edits flow straight into the analysis.")
-                        ),
-                        React.createElement("div", { className: "flex gap-2" },
-                            areaFilter && React.createElement("button", { onClick: () => setAreaFilter(null), className: "flex items-center gap-1 text-xs font-semibold px-3 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-300" }, `Area: ${areaFilter}`, React.createElement(X, { size: 12 })),
-                            React.createElement("button", { onClick: exportCsv, disabled: !txs.length, className: "flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-40" }, React.createElement(Download, { size: 14 }), "CSV"),
-                            React.createElement("button", { onClick: () => setStep('analysis'), disabled: !txs.length, className: "flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-lg bg-indigo-600 text-white disabled:opacity-40" }, "Analyse areas", React.createElement(ArrowRight, { size: 14 }))
-                        )
-                    ),
-                    txs.length === 0
-                        ? React.createElement("p", { className: "text-sm text-zinc-400 italic py-8 text-center" }, "No transactions yet. Snip the statement pages and run AI extraction.")
-                        : React.createElement("div", { className: "overflow-x-auto -mx-4 md:mx-0" },
-                            React.createElement("table", { className: "w-full text-sm min-w-[640px]" },
-                                React.createElement("thead", null, React.createElement("tr", { className: "text-left text-[11px] uppercase tracking-wider text-zinc-400 border-b border-zinc-100 dark:border-zinc-800" },
-                                    ['Date', 'Merchant', 'Area', 'Channel', 'Amount', ''].map(h => React.createElement("th", { key: h, className: "py-2 px-2 font-bold" }, h)))),
-                                React.createElement("tbody", null, txs.filter(t => !areaFilter || normalizeArea(t.area) === areaFilter).map(t => React.createElement("tr", { key: t.id, className: "group border-b border-zinc-50 dark:border-zinc-800/60 hover:bg-zinc-50/70 dark:hover:bg-white/[0.02]" },
-                                    React.createElement("td", { className: "py-2 px-2 text-zinc-500 whitespace-nowrap" }, t.date || '—'),
-                                    React.createElement("td", { className: "py-2 px-2" }, React.createElement("div", { className: "font-medium text-zinc-800 dark:text-zinc-100" }, t.merchant || '—'), React.createElement("div", { className: "text-[11px] text-zinc-400 truncate max-w-[16rem]" }, t.description)),
-                                    React.createElement("td", { className: "py-2 px-2" }, React.createElement("input", { value: t.area || '', onChange: e => updateTx(t.id, { area: e.target.value }), placeholder: "Unknown", className: "w-36 bg-transparent border-b border-transparent hover:border-zinc-300 focus:border-indigo-500 focus:outline-none text-zinc-800 dark:text-zinc-100" })),
-                                    React.createElement("td", { className: "py-2 px-2" }, React.createElement("select", { value: t.channel || 'other', onChange: e => updateTx(t.id, { channel: e.target.value }), className: "bg-transparent text-xs text-zinc-600 dark:text-zinc-300 focus:outline-none" }, ['in-person', 'atm', 'online', 'direct-debit', 'transfer', 'other'].map(c => React.createElement("option", { key: c, value: c }, c)))),
-                                    React.createElement("td", { className: `py-2 px-2 whitespace-nowrap font-semibold ${t.direction === 'in' ? 'text-emerald-600' : 'text-zinc-800 dark:text-zinc-100'}` }, t.amount != null && t.amount !== '' ? `${t.direction === 'in' ? '+' : ''}${Number(t.amount).toFixed(2)}` : '—'),
-                                    React.createElement("td", { className: "py-2 px-2 text-right" }, React.createElement("button", { onClick: () => deleteTx(t.id), className: "p-1 text-zinc-300 hover:text-red-500 md:opacity-0 md:group-hover:opacity-100" }, React.createElement(Trash2, { size: 14 })))
-                                )))
-                            )
-                        )
-                ),
-
-                // ---- Step 3: analysis ----
-                step === 'analysis' && React.createElement("div", { className: "space-y-5" },
-                    React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-3" },
-                        [['Transactions', txs.length], ['In-person / ATM', totalPresence], ['Distinct areas', areaStats.filter(s => s.area !== 'Unknown').length], ['Top area share', totalPresence && areaStats[0] ? `${Math.round((areaStats[0].presence / totalPresence) * 100)}%` : '—']].map(([l, v]) =>
-                            React.createElement("div", { key: l, className: "rounded-2xl bg-white/80 dark:bg-zinc-900/60 border border-zinc-200 dark:border-white/5 p-4" }, React.createElement("p", { className: "text-[11px] font-bold uppercase tracking-wider text-zinc-400" }, l), React.createElement("p", { className: "text-2xl font-bold text-zinc-900 dark:text-white mt-1" }, v)))
-                    ),
-                    React.createElement("div", { className: "rounded-3xl bg-white/80 dark:bg-zinc-900/60 border border-zinc-200 dark:border-white/5 p-4 md:p-6" },
-                        React.createElement("h3", { className: "text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1 flex items-center gap-2" }, React.createElement(MapPin, { size: 14, className: "text-indigo-500" }), "Where the spending happened"),
-                        React.createElement("p", { className: "text-xs text-zinc-400 mb-4" }, "Ranked by in-person card payments and ATM withdrawals, the strongest sign of physical presence. Online payments and direct debits are counted but don't show where someone was. Tap an area to see its transactions."),
-                        areaStats.length === 0 ? React.createElement("p", { className: "text-sm text-zinc-400 italic" }, "No data yet.") :
-                        React.createElement("div", { className: "space-y-2.5" }, areaStats.slice(0, 15).map((s, i) => React.createElement("button", { key: s.area, onClick: () => { setAreaFilter(s.area); setStep('transactions'); }, className: "w-full text-left group" },
-                            React.createElement("div", { className: "flex items-baseline justify-between gap-3 mb-1" },
-                                React.createElement("span", { className: "text-sm font-semibold text-zinc-800 dark:text-zinc-100 group-hover:text-indigo-600 truncate" }, `${i + 1}. ${s.area}`),
-                                React.createElement("span", { className: "text-xs text-zinc-500 whitespace-nowrap" }, `${s.presence} in-person · ${s.count} total · ${s.dayCount} day${s.dayCount === 1 ? '' : 's'} · £${s.spend.toFixed(0)}`)
-                            ),
-                            React.createElement("div", { className: "h-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden" }, React.createElement("div", { className: `h-full rounded-full ${i === 0 ? 'bg-gradient-to-r from-indigo-500 to-purple-500' : 'bg-indigo-300 dark:bg-indigo-500/50'}`, style: { width: `${Math.max(2, (s.presence / maxPresence) * 100)}%` } })),
-                            s.first && React.createElement("p", { className: "text-[11px] text-zinc-400 mt-1 truncate" }, `${s.first} → ${s.last}${s.topMerchants.length ? ' · ' + s.topMerchants.join(', ') : ''}`)
-                        )))
-                    ),
-                    React.createElement("div", { className: "rounded-3xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-700 p-5 md:p-6 text-white shadow-xl shadow-indigo-500/20" },
-                        React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-3" },
-                            React.createElement("div", null,
-                                React.createElement("h3", { className: "font-bold text-lg flex items-center gap-2" }, React.createElement(Sparkles, { size: 18 }), "AI residency assessment"),
-                                React.createElement("p", { className: "text-sm text-white/75" }, caseData.address ? `Compares the spending pattern with ${caseData.address}.` : "Add the address being checked above for a sharper assessment.")
-                            ),
-                            React.createElement("button", { onClick: runAssessment, disabled: !!busy || !txs.length, className: "px-4 py-2.5 rounded-xl bg-white text-indigo-700 text-sm font-bold active:scale-95 disabled:opacity-50" }, a ? "Re-run analysis" : "Run analysis")
-                        )
-                    ),
-                    a && React.createElement("div", { className: "rounded-3xl bg-white/80 dark:bg-zinc-900/60 border border-zinc-200 dark:border-white/5 p-5 md:p-6 space-y-4" },
-                        React.createElement("div", { className: "flex flex-wrap items-center gap-2" },
-                            a.likelyBaseArea && React.createElement("span", { className: "text-sm font-bold text-zinc-900 dark:text-white" }, `Most likely base: ${a.likelyBaseArea}`),
-                            a.confidence && React.createElement("span", { className: `text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${confidenceColor[String(a.confidence).toLowerCase()] || confidenceColor.low}` }, `${a.confidence} confidence`),
-                            a.supportsOccupancy && React.createElement("span", { className: "text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300" }, `Occupancy at address: ${a.supportsOccupancy}`)
-                        ),
-                        a.summary && React.createElement("p", { className: "text-[15px] leading-relaxed text-zinc-700 dark:text-zinc-200" }, a.summary),
-                        [['Key findings', a.keyFindings], ['Points against occupancy at the address', a.pointsAgainstOccupancy], ['Points supporting occupancy at the address', a.pointsForOccupancy], ['Limitations', a.limitations]].filter(([, list]) => Array.isArray(list) && list.length).map(([title, list]) =>
-                            React.createElement("div", { key: title },
-                                React.createElement("h4", { className: "text-[11px] font-bold uppercase tracking-widest text-zinc-400 mb-1.5" }, title),
-                                React.createElement("ul", { className: "space-y-1 list-disc pl-5 text-sm text-zinc-700 dark:text-zinc-300" }, list.map((x, i) => React.createElement("li", { key: i }, x)))
-                            )),
-                        React.createElement("p", { className: "text-[11px] text-zinc-400 pt-2 border-t border-zinc-100 dark:border-zinc-800" }, "AI-generated from the extracted transactions. Treat it as a lead to verify, not as proof of residency.")
                     )
                 )
             );
@@ -1728,7 +1096,7 @@
         };
 
         const ASSISTANT_ACTION_LABELS = {
-            dailyGoal: 'Daily goal', dailyTask: 'Daily task', ideaNote: 'Idea Board note',
+            ideaNote: 'Idea Board note',
             brainDump: 'Brain Dump', libraryBook: 'Library book', countdown: 'Countdown'
         };
 
@@ -1762,7 +1130,7 @@
                             React.createElement("h2", { className: "text-2xl font-bold text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(Sparkles, { className: "text-indigo-500", size: 24 }), "AI Assistant"),
                             React.createElement("button", { onClick: onClose, className: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 -m-2 active:scale-90" }, React.createElement(X, { size: 24 }))
                         ),
-                        React.createElement("p", { className: "text-sm text-zinc-500 mb-4" }, "Describe what you want added — it can fill in your Daily Target, Idea Board, Brain Dump, Library, Food Bank, and Countdowns, all from one prompt."),
+                        React.createElement("p", { className: "text-sm text-zinc-500 mb-4" }, "Describe what you want added — it can fill in your Idea Board, Brain Dump, Library, Food Bank, and Countdowns, all from one prompt."),
                         React.createElement("textarea", { value: text, onChange: e => setText(e.target.value), placeholder: "e.g. Add 'Atomic Habits' to my library, jot an idea about a morning routine app, and set a countdown for my exam on July 4th", className: "w-full min-h-[120px] p-4 rounded-xl bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-base md:text-sm focus:outline-none focus:border-indigo-500 resize-none mb-4" }),
                         error && React.createElement("p", { className: "text-red-500 text-sm mb-4" }, error),
                         result && React.createElement("div", { className: "mb-4 p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl" },
@@ -1993,7 +1361,6 @@
         const App = () => {
             const tabConfig = {
                 dashboard: { label: "Dashboard", icon: Layout },
-                dailyTarget: { label: "Daily Target", icon: Target },
                 ideaBoard: { label: "Idea Board", icon: Lightbulb },
                 braindump: { label: "Brain Dump", icon: Brain },
                 focus: { label: "Focus Timer", icon: Timer },
@@ -2002,7 +1369,6 @@
                 food: { label: "Nutrition", icon: Utensils },
                 countdown: { label: "Countdown", icon: Hourglass },
                 biblePlan: { label: "Bible Plan", icon: BookOpen },
-                statement: { label: "Statement Analyzer", icon: Landmark },
                 profile: { label: "Profile", icon: User }
             };
             const VALID_TABS = Object.keys(tabConfig);
@@ -2260,25 +1626,6 @@
                 return JSON.parse(jsonMatch[0]);
             };
 
-            const toImagePart = (dataUrl) => { const [meta, data] = dataUrl.split(','); return { type: 'image', data, mime_type: meta.match(/data:(.*?);/)[1] }; };
-
-            const extractStatementTransactions = async (images) => {
-                const prompt = `You are reading snipped sections of a UK bank statement. There are ${images.length} image(s), numbered in the order given starting at 1. List every transaction line you can read. For each, work out the merchant/company and the town, city or area where it took place (bank statements often append the location to the description, e.g. "TESCO STORES 2041 LEEDS" -> merchant "Tesco", area "Leeds"; a postcode or postcode district counts too). If no place is shown, leave "area" as an empty string — never guess a place that isn't on the statement. Classify "channel" as: "in-person" (card payment at a physical shop, contactless, chip & pin), "atm" (cash withdrawal), "online" (internet/app purchases, subscriptions), "direct-debit" (DD / standing order), "transfer" (bank transfers, faster payments) or "other". Respond with ONLY raw JSON, no markdown fences, in this exact shape: {"transactions": [{"image": number, "date": "YYYY-MM-DD" (or "" if not visible), "description": string (the raw text), "merchant": string, "area": string, "postcode": string, "channel": string, "direction": "out" | "in", "amount": number}]}`;
-                const result = await callGemini([{ type: 'text', text: prompt }, ...images.map(toImagePart)], false);
-                return result.transactions || [];
-            };
-
-            const assessStatementResidency = async ({ subject, address, areas, transactions }) => {
-                const prompt = `You are assisting a residency / non-occupancy investigation. Bank statement transactions for an account holder${subject ? ` (case: ${subject})` : ''} have been extracted and grouped by area. ${address ? `The address being checked is: ${address}.` : 'No address was given.'}
-
-Area summary (sorted by in-person card payments and ATM withdrawals, which show physical presence; online payments and direct debits do not): ${JSON.stringify(areas)}
-
-Transactions as [date, merchant, area, channel, amount]: ${JSON.stringify(transactions)}
-
-Using your knowledge of UK geography (which towns, districts and postcodes are near each other), assess where this person appears to spend most of their time and whether the spending pattern is consistent with them living at the address being checked. Look at frequency, how many distinct days, everyday spending (supermarkets, petrol, takeaways, local shops) versus one-offs, and changes over time. Be balanced and factual, and flag weaknesses in the evidence (for example few transactions, missing locations, online spending, a partner who may pay for things). Respond with ONLY raw JSON, no markdown fences, in this exact shape: {"likelyBaseArea": string, "confidence": "high" | "medium" | "low", "supportsOccupancy": "yes" | "no" | "unclear", "summary": string (3-5 sentences), "keyFindings": [string], "pointsAgainstOccupancy": [string], "pointsForOccupancy": [string], "limitations": [string]}`;
-                return await callGemini(prompt, false);
-            };
-
             const generateNutritionPlan = async () => {
                 const prompt = `You are a nutrition coach building a practical weekly meal and supplement plan for someone whose goal is building muscle and who wants to avoid ever feeling hungry or having to think hard about what to eat. Design the plan around batch cooking exactly 2 sessions per week (pick two sensible days spread apart, e.g. early in the week and mid-week), where each session's cooked food covers several days — for repeated days, reference which batch it is in the "text" (e.g. "Batch 1: Chicken thighs + rice + broccoli"). Cover all 7 days (Monday through Sunday) with Breakfast, Lunch, Dinner, Snacks, and Supplements. For "Supplements", recommend a core, evidence-based daily stack (safe basics like a protein powder, creatine monohydrate, vitamin D3, omega-3/fish oil, and a multivitamin — only add something beyond that if clearly justified), with dosage and timing. Prioritize adequate protein at every meal to support muscle growth, and keep the food genuinely appealing and low-effort to eat once cooked, so hunger and decision fatigue aren't a problem. Respond with ONLY a raw JSON array, no markdown code fences, no commentary, where each item has this exact shape: {"day": string, "type": "Breakfast"|"Lunch"|"Dinner"|"Snacks"|"Supplements", "text": string}.`;
                 const plan = await callGemini(prompt, false);
@@ -2317,8 +1664,6 @@ Using your knowledge of UK geography (which towns, districts and postcodes are n
 
             const applyAssistantAction = (action) => {
                 switch (action.type) {
-                    case 'dailyGoal': handleUpdateDailyTarget(toDateKey(new Date()), d => ({ ...d, goal: action.text })); break;
-                    case 'dailyTask': handleUpdateDailyTarget(toDateKey(new Date()), d => ({ ...d, tasks: [...(d.tasks || []), { id: generateUUID(), text: action.text, completed: false }] })); break;
                     case 'ideaNote': handleAddIdeaNote({ text: action.text, x: 40 + Math.random() * 200, y: 40 + Math.random() * 200, width: 256, height: 256, color: IDEA_COLORS[ideaNotes.length % IDEA_COLORS.length] }); break;
                     case 'brainDump': handleAddDump(action.text); break;
                     case 'libraryBook': handleAddBook({ title: action.title, author: action.author || '', category: bookCategories.includes(action.category) ? action.category : (bookCategories[0] || 'General'), status: action.status || 'To Read' }); break;
@@ -2330,8 +1675,6 @@ Using your knowledge of UK geography (which towns, districts and postcodes are n
             const runAssistantPrompt = async (promptText) => {
                 const today = new Date().toISOString().split('T')[0];
                 const prompt = `You are a quick-capture assistant for a personal productivity app. Today's date is ${today}. The user will describe things they want added to their app in plain language, possibly several things at once. Convert their request into a JSON list of actions. Only include an action for something the user actually asked for — never invent extra items they didn't mention. Valid action types and their exact shape:
-- Daily goal: {"type": "dailyGoal", "text": string} — sets their main goal for today.
-- Daily task: {"type": "dailyTask", "text": string} — a task to get done today.
 - Idea board note: {"type": "ideaNote", "text": string}
 - Brain dump: {"type": "brainDump", "text": string}
 - Library book: {"type": "libraryBook", "title": string, "author": string, "category": "General"|"Fiction"|"Non-Fiction"|"Self-Help"|"Technical", "status": "To Read"}
@@ -2375,16 +1718,7 @@ Respond with ONLY raw JSON, no markdown fences, no commentary, in this exact sha
             const handleUpdateBook = (item) => { setBooks(prev => prev.map(b => b.id === item.id ? item : b)); };
 
             const handleUpdateDashboard = (newData) => setDashboardData(newData);
-            const handleUpdateDailyTarget = (dateKey, updater) => {
-                setDailyPlan(prev => {
-                    const targets = prev.targets || {};
-                    const next = { ...targets, [dateKey]: updater(targets[dateKey] || EMPTY_DAY_TARGET) };
-                    // Keep roughly the last two months of daily targets
-                    const cutoff = shiftDateKey(toDateKey(new Date()), -60);
-                    Object.keys(next).forEach(k => { if (k < cutoff) delete next[k]; });
-                    return { ...prev, targets: next };
-                });
-            };
+            const handleUpdateDailyPlan = (newData) => setDailyPlan(newData);
 
             const handleDeleteBookCategory = (cat) => setBookCategories(bookCategories.filter(c => c !== cat));
             const handleRenameBookCategory = (oldN, newN) => setBookCategories(bookCategories.map(c => c === oldN ? newN : c));
@@ -2421,9 +1755,7 @@ Respond with ONLY raw JSON, no markdown fences, no commentary, in this exact sha
                 React.createElement(MobileTopBar, { handleLogout, user, darkMode, toggleDarkMode: () => setDarkMode(!darkMode), onProfileClick: () => setActiveTab('profile') }),
                 React.createElement(MobileNavBar, { activeTab, setActiveTab, tabConfig }),
                 React.createElement("main", { className: "md:ml-64 p-4 md:p-8 pb-28 md:pb-8 pt-20 md:pt-8 min-h-screen box-border overflow-x-hidden" },
-                    activeTab === 'dashboard' && React.createElement(DashboardView, { onNavigate: setActiveTab, dashboardData, onUpdateDashboard: handleUpdateDashboard, meals, dumps, books, todayTarget: dailyPlan.targets?.[toDateKey(new Date())] }),
-                    activeTab === 'statement' && React.createElement(StatementAnalyzerView, { userId: user.id, onExtract: extractStatementTransactions, onAssess: assessStatementResidency }),
-                    activeTab === 'dailyTarget' && React.createElement(DailyTargetView, { targets: dailyPlan.targets || {}, onUpdateDay: handleUpdateDailyTarget }),
+                    activeTab === 'dashboard' && React.createElement(DashboardView, { onNavigate: setActiveTab, dashboardData, onUpdateDashboard: handleUpdateDashboard, meals, dumps, books }),
                     activeTab === 'ideaBoard' && React.createElement(IdeaBoardView, { notes: ideaNotes, onAdd: handleAddIdeaNote, onUpdate: handleUpdateIdeaNote, onDelete: handleDeleteIdeaNote }),
                     activeTab === 'braindump' && React.createElement(BrainDumpView, { dumps, onAddDump: handleAddDump, onDeleteDump: handleDeleteDump, onUpdateDump: handleUpdateDump }),
                     activeTab === 'focus' && React.createElement(FocusView, { activeSound, isPlayingSound, toggleSound, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset }),
