@@ -44,6 +44,10 @@
         .cursor-move { cursor: move; cursor: grab; cursor: -webkit-grabbing; }
         .cursor-grabbing { cursor: grabbing !important; }
         .touch-none { touch-action: none; }
+        @keyframes task-pop { 0% { transform: scale(1); } 40% { transform: scale(1.3); } 100% { transform: scale(1); } }
+        .task-pop { animation: task-pop .35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes confetti-fall { 0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg); opacity: 0.6; } }
+        .confetti-piece { position: absolute; top: 0; width: 9px; height: 14px; border-radius: 2px; animation-name: confetti-fall; animation-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94); animation-fill-mode: forwards; }
         @supports (padding-bottom: env(safe-area-inset-bottom)) {
             .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem) !important; }
         }
@@ -65,7 +69,7 @@
             ListTodo, CheckSquare, Square, AlertCircle, Book, Hourglass, Check, Gift,
             Chrome, Calendar, CalendarRange, GripVertical, ArrowUp, ArrowDown, Scale,
             Lightbulb, Flag, Activity, Ban, Bookmark, Eye, EyeOff, User, LogOut, LinkIcon, Globe, Search, Star, Sparkles, Coffee, Wind,
-            Quote, Loader2, ExternalLink, Pill
+            Quote, Loader2, ExternalLink, Pill, Flame, Trophy, Zap
         } from "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0";
 
         const generateUUID = () => { if (typeof crypto !== 'undefined' && crypto.randomUUID) { return crypto.randomUUID(); } return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) { var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); };
@@ -241,7 +245,7 @@
             );
         };
 
-        const DashboardView = ({ onNavigate, dashboardData = {}, onUpdateDashboard, meals = [], dumps = [], books = [] }) => {
+        const DashboardView = ({ onNavigate, dashboardData = {}, onUpdateDashboard, meals = [], dumps = [], books = [], todayTarget }) => {
             const dailyFocus = dashboardData?.focus || "";
             const positiveNote = dashboardData?.positiveNote || "";
             const dailyRules = dashboardData?.dailyRules || { p: false, j: false, l: false, r: false, t: false };
@@ -258,6 +262,8 @@
             const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
             const todaysBreakfast = meals.find(m => m.day === todayName && m.type === 'Breakfast')?.text || "No breakfast planned";
             const rulesDoneCount = rulesConfig.filter(r => dailyRules[r.id]).length;
+            const targetTasks = todayTarget?.tasks || [];
+            const targetDone = targetTasks.filter(t => t.completed).length;
 
             const iconBadge = (Icon, gradient) => React.createElement("div", { className: `w-9 h-9 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white shadow-sm shrink-0` }, React.createElement(Icon, { size: 16 }));
 
@@ -278,6 +284,19 @@
                     )
                 ),
                 React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" },
+                     React.createElement(Card, { className: "lg:col-span-2 border-indigo-200 dark:border-indigo-500/20 bg-gradient-to-br from-indigo-50/80 to-white dark:from-indigo-900/10 dark:to-zinc-900/60" },
+                        React.createElement("div", { className: "flex items-center justify-between mb-4" },
+                            React.createElement("div", { className: "flex items-center gap-3" }, iconBadge(Target, "from-indigo-500 to-violet-600"), React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest" }, "Daily target")),
+                            React.createElement("button", { onClick: () => onNavigate('dailyTarget'), className: "text-zinc-400 hover:text-indigo-500 dark:hover:text-indigo-400 p-2 rounded-lg hover:bg-indigo-100/50 dark:hover:bg-indigo-500/10 transition-colors" }, React.createElement(ArrowRight, { size: 16 }))
+                        ),
+                        React.createElement("p", { className: `text-lg font-medium leading-relaxed mb-3 ${todayTarget?.goal ? 'text-zinc-800 dark:text-zinc-200' : 'text-zinc-400 italic'}` }, todayTarget?.goal || "Set a goal for today."),
+                        targetTasks.length > 0
+                            ? React.createElement("div", null,
+                                React.createElement("div", { className: "flex justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-1.5" }, React.createElement("span", null, `${targetDone}/${targetTasks.length} tasks done`), React.createElement("span", null, `${Math.round((targetDone / targetTasks.length) * 100)}%`)),
+                                React.createElement("div", { className: "h-2 rounded-full bg-indigo-100 dark:bg-indigo-500/10 overflow-hidden" }, React.createElement("div", { className: "h-full bg-indigo-500 rounded-full transition-all duration-500", style: { width: `${(targetDone / targetTasks.length) * 100}%` } }))
+                            )
+                            : React.createElement("button", { onClick: () => onNavigate('dailyTarget'), className: "text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline" }, "Plan today's tasks →")
+                     ),
                      React.createElement(Card, { className: "lg:col-span-2" },
                         React.createElement("div", { className: "flex items-center justify-between mb-4" },
                             React.createElement("div", { className: "flex items-center gap-3" }, iconBadge(CheckCircle2, "from-indigo-500 to-blue-600"), React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest" }, "Daily non-negotiables")),
@@ -367,6 +386,190 @@
                         React.createElement("p", { className: "text-sm text-zinc-500 mb-4" }, "Powers the smart nutrition plan, supplement recommendations, and book planner. Get a free key at ", React.createElement("a", { href: "https://aistudio.google.com/apikey", target: "_blank", rel: "noopener noreferrer", className: "text-indigo-500 hover:underline" }, "aistudio.google.com/apikey"), "."),
                         React.createElement("input", { value: geminiKey, onChange: e => setGeminiKey(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), type: "password", placeholder: "Gemini API Key", className: "w-full mb-6 p-4 rounded-xl bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-base md:text-sm focus:outline-none focus:border-indigo-500" }),
                         React.createElement("div", { className: "flex justify-end gap-3 mt-2" }, React.createElement("button", { onClick: onClose, className: "px-6 py-3 md:py-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-white font-bold rounded-xl active:scale-95" }, "Cancel"), React.createElement("button", { onClick: handleSave, className: "px-8 py-3 md:py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 shadow-glow-sm active:scale-95" }, "Save"))
+                    )
+                )
+            );
+        };
+
+        const toDateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const shiftDateKey = (key, days) => { const [y, m, d] = key.split('-').map(Number); return toDateKey(new Date(y, m - 1, d + days)); };
+        const formatDateKey = (key, opts) => { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('en-US', opts); };
+        const EMPTY_DAY_TARGET = { goal: '', tasks: [] };
+
+        const TARGET_MESSAGES = [
+            { min: 0, text: "Every big day starts with one small win." },
+            { min: 1, text: "You've started. Momentum is on your side." },
+            { min: 34, text: "Look at you go. Keep stacking wins." },
+            { min: 67, text: "So close. Finish strong." },
+            { min: 100, text: "Target hit. You showed up for yourself today." }
+        ];
+        const CONFETTI_COLORS = ['#818cf8', '#c084fc', '#f472b6', '#34d399', '#fbbf24', '#38bdf8'];
+
+        const ProgressRing = ({ percent, size = 112, stroke = 10, complete }) => {
+            const r = (size - stroke) / 2;
+            const c = 2 * Math.PI * r;
+            return React.createElement("svg", { width: size, height: size, className: "-rotate-90 shrink-0" },
+                React.createElement("circle", { cx: size / 2, cy: size / 2, r, fill: "none", stroke: "rgba(255,255,255,0.18)", strokeWidth: stroke }),
+                React.createElement("circle", { cx: size / 2, cy: size / 2, r, fill: "none", stroke: complete ? "#6ee7b7" : "#ffffff", strokeWidth: stroke, strokeLinecap: "round", strokeDasharray: c, strokeDashoffset: c * (1 - percent / 100), style: { transition: "stroke-dashoffset 0.7s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s" } })
+            );
+        };
+
+        const DailyTargetView = ({ targets = {}, onUpdateDay }) => {
+            const [now, setNow] = useState(new Date());
+            const todayKey = toDateKey(now);
+            const [dateKey, setDateKey] = useState(todayKey);
+            const [newTask, setNewTask] = useState("");
+            const [editingId, setEditingId] = useState(null);
+            const [editValue, setEditValue] = useState("");
+            const [showDone, setShowDone] = useState(true);
+            const [celebrate, setCelebrate] = useState(false);
+            const [poppedId, setPoppedId] = useState(null);
+
+            useEffect(() => { const t = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(t); }, []);
+
+            const day = targets[dateKey] || EMPTY_DAY_TARGET;
+            const tasks = day.tasks || [];
+            const openTasks = tasks.filter(t => !t.completed);
+            const doneTasks = tasks.filter(t => t.completed);
+            const progress = tasks.length ? Math.round((doneTasks.length / tasks.length) * 100) : 0;
+            const allDone = tasks.length > 0 && openTasks.length === 0;
+            const isToday = dateKey === todayKey;
+            const update = (fn) => onUpdateDay(dateKey, fn);
+            const message = [...TARGET_MESSAGES].reverse().find(m => progress >= m.min).text;
+
+            // Streak: consecutive days (ending today, or yesterday if today isn't finished yet) where every task was completed
+            const isDayComplete = (k) => { const ts = targets[k]?.tasks || []; return ts.length > 0 && ts.every(t => t.completed); };
+            let streak = 0;
+            for (let k = isDayComplete(todayKey) ? todayKey : shiftDateKey(todayKey, -1); isDayComplete(k); k = shiftDateKey(k, -1)) streak++;
+
+            const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+            const minsLeft = Math.max(0, Math.floor((endOfDay - now) / 60000));
+            const hour = now.getHours();
+            const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+
+            // Most recent earlier day that still has unfinished tasks, offered as a carry-over
+            const carryKey = Object.keys(targets).filter(k => k < dateKey && (targets[k].tasks || []).some(t => !t.completed)).sort().pop();
+            const carryTasks = carryKey ? targets[carryKey].tasks.filter(t => !t.completed && !tasks.some(x => x.text === t.text)) : [];
+
+            // Celebrate only when the viewed day flips to complete, not when navigating onto an already-complete day
+            const prevStateRef = useRef({ dateKey, allDone });
+            useEffect(() => {
+                const prev = prevStateRef.current;
+                prevStateRef.current = { dateKey, allDone };
+                if (prev.dateKey !== dateKey) { setEditingId(null); return; }
+                if (allDone && !prev.allDone) { setCelebrate(true); const t = setTimeout(() => setCelebrate(false), 2600); return () => clearTimeout(t); }
+            }, [dateKey, allDone]);
+
+            const addTask = () => {
+                const text = newTask.trim();
+                if (!text) return;
+                update(d => ({ ...d, tasks: [...(d.tasks || []), { id: generateUUID(), text, completed: false }] }));
+                setNewTask("");
+            };
+            const toggleTask = (id) => {
+                setPoppedId(id); setTimeout(() => setPoppedId(p => p === id ? null : p), 400);
+                update(d => ({ ...d, tasks: d.tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t) }));
+            };
+            const deleteTask = (id) => update(d => ({ ...d, tasks: d.tasks.filter(t => t.id !== id) }));
+            const saveEdit = () => {
+                const text = editValue.trim();
+                if (text) update(d => ({ ...d, tasks: d.tasks.map(t => t.id === editingId ? { ...t, text } : t) }));
+                setEditingId(null);
+            };
+            const carryOver = () => update(d => ({ ...d, tasks: [...(d.tasks || []), ...carryTasks.map(t => ({ id: generateUUID(), text: t.text, completed: false }))] }));
+
+            const dayLabel = isToday ? "Today" : dateKey === shiftDateKey(todayKey, -1) ? "Yesterday" : dateKey === shiftDateKey(todayKey, 1) ? "Tomorrow" : formatDateKey(dateKey, { weekday: 'short' });
+            const upNext = openTasks[0];
+
+            const renderTask = (task, index) => React.createElement("div", { key: task.id, className: `group flex items-center gap-3 px-3 py-3 rounded-2xl border transition-all ${task.completed ? 'border-transparent bg-zinc-50/60 dark:bg-white/[0.02]' : 'border-zinc-100 dark:border-white/5 bg-white dark:bg-zinc-900/40 hover:border-indigo-200 dark:hover:border-indigo-500/30 hover:shadow-sm'}` },
+                React.createElement("button", { onClick: () => toggleTask(task.id), title: task.completed ? "Mark as not done" : "Mark as done", className: `shrink-0 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all active:scale-90 ${poppedId === task.id ? 'task-pop' : ''} ${task.completed ? 'bg-gradient-to-br from-emerald-400 to-teal-500 border-transparent text-white shadow-md shadow-emerald-500/30' : 'border-zinc-300 dark:border-zinc-600 text-transparent hover:border-indigo-500 hover:text-indigo-300'}` }, React.createElement(Check, { size: 15, strokeWidth: 3 })),
+                !task.completed && React.createElement("span", { className: "shrink-0 text-[11px] font-bold text-zinc-300 dark:text-zinc-600 w-4 text-center" }, index + 1),
+                editingId === task.id
+                    ? React.createElement("input", { autoFocus: true, value: editValue, onChange: e => setEditValue(e.target.value), onBlur: saveEdit, onKeyDown: e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null); }, className: "flex-1 min-w-0 bg-transparent border-b-2 border-indigo-500 text-base md:text-sm text-zinc-900 dark:text-white focus:outline-none py-0.5" })
+                    : React.createElement("span", { onClick: () => { setEditingId(task.id); setEditValue(task.text); }, className: `flex-1 min-w-0 break-words text-[15px] cursor-text transition-colors ${task.completed ? 'line-through text-zinc-400 dark:text-zinc-600' : 'text-zinc-800 dark:text-zinc-100 font-medium'}` }, task.text),
+                React.createElement("button", { onClick: () => deleteTask(task.id), className: "shrink-0 p-1.5 text-zinc-300 dark:text-zinc-600 hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 transition-all active:scale-90", title: "Delete task" }, React.createElement(Trash2, { size: 15 }))
+            );
+
+            return React.createElement("div", { className: "p-4 md:p-8 pb-32 max-w-3xl mx-auto space-y-5 relative" },
+                celebrate && React.createElement("div", { className: "pointer-events-none fixed inset-0 z-[60] overflow-hidden" },
+                    Array.from({ length: 36 }).map((_, i) => React.createElement("span", { key: i, className: "confetti-piece", style: { left: `${(i * 37) % 100}%`, background: CONFETTI_COLORS[i % CONFETTI_COLORS.length], animationDelay: `${(i % 9) * 0.07}s`, animationDuration: `${1.6 + (i % 5) * 0.2}s`, transform: `rotate(${i * 23}deg)` } }))
+                ),
+                // Header
+                React.createElement("div", { className: "flex items-end justify-between gap-3" },
+                    React.createElement("div", { className: "min-w-0" },
+                        React.createElement("p", { className: "text-sm text-zinc-500 dark:text-zinc-400 font-medium" }, isToday ? `${greeting} 👋` : formatDateKey(dateKey, { weekday: 'long' })),
+                        React.createElement("h2", { className: "text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 dark:text-white" }, "Daily Target"),
+                        React.createElement("p", { className: "text-xs font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400 mt-1" }, formatDateKey(dateKey, { day: 'numeric', month: 'long', year: 'numeric' }))
+                    ),
+                    React.createElement("div", { className: "flex items-center gap-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-1 shrink-0 shadow-sm" },
+                        React.createElement("button", { onClick: () => setDateKey(shiftDateKey(dateKey, -1)), className: "p-2 rounded-xl text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-90", title: "Previous day" }, React.createElement(ChevronLeft, { size: 18 })),
+                        React.createElement("button", { onClick: () => setDateKey(todayKey), disabled: isToday, className: `px-1 text-sm font-semibold min-w-[4.75rem] ${isToday ? 'text-zinc-900 dark:text-white' : 'text-indigo-600 dark:text-indigo-400 hover:underline'}`, title: isToday ? "" : "Back to today" }, dayLabel),
+                        React.createElement("button", { onClick: () => setDateKey(shiftDateKey(dateKey, 1)), className: "p-2 rounded-xl text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-90", title: "Next day" }, React.createElement(ChevronRight, { size: 18 }))
+                    )
+                ),
+                // Hero: goal + progress ring
+                React.createElement("div", { className: `relative overflow-hidden rounded-3xl p-6 md:p-8 shadow-xl transition-all duration-700 ${allDone ? 'bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-700 shadow-emerald-500/20' : 'bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-700 shadow-indigo-500/20 dark:shadow-indigo-900/30'}` },
+                    React.createElement("div", { className: "absolute -top-24 -right-16 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" }),
+                    React.createElement("div", { className: "absolute -bottom-20 -left-16 w-52 h-52 bg-fuchsia-400/20 rounded-full blur-3xl pointer-events-none" }),
+                    React.createElement("div", { className: "relative z-10 flex flex-col sm:flex-row sm:items-center gap-6" },
+                        React.createElement("div", { className: "flex-1 min-w-0" },
+                            React.createElement("div", { className: "flex items-center gap-2 mb-2 text-white/80 text-xs font-bold uppercase tracking-widest" }, React.createElement("div", { className: "w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center" }, React.createElement(Target, { size: 12 })), "Today I will..."),
+                            React.createElement("textarea", { value: day.goal || "", rows: 2, onChange: (e) => { const goal = e.target.value; update(d => ({ ...d, goal })); }, placeholder: "Name the one thing that makes today a win", className: "w-full bg-transparent resize-none text-2xl md:text-3xl font-bold leading-snug text-white placeholder:text-white/40 focus:outline-none" }),
+                            React.createElement("p", { className: "text-sm text-white/85 font-medium mt-2" }, message)
+                        ),
+                        React.createElement("div", { className: "relative self-center" },
+                            React.createElement(ProgressRing, { percent: progress, complete: allDone }),
+                            React.createElement("div", { className: "absolute inset-0 flex flex-col items-center justify-center text-white" },
+                                allDone ? React.createElement(Trophy, { size: 30, className: "text-white drop-shadow" }) : React.createElement("span", { className: "text-2xl font-bold leading-none" }, `${progress}%`),
+                                React.createElement("span", { className: "text-[11px] font-semibold text-white/75 mt-1" }, `${doneTasks.length}/${tasks.length} done`)
+                            )
+                        )
+                    ),
+                    React.createElement("div", { className: "relative z-10 flex flex-wrap gap-2 mt-5" },
+                        React.createElement("span", { className: "inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-white/15 backdrop-blur px-3 py-1.5 rounded-full" }, React.createElement(Flame, { size: 13, className: streak > 0 ? "text-amber-300" : "text-white/60" }), streak > 0 ? `${streak}-day streak` : "Start a streak today"),
+                        isToday && React.createElement("span", { className: "inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-white/15 backdrop-blur px-3 py-1.5 rounded-full" }, React.createElement(Hourglass, { size: 13 }), `${Math.floor(minsLeft / 60)}h ${minsLeft % 60}m left today`)
+                    )
+                ),
+                // Up next spotlight
+                upNext && React.createElement("div", { className: "flex items-center gap-4 p-4 md:p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-indigo-100 dark:border-indigo-500/20 shadow-sm" },
+                    React.createElement("div", { className: "w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-md shadow-orange-500/30 shrink-0" }, React.createElement(Zap, { size: 20 })),
+                    React.createElement("div", { className: "flex-1 min-w-0" },
+                        React.createElement("p", { className: "text-[10px] font-bold uppercase tracking-widest text-orange-500" }, "Up next"),
+                        React.createElement("p", { className: "text-base md:text-lg font-bold text-zinc-900 dark:text-white break-words leading-snug" }, upNext.text)
+                    ),
+                    React.createElement("button", { onClick: () => toggleTask(upNext.id), className: "shrink-0 px-4 py-2.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-bold active:scale-95 transition-all hover:opacity-90 flex items-center gap-1.5" }, React.createElement(Check, { size: 16, strokeWidth: 3 }), "Done")
+                ),
+                allDone && React.createElement("div", { className: "flex items-center gap-4 p-4 md:p-5 rounded-3xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20" },
+                    React.createElement("div", { className: "w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white shrink-0" }, React.createElement(Trophy, { size: 20 })),
+                    React.createElement("div", null,
+                        React.createElement("p", { className: "font-bold text-emerald-800 dark:text-emerald-300" }, "All tasks complete! 🎉"),
+                        React.createElement("p", { className: "text-sm text-emerald-700/80 dark:text-emerald-400/80" }, streak > 1 ? `That's ${streak} days in a row. Don't break the chain.` : "Come back tomorrow to build your streak.")
+                    )
+                ),
+                // Task list
+                React.createElement("div", { className: "rounded-3xl bg-white/80 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-200 dark:border-white/5 p-4 md:p-6 shadow-sm" },
+                    React.createElement("div", { className: "flex items-center justify-between mb-4 px-1" },
+                        React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest flex items-center gap-2" }, React.createElement(ListTodo, { size: 16, className: "text-indigo-500" }), "Today's tasks"),
+                        tasks.length > 0 && React.createElement("span", { className: "text-xs font-semibold text-zinc-400" }, openTasks.length ? `${openTasks.length} to go` : "All clear")
+                    ),
+                    React.createElement("div", { className: "flex gap-2 mb-4" },
+                        React.createElement("input", { value: newTask, onChange: e => setNewTask(e.target.value), onKeyDown: e => { if (e.key === 'Enter') addTask(); }, placeholder: tasks.length ? "Add another task..." : "What needs to get done today?", className: "flex-1 min-w-0 px-4 py-3 rounded-2xl bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-zinc-700 text-base md:text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all" }),
+                        React.createElement("button", { onClick: addTask, className: "px-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md shadow-indigo-500/30 active:scale-95 transition-all hover:opacity-90", title: "Add task" }, React.createElement(Plus, { size: 20 }))
+                    ),
+                    carryTasks.length > 0 && React.createElement("button", { onClick: carryOver, className: "w-full mb-4 flex items-center justify-center gap-2 p-3 rounded-2xl border border-dashed border-indigo-300 dark:border-indigo-500/40 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 active:scale-[0.99] transition-colors" },
+                        React.createElement(RotateCcw, { size: 14 }), `Bring over ${carryTasks.length} unfinished from ${formatDateKey(carryKey, { weekday: 'short', day: 'numeric', month: 'short' })}`
+                    ),
+                    tasks.length === 0 && React.createElement("div", { className: "text-center py-8" },
+                        React.createElement("div", { className: "text-4xl mb-2" }, "🎯"),
+                        React.createElement("p", { className: "font-semibold text-zinc-700 dark:text-zinc-300" }, "A clear plan beats a busy day."),
+                        React.createElement("p", { className: "text-sm text-zinc-400 mt-1" }, "Add 3–5 tasks that move you toward today's goal.")
+                    ),
+                    React.createElement("div", { className: "space-y-2" }, openTasks.map((t, i) => renderTask(t, i))),
+                    doneTasks.length > 0 && React.createElement("div", { className: "mt-5" },
+                        React.createElement("button", { onClick: () => setShowDone(!showDone), className: "flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 mb-2 px-1" },
+                            React.createElement(ChevronRight, { size: 14, className: `transition-transform ${showDone ? 'rotate-90' : ''}` }), `Completed · ${doneTasks.length}`
+                        ),
+                        showDone && React.createElement("div", { className: "space-y-1.5" }, doneTasks.map((t, i) => renderTask(t, i)))
                     )
                 )
             );
@@ -1096,7 +1299,7 @@
         };
 
         const ASSISTANT_ACTION_LABELS = {
-            ideaNote: 'Idea Board note',
+            dailyGoal: 'Daily goal', dailyTask: 'Daily task', ideaNote: 'Idea Board note',
             brainDump: 'Brain Dump', libraryBook: 'Library book', countdown: 'Countdown'
         };
 
@@ -1130,7 +1333,7 @@
                             React.createElement("h2", { className: "text-2xl font-bold text-zinc-900 dark:text-white flex items-center gap-2" }, React.createElement(Sparkles, { className: "text-indigo-500", size: 24 }), "AI Assistant"),
                             React.createElement("button", { onClick: onClose, className: "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 -m-2 active:scale-90" }, React.createElement(X, { size: 24 }))
                         ),
-                        React.createElement("p", { className: "text-sm text-zinc-500 mb-4" }, "Describe what you want added — it can fill in your Idea Board, Brain Dump, Library, Food Bank, and Countdowns, all from one prompt."),
+                        React.createElement("p", { className: "text-sm text-zinc-500 mb-4" }, "Describe what you want added — it can fill in your Daily Target, Idea Board, Brain Dump, Library, Food Bank, and Countdowns, all from one prompt."),
                         React.createElement("textarea", { value: text, onChange: e => setText(e.target.value), placeholder: "e.g. Add 'Atomic Habits' to my library, jot an idea about a morning routine app, and set a countdown for my exam on July 4th", className: "w-full min-h-[120px] p-4 rounded-xl bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-base md:text-sm focus:outline-none focus:border-indigo-500 resize-none mb-4" }),
                         error && React.createElement("p", { className: "text-red-500 text-sm mb-4" }, error),
                         result && React.createElement("div", { className: "mb-4 p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl" },
@@ -1361,6 +1564,7 @@
         const App = () => {
             const tabConfig = {
                 dashboard: { label: "Dashboard", icon: Layout },
+                dailyTarget: { label: "Daily Target", icon: Target },
                 ideaBoard: { label: "Idea Board", icon: Lightbulb },
                 braindump: { label: "Brain Dump", icon: Brain },
                 focus: { label: "Focus Timer", icon: Timer },
@@ -1664,6 +1868,8 @@
 
             const applyAssistantAction = (action) => {
                 switch (action.type) {
+                    case 'dailyGoal': handleUpdateDailyTarget(toDateKey(new Date()), d => ({ ...d, goal: action.text })); break;
+                    case 'dailyTask': handleUpdateDailyTarget(toDateKey(new Date()), d => ({ ...d, tasks: [...(d.tasks || []), { id: generateUUID(), text: action.text, completed: false }] })); break;
                     case 'ideaNote': handleAddIdeaNote({ text: action.text, x: 40 + Math.random() * 200, y: 40 + Math.random() * 200, width: 256, height: 256, color: IDEA_COLORS[ideaNotes.length % IDEA_COLORS.length] }); break;
                     case 'brainDump': handleAddDump(action.text); break;
                     case 'libraryBook': handleAddBook({ title: action.title, author: action.author || '', category: bookCategories.includes(action.category) ? action.category : (bookCategories[0] || 'General'), status: action.status || 'To Read' }); break;
@@ -1675,6 +1881,8 @@
             const runAssistantPrompt = async (promptText) => {
                 const today = new Date().toISOString().split('T')[0];
                 const prompt = `You are a quick-capture assistant for a personal productivity app. Today's date is ${today}. The user will describe things they want added to their app in plain language, possibly several things at once. Convert their request into a JSON list of actions. Only include an action for something the user actually asked for — never invent extra items they didn't mention. Valid action types and their exact shape:
+- Daily goal: {"type": "dailyGoal", "text": string} — sets their main goal for today.
+- Daily task: {"type": "dailyTask", "text": string} — a task to get done today.
 - Idea board note: {"type": "ideaNote", "text": string}
 - Brain dump: {"type": "brainDump", "text": string}
 - Library book: {"type": "libraryBook", "title": string, "author": string, "category": "General"|"Fiction"|"Non-Fiction"|"Self-Help"|"Technical", "status": "To Read"}
@@ -1718,7 +1926,16 @@ Respond with ONLY raw JSON, no markdown fences, no commentary, in this exact sha
             const handleUpdateBook = (item) => { setBooks(prev => prev.map(b => b.id === item.id ? item : b)); };
 
             const handleUpdateDashboard = (newData) => setDashboardData(newData);
-            const handleUpdateDailyPlan = (newData) => setDailyPlan(newData);
+            const handleUpdateDailyTarget = (dateKey, updater) => {
+                setDailyPlan(prev => {
+                    const targets = prev.targets || {};
+                    const next = { ...targets, [dateKey]: updater(targets[dateKey] || EMPTY_DAY_TARGET) };
+                    // Keep roughly the last two months of daily targets
+                    const cutoff = shiftDateKey(toDateKey(new Date()), -60);
+                    Object.keys(next).forEach(k => { if (k < cutoff) delete next[k]; });
+                    return { ...prev, targets: next };
+                });
+            };
 
             const handleDeleteBookCategory = (cat) => setBookCategories(bookCategories.filter(c => c !== cat));
             const handleRenameBookCategory = (oldN, newN) => setBookCategories(bookCategories.map(c => c === oldN ? newN : c));
@@ -1755,7 +1972,8 @@ Respond with ONLY raw JSON, no markdown fences, no commentary, in this exact sha
                 React.createElement(MobileTopBar, { handleLogout, user, darkMode, toggleDarkMode: () => setDarkMode(!darkMode), onProfileClick: () => setActiveTab('profile') }),
                 React.createElement(MobileNavBar, { activeTab, setActiveTab, tabConfig }),
                 React.createElement("main", { className: "md:ml-64 p-4 md:p-8 pb-28 md:pb-8 pt-20 md:pt-8 min-h-screen box-border overflow-x-hidden" },
-                    activeTab === 'dashboard' && React.createElement(DashboardView, { onNavigate: setActiveTab, dashboardData, onUpdateDashboard: handleUpdateDashboard, meals, dumps, books }),
+                    activeTab === 'dashboard' && React.createElement(DashboardView, { onNavigate: setActiveTab, dashboardData, onUpdateDashboard: handleUpdateDashboard, meals, dumps, books, todayTarget: dailyPlan.targets?.[toDateKey(new Date())] }),
+                    activeTab === 'dailyTarget' && React.createElement(DailyTargetView, { targets: dailyPlan.targets || {}, onUpdateDay: handleUpdateDailyTarget }),
                     activeTab === 'ideaBoard' && React.createElement(IdeaBoardView, { notes: ideaNotes, onAdd: handleAddIdeaNote, onUpdate: handleUpdateIdeaNote, onDelete: handleDeleteIdeaNote }),
                     activeTab === 'braindump' && React.createElement(BrainDumpView, { dumps, onAddDump: handleAddDump, onDeleteDump: handleDeleteDump, onUpdateDump: handleUpdateDump }),
                     activeTab === 'focus' && React.createElement(FocusView, { activeSound, isPlayingSound, toggleSound, timerState: focusState, toggleTimer: handleTimerToggle, resetTimer: handleTimerReset }),
