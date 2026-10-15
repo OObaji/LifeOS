@@ -380,6 +380,57 @@
             const [editingId, setEditingId] = useState(null);
             const offsetRef = useRef({ x: 0, y: 0 });
             const noteRefs = useRef({});
+            const [pan, setPan] = useState({ x: 0, y: 0 });
+            const [isPanning, setIsPanning] = useState(false);
+            const panStartRef = useRef(null);
+
+            // Keep the view within the area occupied by notes so you can't pan off into nothing
+            const clampPan = (next) => {
+                const board = boardRef.current;
+                if (!board) return next;
+                const maxRight = notes.reduce((m, n) => Math.max(m, n.x + (n.width || 256)), 0) + 80;
+                const maxBottom = notes.reduce((m, n) => Math.max(m, n.y + (n.height || 256)), 0) + 120;
+                const minX = Math.min(0, board.clientWidth - maxRight);
+                const minY = Math.min(0, board.clientHeight - maxBottom);
+                return { x: Math.min(0, Math.max(minX, next.x)), y: Math.min(0, Math.max(minY, next.y)) };
+            };
+
+            const handlePanStart = (e) => {
+                if (e.target.closest('.sticky-note') || e.target.closest('button')) return;
+                if (e.touches && e.touches.length > 1) return;
+                const pos = getPointerPos(e);
+                panStartRef.current = { x: pos.x, y: pos.y, pan };
+                setIsPanning(true);
+            };
+
+            useEffect(() => {
+                if (!isPanning) return;
+                const handleMove = (e) => {
+                    if (e.cancelable) e.preventDefault();
+                    const start = panStartRef.current;
+                    if (!start) return;
+                    const pos = getPointerPos(e);
+                    setPan(clampPan({ x: start.pan.x + pos.x - start.x, y: start.pan.y + pos.y - start.y }));
+                };
+                const handleUp = () => { setIsPanning(false); panStartRef.current = null; };
+                window.addEventListener('mousemove', handleMove, { passive: false });
+                window.addEventListener('touchmove', handleMove, { passive: false });
+                window.addEventListener('mouseup', handleUp);
+                window.addEventListener('touchend', handleUp);
+                window.addEventListener('touchcancel', handleUp);
+                return () => {
+                    window.removeEventListener('mousemove', handleMove);
+                    window.removeEventListener('touchmove', handleMove);
+                    window.removeEventListener('mouseup', handleUp);
+                    window.removeEventListener('touchend', handleUp);
+                    window.removeEventListener('touchcancel', handleUp);
+                };
+            }, [isPanning, notes]);
+
+            const handleWheel = (e) => {
+                if (e.target.closest('.sticky-note')) return;
+                setPan(prev => clampPan({ x: prev.x - e.deltaX, y: prev.y - e.deltaY }));
+            };
 
             const handleDragStart = (e, note) => {
                 setDraggingId(note.id);
@@ -432,15 +483,24 @@
                 const color = IDEA_COLORS[notes.length % IDEA_COLORS.length];
                 const boardW = boardRef.current ? boardRef.current.clientWidth : 800;
                 const boardH = boardRef.current ? boardRef.current.clientHeight : 600;
-                const x = Math.max(20, Math.random() * (boardW - 280));
-                const y = Math.max(20, Math.random() * (boardH - 280));
+                // Place the new note inside the currently visible part of the board
+                const x = -pan.x + Math.max(20, Math.random() * (boardW - 280));
+                const y = -pan.y + Math.max(20, Math.random() * (boardH - 280));
                 const id = generateUUID();
                 onAdd({ id, text: '', strikes: [], x, y, width: 256, height: 256, color });
                 setEditingId(id);
             };
 
-            return React.createElement("div", { className: "h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)] relative" },
-                React.createElement("div", { ref: boardRef, className: "idea-board-bg absolute inset-0 overflow-hidden" },
+            return React.createElement("div", { className: "h-[calc(100dvh-12rem)] md:h-[calc(100vh-4rem)] relative" },
+                React.createElement("div", {
+                    ref: boardRef,
+                    onMouseDown: handlePanStart,
+                    onTouchStart: handlePanStart,
+                    onWheel: handleWheel,
+                    className: `idea-board-bg absolute inset-0 overflow-hidden rounded-2xl select-none ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`,
+                    style: { backgroundPosition: `${pan.x}px ${pan.y}px` }
+                },
+                  React.createElement("div", { className: "absolute top-0 left-0", style: { transform: `translate(${pan.x}px, ${pan.y}px)` } },
                     notes.map(note => {
                         const isEditing = editingId === note.id;
                         const lines = (note.text || '').split('\n');
@@ -490,8 +550,12 @@
                                 )
                         );
                     })
+                  )
                 ),
-                React.createElement("button", { onClick: handleAddNote, className: "absolute bottom-8 right-8 px-6 py-4 bg-yellow-400 text-yellow-900 font-bold rounded-full shadow-2xl hover:bg-yellow-300 hover:scale-110 transition-all z-20 flex items-center gap-2" },
+                (pan.x !== 0 || pan.y !== 0) && React.createElement("button", { onClick: () => setPan({ x: 0, y: 0 }), className: "absolute top-3 left-3 px-3 py-2 bg-white/90 dark:bg-zinc-800/90 text-zinc-700 dark:text-zinc-200 text-sm font-semibold rounded-full shadow-lg border border-zinc-200 dark:border-zinc-700 z-20 flex items-center gap-2 active:scale-95 transition-all" },
+                    React.createElement(Target, { size: 16 }), "Reset view"
+                ),
+                React.createElement("button", { onClick: handleAddNote, className: "absolute bottom-8 right-4 md:right-8 px-6 py-4 bg-yellow-400 text-yellow-900 font-bold rounded-full shadow-2xl hover:bg-yellow-300 hover:scale-110 transition-all z-20 flex items-center gap-2" },
                     React.createElement(Plus, { size: 24 }), React.createElement("span", { className: "hidden md:inline" }, "Add Note")
                 )
             );
