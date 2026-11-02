@@ -388,7 +388,7 @@
         };
 
         // ---------- Debt Sprint (shift earnings tracker) ----------
-        const DEFAULT_SHIFT_TRACKER = { target: 2800, deadline: '2026-12-31', weeklyShiftLimit: 3, hourlyRate: null, shifts: [] };
+        const DEFAULT_SHIFT_TRACKER = { target: 2800, deadline: '2026-12-31', weeklyShiftLimit: 5, limitVersion: 2, hourlyRate: null, shifts: [] };
         const localDateKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         const parseDateKey = (k) => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
         const formatGBP = (n, dp = 0) => `£${Number(n || 0).toLocaleString('en-GB', { minimumFractionDigits: dp, maximumFractionDigits: dp })}`;
@@ -401,7 +401,12 @@
             "When the target is hit, the sprint ends. No 'just one more shift'.",
             "Time spent recovering is time you can invest in what's actually next."
         ];
-        const getShiftTracker = (dashboardData) => ({ ...DEFAULT_SHIFT_TRACKER, ...(dashboardData?.shiftTracker || {}) });
+        const getShiftTracker = (dashboardData) => {
+            const saved = dashboardData?.shiftTracker || {};
+            // Trackers saved before the weekly cap moved from 3 to 5 pick up the new default once; later edits in settings are kept
+            const migrated = saved.limitVersion >= 2 ? saved : { ...saved, weeklyShiftLimit: DEFAULT_SHIFT_TRACKER.weeklyShiftLimit, limitVersion: 2 };
+            return { ...DEFAULT_SHIFT_TRACKER, ...migrated };
+        };
 
         const DebtSprintView = ({ tracker, onUpdate }) => {
             const { target, deadline, weeklyShiftLimit, shifts } = tracker;
@@ -513,10 +518,13 @@
                             React.createElement("div", { className: "mt-4" },
                                 React.createElement("div", { className: "flex justify-between text-xs font-semibold mb-1.5" },
                                     React.createElement("span", { className: overLimit ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-500 dark:text-zinc-400' }, `Shifts this week: ${shiftsThisWeek} of ${weeklyShiftLimit} max`),
-                                    atLimit && React.createElement("span", { className: "text-amber-600 dark:text-amber-400" }, "Limit reached. Rest is booked.")
+                                    atLimit
+                                        ? React.createElement("span", { className: "text-amber-600 dark:text-amber-400" }, "Limit reached. Rest is booked.")
+                                        : !overLimit && React.createElement("span", { className: "text-zinc-400 font-medium" }, "A ceiling, not a target")
                                 ),
                                 React.createElement("div", { className: "flex gap-1.5" }, Array.from({ length: Math.max(weeklyShiftLimit, shiftsThisWeek) }).map((_, i) => React.createElement("div", { key: i, className: `h-2.5 flex-1 rounded-full ${i < shiftsThisWeek ? (i >= weeklyShiftLimit ? 'bg-rose-500' : 'bg-indigo-500') : 'bg-zinc-200 dark:bg-zinc-800'}` })))
                             ),
+                            !overLimit && !atLimit && React.createElement("p", { className: "text-xs text-zinc-500 dark:text-zinc-400 mt-3" }, `Up to ${weeklyShiftLimit} shifts a week to finish faster, only when you genuinely have the time and energy. Fewer is fine.`),
                             overLimit && React.createElement("p", { className: "text-sm text-rose-700 dark:text-rose-300 mt-3 font-medium" }, `You're ${shiftsThisWeek - weeklyShiftLimit} over your weekly limit. Don't let extra cash cost you sleep, your health or your performance at your main job. Skip the next one.`)
                         )
                     )
