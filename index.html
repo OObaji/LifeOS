@@ -65,7 +65,7 @@
             ListTodo, CheckSquare, Square, AlertCircle, Book, Hourglass, Check, Gift,
             Chrome, Calendar, CalendarRange, GripVertical, ArrowUp, ArrowDown, Scale,
             Lightbulb, Flag, Activity, Ban, Bookmark, Eye, EyeOff, User, LogOut, LinkIcon, Globe, Search, Star, Sparkles, Coffee, Wind,
-            Quote, Loader2, ExternalLink, Pill
+            Quote, Loader2, ExternalLink, Pill, PiggyBank, Wallet, HeartPulse, Briefcase, Trophy
         } from "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0";
 
         const generateUUID = () => { if (typeof crypto !== 'undefined' && crypto.randomUUID) { return crypto.randomUUID(); } return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) { var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); };
@@ -258,6 +258,9 @@
             const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
             const todaysBreakfast = meals.find(m => m.day === todayName && m.type === 'Breakfast')?.text || "No breakfast planned";
             const rulesDoneCount = rulesConfig.filter(r => dailyRules[r.id]).length;
+            const sprint = getShiftTracker(dashboardData);
+            const sprintRaised = sprint.shifts.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+            const sprintPct = sprint.target > 0 ? Math.min(100, (sprintRaised / sprint.target) * 100) : 0;
 
             const iconBadge = (Icon, gradient) => React.createElement("div", { className: `w-9 h-9 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white shadow-sm shrink-0` }, React.createElement(Icon, { size: 16 }));
 
@@ -278,6 +281,18 @@
                     )
                 ),
                 React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" },
+                     React.createElement(Card, { className: "lg:col-span-2 border-emerald-200 dark:border-emerald-500/20 bg-gradient-to-br from-emerald-50/80 to-white dark:from-emerald-900/10 dark:to-zinc-900/60" },
+                        React.createElement("div", { className: "flex items-center justify-between mb-4" },
+                            React.createElement("div", { className: "flex items-center gap-3" }, iconBadge(PiggyBank, "from-emerald-500 to-teal-600"), React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest" }, "Debt sprint")),
+                            React.createElement("button", { onClick: () => onNavigate('debtSprint'), className: "text-zinc-400 hover:text-emerald-500 dark:hover:text-emerald-400 p-2 rounded-lg hover:bg-emerald-100/50 dark:hover:bg-emerald-500/10 transition-colors" }, React.createElement(ArrowRight, { size: 16 }))
+                        ),
+                        React.createElement("div", { className: "flex items-baseline gap-2 mb-3" },
+                            React.createElement("span", { className: "text-3xl font-bold text-zinc-900 dark:text-white" }, formatGBP(sprintRaised)),
+                            React.createElement("span", { className: "text-sm font-semibold text-zinc-500" }, `of ${formatGBP(sprint.target)}`)
+                        ),
+                        React.createElement("div", { className: "h-2.5 rounded-full bg-emerald-100 dark:bg-emerald-500/10 overflow-hidden" }, React.createElement("div", { className: "h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-700", style: { width: `${sprintPct}%` } })),
+                        React.createElement("p", { className: "text-xs text-zinc-500 dark:text-zinc-400 mt-2" }, sprintRaised >= sprint.target ? "Target hit. Sprint over. Back to building your career." : `${Math.round(sprintPct)}% · ${formatGBP(sprint.target - sprintRaised)} to go. Temporary grind, not the destination.`)
+                     ),
                      React.createElement(Card, { className: "lg:col-span-2" },
                         React.createElement("div", { className: "flex items-center justify-between mb-4" },
                             React.createElement("div", { className: "flex items-center gap-3" }, iconBadge(CheckCircle2, "from-indigo-500 to-blue-600"), React.createElement("h3", { className: "text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest" }, "Daily non-negotiables")),
@@ -368,6 +383,167 @@
                         React.createElement("input", { value: geminiKey, onChange: e => setGeminiKey(e.target.value), onKeyDown: e => e.key === 'Enter' && handleSave(), type: "password", placeholder: "Gemini API Key", className: "w-full mb-6 p-4 rounded-xl bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-base md:text-sm focus:outline-none focus:border-indigo-500" }),
                         React.createElement("div", { className: "flex justify-end gap-3 mt-2" }, React.createElement("button", { onClick: onClose, className: "px-6 py-3 md:py-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-white font-bold rounded-xl active:scale-95" }, "Cancel"), React.createElement("button", { onClick: handleSave, className: "px-8 py-3 md:py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 shadow-glow-sm active:scale-95" }, "Save"))
                     )
+                )
+            );
+        };
+
+        // ---------- Debt Sprint (shift earnings tracker) ----------
+        const DEFAULT_SHIFT_TRACKER = { target: 2800, deadline: '2026-12-31', weeklyShiftLimit: 3, shifts: [] };
+        const localDateKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const parseDateKey = (k) => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+        const formatGBP = (n, dp = 0) => `£${Number(n || 0).toLocaleString('en-GB', { minimumFractionDigits: dp, maximumFractionDigits: dp })}`;
+        const startOfWeekKey = (d = new Date()) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return localDateKey(x); };
+        const SPRINT_REMINDERS = [
+            "The warehouse is a bridge, not the destination.",
+            "Every shift has a job: clear a debt. Not buy more stuff.",
+            "Your full-time job and your career pay off for decades. Protect them first.",
+            "Rest is part of the plan. A tired you does worse work everywhere.",
+            "When the target is hit, the sprint ends. No 'just one more shift'.",
+            "Time spent recovering is time you can invest in what's actually next."
+        ];
+        const getShiftTracker = (dashboardData) => ({ ...DEFAULT_SHIFT_TRACKER, ...(dashboardData?.shiftTracker || {}) });
+
+        const DebtSprintView = ({ tracker, onUpdate }) => {
+            const { target, deadline, weeklyShiftLimit, shifts } = tracker;
+            const [form, setForm] = useState({ date: localDateKey(), amount: '', hours: '', note: '' });
+            const [editingSettings, setEditingSettings] = useState(false);
+            const [justLogged, setJustLogged] = useState(null);
+            const [reminderIdx] = useState(() => Math.floor(Math.random() * SPRINT_REMINDERS.length));
+
+            const raised = shifts.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+            const remaining = Math.max(0, target - raised);
+            const pct = target > 0 ? Math.min(100, (raised / target) * 100) : 0;
+            const done = raised >= target && target > 0;
+            const today = parseDateKey(localDateKey());
+            const daysLeft = Math.max(0, Math.round((parseDateKey(deadline) - today) / 86400000));
+            const weeksLeft = Math.max(1, Math.ceil(daysLeft / 7));
+            const avgShift = shifts.length ? raised / shifts.length : 0;
+            const shiftsNeeded = avgShift > 0 ? Math.ceil(remaining / avgShift) : null;
+            const totalHours = shifts.reduce((s, x) => s + (Number(x.hours) || 0), 0);
+            const hourly = totalHours > 0 ? shifts.filter(x => Number(x.hours) > 0).reduce((s, x) => s + Number(x.amount), 0) / totalHours : null;
+            const weekStart = startOfWeekKey();
+            const shiftsThisWeek = shifts.filter(x => x.date >= weekStart).length;
+            const overLimit = shiftsThisWeek > weeklyShiftLimit;
+            const atLimit = shiftsThisWeek === weeklyShiftLimit;
+            const sorted = [...shifts].sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
+            const milestones = [25, 50, 75, 100];
+
+            const logShift = () => {
+                const amount = parseFloat(form.amount);
+                if (!amount || amount <= 0 || !form.date) return;
+                const shift = { id: generateUUID(), date: form.date, amount: Math.round(amount * 100) / 100, hours: parseFloat(form.hours) || null, note: form.note.trim(), createdAt: Date.now() };
+                onUpdate(t => ({ ...t, shifts: [...t.shifts, shift] }));
+                setJustLogged(shift.id); setTimeout(() => setJustLogged(null), 1500);
+                setForm({ date: localDateKey(), amount: '', hours: '', note: '' });
+            };
+            const deleteShift = (id) => onUpdate(t => ({ ...t, shifts: t.shifts.filter(x => x.id !== id) }));
+            const setting = (key, value) => onUpdate(t => ({ ...t, [key]: value }));
+
+            const statTile = (label, value, sub) => React.createElement("div", { className: "rounded-2xl bg-white/80 dark:bg-zinc-900/60 border border-zinc-200 dark:border-white/5 p-4" },
+                React.createElement("p", { className: "text-[11px] font-bold uppercase tracking-wider text-zinc-400" }, label),
+                React.createElement("p", { className: "text-2xl font-bold text-zinc-900 dark:text-white mt-1" }, value),
+                sub && React.createElement("p", { className: "text-xs text-zinc-500 dark:text-zinc-400 mt-0.5" }, sub));
+            const inputCls = "w-full px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-zinc-700 text-base md:text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all";
+
+            return React.createElement("div", { className: "p-4 md:p-8 pb-32 max-w-4xl mx-auto space-y-5" },
+                // Header
+                React.createElement("div", { className: "flex items-end justify-between gap-3" },
+                    React.createElement("div", null,
+                        React.createElement("p", { className: "text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-1" }, `Clear the small debts by ${parseDateKey(deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}`),
+                        React.createElement("h2", { className: "text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 dark:text-white" }, "Debt Sprint"),
+                        React.createElement("p", { className: "text-sm text-zinc-500 dark:text-zinc-400 mt-1" }, "Extra shifts with one purpose. Hit the number, then stop.")
+                    ),
+                    React.createElement("button", { onClick: () => setEditingSettings(!editingSettings), className: "shrink-0 p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-emerald-600 active:scale-95", title: "Edit target" }, React.createElement(editingSettings ? Check : Settings, { size: 18 }))
+                ),
+                editingSettings && React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800" },
+                    React.createElement("label", { className: "text-xs font-semibold text-zinc-500" }, "Target (£)", React.createElement("input", { type: "number", min: 0, value: target, onChange: e => setting('target', Math.max(0, Number(e.target.value) || 0)), className: inputCls + " mt-1" })),
+                    React.createElement("label", { className: "text-xs font-semibold text-zinc-500" }, "Deadline", React.createElement("input", { type: "date", value: deadline, onChange: e => e.target.value && setting('deadline', e.target.value), className: inputCls + " mt-1" })),
+                    React.createElement("label", { className: "text-xs font-semibold text-zinc-500" }, "Max shifts per week", React.createElement("input", { type: "number", min: 1, max: 7, value: weeklyShiftLimit, onChange: e => setting('weeklyShiftLimit', Math.min(7, Math.max(1, Number(e.target.value) || 1))), className: inputCls + " mt-1" }))
+                ),
+
+                // Hero progress
+                React.createElement("div", { className: `relative overflow-hidden rounded-3xl p-6 md:p-8 shadow-xl transition-all duration-700 ${done ? 'bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 shadow-orange-500/20' : 'bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-700 shadow-emerald-500/20'}` },
+                    React.createElement("div", { className: "absolute -top-24 -right-16 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" }),
+                    React.createElement("div", { className: "absolute -bottom-20 -left-16 w-52 h-52 bg-white/10 rounded-full blur-3xl pointer-events-none" }),
+                    React.createElement("div", { className: "relative z-10" },
+                        React.createElement("div", { className: "flex items-center gap-2 text-white/80 text-xs font-bold uppercase tracking-widest mb-3" }, React.createElement("div", { className: "w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center" }, React.createElement(done ? Trophy : PiggyBank, { size: 13 })), done ? "Sprint complete" : "Raised so far"),
+                        React.createElement("div", { className: "flex flex-wrap items-end gap-x-3 gap-y-1" },
+                            React.createElement("span", { className: "text-5xl md:text-6xl font-bold text-white tracking-tight" }, formatGBP(raised)),
+                            React.createElement("span", { className: "text-lg font-semibold text-white/70 pb-1.5" }, `of ${formatGBP(target)}`)
+                        ),
+                        React.createElement("div", { className: "mt-6" },
+                            React.createElement("div", { className: "relative h-4 rounded-full bg-white/20 overflow-hidden" },
+                                React.createElement("div", { className: "h-full rounded-full bg-white transition-all duration-1000 ease-out", style: { width: `${pct}%` } }),
+                                milestones.slice(0, 3).map(m => React.createElement("div", { key: m, className: "absolute top-0 bottom-0 w-0.5 bg-black/10", style: { left: `${m}%` } }))
+                            ),
+                            React.createElement("div", { className: "relative h-5 mt-1.5 text-[11px] font-bold" },
+                                milestones.map(m => React.createElement("span", { key: m, className: `absolute ${m === 100 ? '' : '-translate-x-1/2'} ${pct >= m ? 'text-white' : 'text-white/45'}`, style: m === 100 ? { right: 0 } : { left: `${m}%` } }, pct >= m ? `✓ ${formatGBP(target * m / 100)}` : formatGBP(target * m / 100)))
+                            )
+                        ),
+                        React.createElement("p", { className: "text-sm md:text-base font-medium text-white/90 mt-3" },
+                            done ? "Target hit. The sprint is over. Stop picking up extra shifts and put that time back into your career, rest and the people around you."
+                                : `${Math.round(pct)}% there. ${formatGBP(remaining)} to go, then NatWest is the only debt left for 2027.`)
+                    )
+                ),
+
+                // Stats
+                !done && React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-3" },
+                    statTile("Days left", daysLeft, `until ${parseDateKey(deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`),
+                    statTile("Needed / week", formatGBP(remaining / weeksLeft), `over ${weeksLeft} week${weeksLeft === 1 ? '' : 's'}`),
+                    statTile("Avg per shift", shifts.length ? formatGBP(avgShift) : '—', hourly ? `${formatGBP(hourly, 2)}/hr` : `${shifts.length} shift${shifts.length === 1 ? '' : 's'} logged`),
+                    statTile("Shifts to go", shiftsNeeded ?? '—', shiftsNeeded ? "at your average" : "log a shift to estimate")
+                ),
+
+                // Guardrails
+                React.createElement("div", { className: `rounded-3xl p-5 md:p-6 border ${overLimit ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30' : 'bg-white/80 dark:bg-zinc-900/60 border-zinc-200 dark:border-white/5'}` },
+                    React.createElement("div", { className: "flex items-start gap-4" },
+                        React.createElement("div", { className: `w-11 h-11 rounded-2xl flex items-center justify-center text-white shrink-0 ${overLimit ? 'bg-gradient-to-br from-rose-500 to-red-600' : 'bg-gradient-to-br from-indigo-500 to-violet-600'}` }, React.createElement(overLimit ? HeartPulse : Briefcase, { size: 20 })),
+                        React.createElement("div", { className: "flex-1 min-w-0" },
+                            React.createElement("p", { className: "text-[11px] font-bold uppercase tracking-widest text-zinc-400 mb-1" }, "This is temporary"),
+                            React.createElement("p", { className: "text-lg font-bold text-zinc-900 dark:text-white leading-snug" }, SPRINT_REMINDERS[reminderIdx]),
+                            React.createElement("div", { className: "mt-4" },
+                                React.createElement("div", { className: "flex justify-between text-xs font-semibold mb-1.5" },
+                                    React.createElement("span", { className: overLimit ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-500 dark:text-zinc-400' }, `Shifts this week: ${shiftsThisWeek} of ${weeklyShiftLimit} max`),
+                                    atLimit && React.createElement("span", { className: "text-amber-600 dark:text-amber-400" }, "Limit reached. Rest is booked.")
+                                ),
+                                React.createElement("div", { className: "flex gap-1.5" }, Array.from({ length: Math.max(weeklyShiftLimit, shiftsThisWeek) }).map((_, i) => React.createElement("div", { key: i, className: `h-2.5 flex-1 rounded-full ${i < shiftsThisWeek ? (i >= weeklyShiftLimit ? 'bg-rose-500' : 'bg-indigo-500') : 'bg-zinc-200 dark:bg-zinc-800'}` })))
+                            ),
+                            overLimit && React.createElement("p", { className: "text-sm text-rose-700 dark:text-rose-300 mt-3 font-medium" }, `You're ${shiftsThisWeek - weeklyShiftLimit} over your weekly limit. Don't let extra cash cost you sleep, your health or your performance at your main job. Skip the next one.`)
+                        )
+                    )
+                ),
+
+                // Log a shift
+                !done && React.createElement("div", { className: "rounded-3xl bg-white/80 dark:bg-zinc-900/60 border border-zinc-200 dark:border-white/5 p-5 md:p-6" },
+                    React.createElement("h3", { className: "text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2" }, React.createElement(Plus, { size: 14, className: "text-emerald-500" }), "Log a shift"),
+                    React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-[1fr_1fr_0.8fr_1.4fr_auto] gap-3 items-end" },
+                        React.createElement("label", { className: "text-xs font-semibold text-zinc-500" }, "Date", React.createElement("input", { type: "date", value: form.date, max: localDateKey(), onChange: e => setForm({ ...form, date: e.target.value }), className: inputCls + " mt-1" })),
+                        React.createElement("label", { className: "text-xs font-semibold text-zinc-500" }, "Earned (£)", React.createElement("input", { type: "number", inputMode: "decimal", min: 0, step: "0.01", value: form.amount, placeholder: "0.00", onChange: e => setForm({ ...form, amount: e.target.value }), onKeyDown: e => { if (e.key === 'Enter') logShift(); }, className: inputCls + " mt-1 font-semibold" })),
+                        React.createElement("label", { className: "text-xs font-semibold text-zinc-500" }, "Hours", React.createElement("input", { type: "number", inputMode: "decimal", min: 0, step: "0.5", value: form.hours, placeholder: "opt.", onChange: e => setForm({ ...form, hours: e.target.value }), onKeyDown: e => { if (e.key === 'Enter') logShift(); }, className: inputCls + " mt-1" })),
+                        React.createElement("label", { className: "text-xs font-semibold text-zinc-500" }, "Note", React.createElement("input", { value: form.note, placeholder: "e.g. night shift", onChange: e => setForm({ ...form, note: e.target.value }), onKeyDown: e => { if (e.key === 'Enter') logShift(); }, className: inputCls + " mt-1" })),
+                        React.createElement("button", { onClick: logShift, disabled: !(parseFloat(form.amount) > 0), className: "col-span-2 md:col-span-1 h-[46px] px-5 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-sm font-bold shadow-md shadow-emerald-500/30 active:scale-95 disabled:opacity-40 transition-all" }, "Log shift")
+                    )
+                ),
+
+                // Shift history
+                React.createElement("div", { className: "rounded-3xl bg-white/80 dark:bg-zinc-900/60 border border-zinc-200 dark:border-white/5 p-5 md:p-6" },
+                    React.createElement("div", { className: "flex items-center justify-between mb-4" },
+                        React.createElement("h3", { className: "text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2" }, React.createElement(Wallet, { size: 14, className: "text-emerald-500" }), `Shifts · ${shifts.length}`),
+                        totalHours > 0 && React.createElement("span", { className: "text-xs font-semibold text-zinc-400" }, `${totalHours} hrs worked`)
+                    ),
+                    shifts.length === 0
+                        ? React.createElement("p", { className: "text-sm text-zinc-400 italic py-4 text-center" }, "No shifts logged yet. Your first one starts the countdown.")
+                        : React.createElement("div", { className: "space-y-2" }, sorted.map(s => React.createElement("div", { key: s.id, className: `group flex items-center gap-3 px-3 py-3 rounded-2xl border transition-all ${justLogged === s.id ? 'border-emerald-300 bg-emerald-50 dark:bg-emerald-500/10' : 'border-zinc-100 dark:border-white/5 bg-white dark:bg-zinc-900/40'}` },
+                            React.createElement("div", { className: "w-12 shrink-0 text-center" },
+                                React.createElement("p", { className: "text-[10px] font-bold uppercase text-zinc-400" }, parseDateKey(s.date).toLocaleDateString('en-GB', { weekday: 'short' })),
+                                React.createElement("p", { className: "text-sm font-bold text-zinc-800 dark:text-zinc-100" }, parseDateKey(s.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))
+                            ),
+                            React.createElement("div", { className: "flex-1 min-w-0" },
+                                React.createElement("p", { className: "text-base font-bold text-emerald-600 dark:text-emerald-400" }, `+${formatGBP(s.amount, 2)}`),
+                                React.createElement("p", { className: "text-xs text-zinc-500 truncate" }, [s.hours ? `${s.hours} hrs · ${formatGBP(s.amount / s.hours, 2)}/hr` : null, s.note || null].filter(Boolean).join(' · ') || ' ')
+                            ),
+                            React.createElement("button", { onClick: () => deleteShift(s.id), className: "shrink-0 p-1.5 text-zinc-300 dark:text-zinc-600 hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 transition-all active:scale-90", title: "Delete shift" }, React.createElement(Trash2, { size: 15 }))
+                        )))
                 )
             );
         };
@@ -1361,6 +1537,7 @@
         const App = () => {
             const tabConfig = {
                 dashboard: { label: "Dashboard", icon: Layout },
+                debtSprint: { label: "Debt Sprint", icon: PiggyBank },
                 ideaBoard: { label: "Idea Board", icon: Lightbulb },
                 braindump: { label: "Brain Dump", icon: Brain },
                 focus: { label: "Focus Timer", icon: Timer },
@@ -1718,6 +1895,7 @@ Respond with ONLY raw JSON, no markdown fences, no commentary, in this exact sha
             const handleUpdateBook = (item) => { setBooks(prev => prev.map(b => b.id === item.id ? item : b)); };
 
             const handleUpdateDashboard = (newData) => setDashboardData(newData);
+            const handleUpdateShiftTracker = (updater) => setDashboardData(prev => ({ ...prev, shiftTracker: updater(getShiftTracker(prev)) }));
             const handleUpdateDailyPlan = (newData) => setDailyPlan(newData);
 
             const handleDeleteBookCategory = (cat) => setBookCategories(bookCategories.filter(c => c !== cat));
@@ -1755,6 +1933,7 @@ Respond with ONLY raw JSON, no markdown fences, no commentary, in this exact sha
                 React.createElement(MobileTopBar, { handleLogout, user, darkMode, toggleDarkMode: () => setDarkMode(!darkMode), onProfileClick: () => setActiveTab('profile') }),
                 React.createElement(MobileNavBar, { activeTab, setActiveTab, tabConfig }),
                 React.createElement("main", { className: "md:ml-64 p-4 md:p-8 pb-28 md:pb-8 pt-20 md:pt-8 min-h-screen box-border overflow-x-hidden" },
+                    activeTab === 'debtSprint' && React.createElement(DebtSprintView, { tracker: getShiftTracker(dashboardData), onUpdate: handleUpdateShiftTracker }),
                     activeTab === 'dashboard' && React.createElement(DashboardView, { onNavigate: setActiveTab, dashboardData, onUpdateDashboard: handleUpdateDashboard, meals, dumps, books }),
                     activeTab === 'ideaBoard' && React.createElement(IdeaBoardView, { notes: ideaNotes, onAdd: handleAddIdeaNote, onUpdate: handleUpdateIdeaNote, onDelete: handleDeleteIdeaNote }),
                     activeTab === 'braindump' && React.createElement(BrainDumpView, { dumps, onAddDump: handleAddDump, onDeleteDump: handleDeleteDump, onUpdateDump: handleUpdateDump }),
