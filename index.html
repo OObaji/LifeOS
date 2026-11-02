@@ -388,7 +388,7 @@
         };
 
         // ---------- Debt Sprint (shift earnings tracker) ----------
-        const DEFAULT_SHIFT_TRACKER = { target: 2800, deadline: '2026-12-31', weeklyShiftLimit: 3, shifts: [] };
+        const DEFAULT_SHIFT_TRACKER = { target: 2800, deadline: '2026-12-31', weeklyShiftLimit: 3, hourlyRate: null, shifts: [] };
         const localDateKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         const parseDateKey = (k) => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
         const formatGBP = (n, dp = 0) => `£${Number(n || 0).toLocaleString('en-GB', { minimumFractionDigits: dp, maximumFractionDigits: dp })}`;
@@ -405,7 +405,15 @@
 
         const DebtSprintView = ({ tracker, onUpdate }) => {
             const { target, deadline, weeklyShiftLimit, shifts } = tracker;
-            const [form, setForm] = useState({ date: localDateKey(), amount: '', hours: '', note: '' });
+            const emptyForm = () => ({ date: localDateKey(), hours: '', rate: tracker.hourlyRate ? String(tracker.hourlyRate) : '', amount: '', amountEdited: false, note: '' });
+            const [form, setForm] = useState(emptyForm);
+            // Earned = hours × rate, unless the amount has been typed over (e.g. bonus or overtime)
+            const calcAmount = (hours, rate) => { const h = parseFloat(hours), r = parseFloat(rate); return h > 0 && r > 0 ? (Math.round(h * r * 100) / 100).toFixed(2) : ''; };
+            const setHoursOrRate = (key, value) => setForm(f => { const next = { ...f, [key]: value }; return next.amountEdited ? next : { ...next, amount: calcAmount(next.hours, next.rate) }; });
+            const setAmount = (value) => setForm(f => value === '' ? { ...f, amountEdited: false, amount: calcAmount(f.hours, f.rate) } : { ...f, amount: value, amountEdited: true });
+            const resetAmount = () => setForm(f => ({ ...f, amountEdited: false, amount: calcAmount(f.hours, f.rate) }));
+            // Saved data can arrive after first render, so pick up the remembered rate when it does
+            useEffect(() => { if (tracker.hourlyRate) setForm(f => f.rate ? f : { ...f, rate: String(tracker.hourlyRate), amount: f.amountEdited ? f.amount : calcAmount(f.hours, tracker.hourlyRate) }); }, [tracker.hourlyRate]);
             const [editingSettings, setEditingSettings] = useState(false);
             const [justLogged, setJustLogged] = useState(null);
             const [reminderIdx] = useState(() => Math.floor(Math.random() * SPRINT_REMINDERS.length));
@@ -431,10 +439,11 @@
             const logShift = () => {
                 const amount = parseFloat(form.amount);
                 if (!amount || amount <= 0 || !form.date) return;
-                const shift = { id: generateUUID(), date: form.date, amount: Math.round(amount * 100) / 100, hours: parseFloat(form.hours) || null, note: form.note.trim(), createdAt: Date.now() };
-                onUpdate(t => ({ ...t, shifts: [...t.shifts, shift] }));
+                const rate = parseFloat(form.rate) || null;
+                const shift = { id: generateUUID(), date: form.date, amount: Math.round(amount * 100) / 100, hours: parseFloat(form.hours) || null, rate, note: form.note.trim(), createdAt: Date.now() };
+                onUpdate(t => ({ ...t, hourlyRate: rate || t.hourlyRate, shifts: [...t.shifts, shift] }));
                 setJustLogged(shift.id); setTimeout(() => setJustLogged(null), 1500);
-                setForm({ date: localDateKey(), amount: '', hours: '', note: '' });
+                setForm(f => ({ ...emptyForm(), rate: f.rate }));
             };
             const deleteShift = (id) => onUpdate(t => ({ ...t, shifts: t.shifts.filter(x => x.id !== id) }));
             const setting = (key, value) => onUpdate(t => ({ ...t, [key]: value }));
@@ -516,11 +525,17 @@
                 // Log a shift
                 !done && React.createElement("div", { className: "rounded-3xl bg-white/80 dark:bg-zinc-900/60 border border-zinc-200 dark:border-white/5 p-5 md:p-6" },
                     React.createElement("h3", { className: "text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2" }, React.createElement(Plus, { size: 14, className: "text-emerald-500" }), "Log a shift"),
-                    React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-[1fr_1fr_0.8fr_1.4fr_auto] gap-3 items-end" },
+                    React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-[1.1fr_0.7fr_0.8fr_1fr_1.2fr_auto] gap-3 items-end" },
                         React.createElement("label", { className: "text-xs font-semibold text-zinc-500" }, "Date", React.createElement("input", { type: "date", value: form.date, max: localDateKey(), onChange: e => setForm({ ...form, date: e.target.value }), className: inputCls + " mt-1" })),
-                        React.createElement("label", { className: "text-xs font-semibold text-zinc-500" }, "Earned (£)", React.createElement("input", { type: "number", inputMode: "decimal", min: 0, step: "0.01", value: form.amount, placeholder: "0.00", onChange: e => setForm({ ...form, amount: e.target.value }), onKeyDown: e => { if (e.key === 'Enter') logShift(); }, className: inputCls + " mt-1 font-semibold" })),
-                        React.createElement("label", { className: "text-xs font-semibold text-zinc-500" }, "Hours", React.createElement("input", { type: "number", inputMode: "decimal", min: 0, step: "0.5", value: form.hours, placeholder: "opt.", onChange: e => setForm({ ...form, hours: e.target.value }), onKeyDown: e => { if (e.key === 'Enter') logShift(); }, className: inputCls + " mt-1" })),
-                        React.createElement("label", { className: "text-xs font-semibold text-zinc-500" }, "Note", React.createElement("input", { value: form.note, placeholder: "e.g. night shift", onChange: e => setForm({ ...form, note: e.target.value }), onKeyDown: e => { if (e.key === 'Enter') logShift(); }, className: inputCls + " mt-1" })),
+                        React.createElement("label", { className: "text-xs font-semibold text-zinc-500" }, "Hours", React.createElement("input", { type: "number", inputMode: "decimal", min: 0, step: "0.25", value: form.hours, placeholder: "8", onChange: e => setHoursOrRate('hours', e.target.value), onKeyDown: e => { if (e.key === 'Enter') logShift(); }, className: inputCls + " mt-1" })),
+                        React.createElement("label", { className: "text-xs font-semibold text-zinc-500" }, "Rate (£/hr)", React.createElement("input", { type: "number", inputMode: "decimal", min: 0, step: "0.01", value: form.rate, placeholder: "12.50", onChange: e => setHoursOrRate('rate', e.target.value), onKeyDown: e => { if (e.key === 'Enter') logShift(); }, className: inputCls + " mt-1" })),
+                        React.createElement("div", { className: "text-xs font-semibold text-zinc-500" },
+                            React.createElement("span", { className: "flex items-center justify-between gap-1" }, "Earned (£)",
+                                form.amountEdited
+                                    ? (calcAmount(form.hours, form.rate) && React.createElement("button", { type: "button", onClick: resetAmount, className: "text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline" }, "↺ Auto"))
+                                    : (form.amount && React.createElement("span", { className: "text-[10px] font-bold text-emerald-600 dark:text-emerald-400" }, "Auto"))),
+                            React.createElement("input", { type: "number", inputMode: "decimal", min: 0, step: "0.01", value: form.amount, placeholder: "0.00", onChange: e => setAmount(e.target.value), onKeyDown: e => { if (e.key === 'Enter') logShift(); }, className: inputCls + ` mt-1 font-semibold ${form.amount && !form.amountEdited ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300' : ''}` })),
+                        React.createElement("label", { className: "col-span-2 md:col-span-1 text-xs font-semibold text-zinc-500" }, "Note", React.createElement("input", { value: form.note, placeholder: "e.g. night shift", onChange: e => setForm({ ...form, note: e.target.value }), onKeyDown: e => { if (e.key === 'Enter') logShift(); }, className: inputCls + " mt-1" })),
                         React.createElement("button", { onClick: logShift, disabled: !(parseFloat(form.amount) > 0), className: "col-span-2 md:col-span-1 h-[46px] px-5 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-sm font-bold shadow-md shadow-emerald-500/30 active:scale-95 disabled:opacity-40 transition-all" }, "Log shift")
                     )
                 ),
