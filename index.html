@@ -65,7 +65,7 @@
             ListTodo, CheckSquare, Square, AlertCircle, Book, Hourglass, Check, Gift,
             Chrome, Calendar, CalendarRange, GripVertical, ArrowUp, ArrowDown, Scale,
             Lightbulb, Flag, Activity, Ban, Bookmark, Eye, EyeOff, User, LogOut, LinkIcon, Globe, Search, Star, Sparkles, Coffee, Wind,
-            Quote, Loader2, ExternalLink, Pill, PiggyBank, Wallet, HeartPulse, Briefcase, Trophy
+            Quote, Loader2, ExternalLink, Pill, PiggyBank, Wallet, HeartPulse, Briefcase, Trophy, ScanLine
         } from "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0";
 
         const generateUUID = () => { if (typeof crypto !== 'undefined' && crypto.randomUUID) { return crypto.randomUUID(); } return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) { var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); };
@@ -567,6 +567,148 @@
                             ),
                             React.createElement("button", { onClick: () => deleteShift(s.id), className: "shrink-0 p-1.5 text-zinc-300 dark:text-zinc-600 hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 transition-all active:scale-90", title: "Delete shift" }, React.createElement(Trash2, { size: 15 }))
                         )))
+                )
+            );
+        };
+
+        // ---------- Alpha Codes (warehouse postcode -> alpha code lookup, temporary) ----------
+        // Transcribed from the depot sheet. Ranges are postcode district numbers; "?" = unreadable on the sheet photo.
+        const ALPHA_SHEET = [
+            ['AB', 'A99+84'], ['AL', 'R36'], ['B', 'L55'], ['BA', 'X6'], ['BB', 'C75'], ['BD', 'E66'], ['BFPO', 'Q20'], ['BH', 'X14'], ['BL', 'C76'], ['BN', 'Q19'], ['BR', 'Q22'], ['BS', 'X5'],
+            ['BT1-18', 'C84'], ['BT19-58', 'C83'], ['BT60-94', 'C82'], ['BX1,4,5', '?', 'E'], ['BX2', '?', 'A'], ['BX8,9', '?', 'L'],
+            ['CA', 'C78'], ['CB', 'L48'], ['CF', 'X3'], ['CH', 'C74'], ['CM', 'R34'], ['CO', 'R34'], ['CR', 'Q22'], ['CT', 'R37'], ['CV', 'L57'], ['CW', 'C79'],
+            ['DA', 'R40'], ['DD', 'A95'], ['DE', 'E60'], ['DG', 'C78'], ['DH', 'E70'], ['DL', 'E70'], ['DN', 'E62'], ['DT', 'X14'], ['DY', 'L53'],
+            ['E', 'R32'], ['EC', 'Q27'], ['EH1-17,29-30,91,99', 'A98'], ['EH18-28,31-55', 'A97'], ['EN', 'R36'], ['EX', 'X12'], ['FK', 'A96'], ['FY', 'C75'],
+            ['G1-59,90', 'A91'], ['G60-84', 'A90'], ['GL', 'X7'], ['GU', 'Q24'], ['GY', 'Q29'],
+            ['HA', 'Q20'], ['HD', 'E67'], ['HG', 'E67'], ['HP', 'R36'], ['HR', 'L54'], ['HS', 'A86'], ['HU', 'E63'], ['HX', 'E67'],
+            ['IG', 'R32'], ['IM', 'L45'], ['IP', 'R41'], ['IV', 'A93'], ['JE', 'Q28'],
+            ['KA1-26,28-30', 'A89'], ['KA27', 'A86'], ['KT', 'Q25'], ['KW1-14', 'A92'], ['KW15-17', 'A86'], ['KY', 'A96'],
+            ['L', 'C80'], ['LA', 'C75'], ['LD', 'X4'], ['LE', 'L58'], ['LL', 'C74'], ['LN', 'E65'], ['LS', 'E68'], ['LU', 'R36'],
+            ['M', 'C77'], ['ME', 'R38'], ['MK', 'L57'], ['ML', 'A88'],
+            ['N', '?', 'Q'], ['NE', 'E71'], ['NG', 'E60'], ['NN', 'L56'], ['NP', 'X4'], ['NR', 'L46'], ['NW', 'Q30'], ['OL', 'C76'], ['OX', 'X8'],
+            ['PA1-19,33-40', 'A87'], ['PA20-32,41-80', 'A86'], ['PE', 'L47'], ['PH1-18', 'A95'], ['PH19-50', 'A92'], ['PL', 'X11'], ['PO', 'X16'], ['PR', 'C75'],
+            ['RG', 'X9'], ['RH', 'Q19'], ['RM', 'R32'],
+            ['S', 'E64'], ['SA', 'X2'], ['SE', 'Q33'], ['SG', 'R36'], ['SK', 'C76'], ['SL', 'Q20'], ['SM', 'Q22'], ['SN', 'X8'], ['SO', 'X15'], ['SP', 'X15'], ['SR', 'E71'], ['SS', 'R35'], ['ST', 'L52'], ['SW', 'Q26'], ['SY', 'C73'],
+            ['TA', 'X6'], ['TD', 'A94'], ['TF', 'L53'], ['TN', 'R39'], ['TQ', 'X12'], ['TR', 'X10'], ['TS', 'E69'], ['TW', 'Q25'], ['UB', 'Q20'],
+            ['W1', 'Q27'], ['W2-14', 'Q21'], ['WA', 'C79'], ['WC', 'Q27'], ['WD', 'R36'], ['WF', 'E66'], ['WN', '?', 'C'], ['WR', '?', 'L'], ['WS', '?', 'L'], ['WV', 'L53'],
+            ['YO', 'E68'], ['ZE', 'A86']
+        ].map(([label, code, colourHint]) => {
+            const m = label.match(/^([A-Z]+)(.*)$/);
+            const ranges = m[2] ? m[2].split(',').map(part => { const [a, b] = part.split('-').map(Number); return [a, b ?? a]; }) : null;
+            return { label, area: m[1], ranges, code, colourHint };
+        });
+        // The sheet colour-codes by the code's first letter
+        const ALPHA_COLOURS = {
+            A: 'bg-zinc-400 text-zinc-900', C: 'bg-red-700 text-white', E: 'bg-green-600 text-white', L: 'bg-blue-600 text-white',
+            Q: 'bg-yellow-300 text-zinc-900', X: 'bg-orange-400 text-zinc-900', R: 'bg-white text-zinc-900 border border-zinc-300'
+        };
+        const alphaColour = (code, hint) => ALPHA_COLOURS[(code && code !== '?' ? code[0] : hint) || ''] || 'bg-zinc-200 text-zinc-500';
+        const parsePostcode = (raw) => {
+            const s = (raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const m = s.match(/^([A-Z]+)(\d+)?/);
+            return m ? { clean: s, area: m[1], district: m[2] != null ? Number(m[2]) : null } : null;
+        };
+        // Full postcodes end in digit+2 letters (inward code); peel it off so "B11AA" reads as district 1, not 11
+        const districtOf = (clean, area) => {
+            let rest = clean.slice(area.length);
+            if (rest.length >= 5 || /^\d[A-Z\d]?\d[A-Z]{2}$/.test(rest)) rest = rest.replace(/\d[A-Z]{2}$/, '');
+            const d = rest.match(/^\d+/);
+            return d ? Number(d[0]) : null;
+        };
+        const lookupAlpha = (raw, overrides) => {
+            const p = parsePostcode(raw);
+            if (!p) return { status: 'empty' };
+            // If a space was typed, everything before it is the outward code (so "BT1 9" stays district 1)
+            const parts = (raw || '').trim().toUpperCase().split(/\s+/);
+            const outward = parts.length > 1 ? parts[0].replace(/[^A-Z0-9]/g, '') : null;
+            const district = outward && outward.startsWith(p.area) ? (outward.slice(p.area.length).match(/^\d+/) ? Number(outward.slice(p.area.length).match(/^\d+/)[0]) : null) : districtOf(p.clean, p.area);
+            const entries = ALPHA_SHEET.filter(e => e.area === p.area).map(e => ({ ...e, code: overrides[e.label] || e.code }));
+            if (!entries.length) {
+                const partial = ALPHA_SHEET.filter(e => e.area.startsWith(p.area));
+                return partial.length && district == null ? { status: 'partial', options: partial.map(e => ({ ...e, code: overrides[e.label] || e.code })) } : { status: 'none', area: p.area };
+            }
+            if (district == null) return entries.length === 1 && !entries[0].ranges ? { status: 'match', entry: entries[0], area: p.area } : { status: 'needDistrict', options: entries, area: p.area };
+            const hit = entries.find(e => !e.ranges || e.ranges.some(([a, b]) => district >= a && district <= b));
+            return hit ? { status: 'match', entry: hit, area: p.area, district } : { status: 'none', area: p.area, district, options: entries };
+        };
+
+        const AlphaCodeView = ({ overrides = {}, onSetOverride }) => {
+            const [query, setQuery] = useState("");
+            const [recent, setRecent] = useState([]);
+            const [editing, setEditing] = useState(null);
+            const [editValue, setEditValue] = useState("");
+            const [showSheet, setShowSheet] = useState(false);
+            const inputRef = useRef(null);
+            const result = lookupAlpha(query, overrides);
+            const unclear = ALPHA_SHEET.filter(e => !overrides[e.label] && e.code === '?');
+
+            const remember = () => {
+                if (result.status !== 'match') return;
+                const item = { q: query.toUpperCase().trim(), code: result.entry.code, hint: result.entry.colourHint };
+                setRecent(prev => [item, ...prev.filter(r => r.q !== item.q)].slice(0, 8));
+                setQuery(""); inputRef.current?.focus();
+            };
+            const saveEdit = () => { const v = editValue.trim().toUpperCase(); onSetOverride(editing, v || null); setEditing(null); };
+            const codeBadge = (code, hint, size = "text-sm px-2.5 py-1") => React.createElement("span", { className: `inline-flex items-center justify-center rounded-lg font-bold font-mono ${size} ${alphaColour(code, hint)}` }, code === '?' ? '??' : code);
+            const optionRow = (e) => React.createElement("div", { key: e.label, className: "flex items-center justify-between gap-3 py-2" },
+                React.createElement("span", { className: "font-bold text-zinc-800 dark:text-zinc-100" }, e.label),
+                codeBadge(e.code, e.colourHint));
+
+            return React.createElement("div", { className: "p-4 md:p-8 pb-32 max-w-xl mx-auto space-y-4" },
+                React.createElement("div", null,
+                    React.createElement("p", { className: "text-xs font-bold uppercase tracking-widest text-orange-500 mb-1" }, "Warehouse · temporary"),
+                    React.createElement("h2", { className: "text-3xl font-bold tracking-tight text-zinc-900 dark:text-white" }, "Alpha Codes"),
+                    React.createElement("p", { className: "text-sm text-zinc-500 dark:text-zinc-400 mt-1" }, "Type the postcode on the label to get its alpha code.")
+                ),
+                React.createElement("div", { className: "relative" },
+                    React.createElement("input", { ref: inputRef, autoFocus: true, value: query, onChange: e => setQuery(e.target.value.toUpperCase()), onKeyDown: e => { if (e.key === 'Enter') remember(); if (e.key === 'Escape') setQuery(""); }, placeholder: "e.g. LS6 2AB", autoCapitalize: "characters", autoCorrect: "off", autoComplete: "off", spellCheck: false, enterKeyHint: "done", className: "w-full px-5 py-5 pr-14 rounded-2xl bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-700 text-3xl font-bold tracking-wider font-mono text-zinc-900 dark:text-white placeholder:text-zinc-300 dark:placeholder:text-zinc-700 placeholder:font-sans placeholder:tracking-normal focus:outline-none focus:border-orange-400 shadow-sm" }),
+                    query && React.createElement("button", { onClick: () => { setQuery(""); inputRef.current?.focus(); }, className: "absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 active:scale-90", title: "Clear" }, React.createElement(X, { size: 22 }))
+                ),
+                // Result
+                result.status === 'match' && React.createElement("div", { className: "rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 text-center shadow-sm" },
+                    React.createElement("p", { className: "text-xs font-bold uppercase tracking-widest text-zinc-400 mb-3" }, `${result.entry.label} →`),
+                    result.entry.code === '?'
+                        ? React.createElement("div", null,
+                            React.createElement("div", { className: `inline-flex w-40 h-28 rounded-2xl items-center justify-center text-5xl font-bold ${alphaColour('?', result.entry.colourHint)}` }, "??"),
+                            React.createElement("p", { className: "text-sm text-amber-600 dark:text-amber-400 font-medium mt-3" }, "Not readable on the sheet photo. Check the sheet, then set it below."))
+                        : React.createElement("div", { className: `inline-flex min-w-[11rem] px-6 h-32 rounded-3xl items-center justify-center text-7xl font-black font-mono tracking-tight shadow-lg ${alphaColour(result.entry.code)}` }, result.entry.code),
+                    React.createElement("p", { className: "text-xs text-zinc-400 mt-4" }, "Press Enter (or Done) for the next label")
+                ),
+                result.status === 'needDistrict' && React.createElement("div", { className: "rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5" },
+                    React.createElement("p", { className: "text-sm font-semibold text-zinc-600 dark:text-zinc-300 mb-2" }, `${result.area} is split by district. Keep typing the number:`),
+                    React.createElement("div", { className: "divide-y divide-zinc-100 dark:divide-zinc-800" }, result.options.map(optionRow))),
+                result.status === 'partial' && React.createElement("div", { className: "rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5" },
+                    React.createElement("p", { className: "text-xs font-bold uppercase tracking-widest text-zinc-400 mb-1" }, "Areas starting with " + parsePostcode(query).area),
+                    React.createElement("div", { className: "divide-y divide-zinc-100 dark:divide-zinc-800 max-h-72 overflow-y-auto custom-scrollbar" }, result.options.map(optionRow))),
+                result.status === 'none' && React.createElement("div", { className: "rounded-3xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 p-5 text-center" },
+                    React.createElement("p", { className: "font-bold text-red-700 dark:text-red-300" }, result.district != null && result.options ? `${result.area}${result.district} isn't on the sheet` : `${result.area} isn't on the sheet`),
+                    React.createElement("p", { className: "text-sm text-red-600/80 dark:text-red-300/80 mt-1" }, "Double-check the label or ask a team lead."),
+                    result.options && React.createElement("div", { className: "divide-y divide-red-100 dark:divide-red-500/10 mt-3 text-left" }, result.options.map(optionRow))),
+                // Recent
+                recent.length > 0 && React.createElement("div", null,
+                    React.createElement("p", { className: "text-[11px] font-bold uppercase tracking-widest text-zinc-400 mb-2" }, "Recent"),
+                    React.createElement("div", { className: "flex flex-wrap gap-2" }, recent.map(r => React.createElement("button", { key: r.q, onClick: () => { setQuery(r.q); inputRef.current?.focus(); }, className: "flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm font-mono font-semibold text-zinc-700 dark:text-zinc-200" }, r.q, codeBadge(r.code, r.hint, "text-xs px-2 py-0.5"))))
+                ),
+                // Unclear entries to fill in
+                unclear.length > 0 && React.createElement("div", { className: "rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 p-4" },
+                    React.createElement("p", { className: "text-sm font-semibold text-amber-800 dark:text-amber-300" }, `${unclear.length} codes weren't readable on the photo: ${unclear.map(e => e.label).join(', ')}.`),
+                    React.createElement("p", { className: "text-xs text-amber-700/80 dark:text-amber-300/70 mt-0.5" }, "Open the full sheet below and tap one to set its code.")
+                ),
+                // Full sheet
+                React.createElement("div", { className: "rounded-3xl bg-white/80 dark:bg-zinc-900/60 border border-zinc-200 dark:border-white/5" },
+                    React.createElement("button", { onClick: () => setShowSheet(!showSheet), className: "w-full flex items-center justify-between p-4 text-sm font-bold text-zinc-700 dark:text-zinc-200" },
+                        `Full sheet · ${ALPHA_SHEET.length} entries`, React.createElement(ChevronRight, { size: 18, className: `transition-transform ${showSheet ? 'rotate-90' : ''}` })),
+                    showSheet && React.createElement("div", { className: "px-4 pb-4 grid grid-cols-2 sm:grid-cols-3 gap-2" }, ALPHA_SHEET.map(e => {
+                        const code = overrides[e.label] || e.code;
+                        return editing === e.label
+                            ? React.createElement("div", { key: e.label, className: "col-span-2 sm:col-span-3 flex items-center gap-2 p-2 rounded-xl border-2 border-orange-400" },
+                                React.createElement("span", { className: "font-bold text-sm text-zinc-800 dark:text-zinc-100 shrink-0" }, e.label),
+                                React.createElement("input", { autoFocus: true, value: editValue, onChange: ev => setEditValue(ev.target.value.toUpperCase()), onKeyDown: ev => { if (ev.key === 'Enter') saveEdit(); if (ev.key === 'Escape') setEditing(null); }, placeholder: "Code, e.g. C79", className: "flex-1 min-w-0 px-2 py-1.5 rounded-lg bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-zinc-700 text-base font-mono font-bold text-zinc-900 dark:text-white focus:outline-none" }),
+                                React.createElement("button", { onClick: saveEdit, className: "px-3 py-1.5 rounded-lg bg-orange-500 text-white text-sm font-bold" }, "Save"))
+                            : React.createElement("button", { key: e.label, onClick: () => { setEditing(e.label); setEditValue(code === '?' ? '' : code); }, title: "Tap to correct this code", className: `flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-left ${code === '?' ? 'border-amber-300 bg-amber-50 dark:bg-amber-500/10' : 'border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900'}` },
+                                React.createElement("span", { className: "text-xs font-bold text-zinc-700 dark:text-zinc-200 break-all" }, e.label, overrides[e.label] ? ' ✎' : ''),
+                                codeBadge(code, e.colourHint, "text-xs px-2 py-0.5 shrink-0"));
+                    }))
                 )
             );
         };
@@ -1561,6 +1703,7 @@
             const tabConfig = {
                 dashboard: { label: "Dashboard", icon: Layout },
                 debtSprint: { label: "Debt Sprint", icon: PiggyBank },
+                alphaCodes: { label: "Alpha Codes", icon: ScanLine },
                 ideaBoard: { label: "Idea Board", icon: Lightbulb },
                 braindump: { label: "Brain Dump", icon: Brain },
                 focus: { label: "Focus Timer", icon: Timer },
@@ -1918,6 +2061,7 @@ Respond with ONLY raw JSON, no markdown fences, no commentary, in this exact sha
             const handleUpdateBook = (item) => { setBooks(prev => prev.map(b => b.id === item.id ? item : b)); };
 
             const handleUpdateDashboard = (newData) => setDashboardData(newData);
+            const handleSetAlphaOverride = (label, code) => setDashboardData(prev => { const next = { ...(prev.alphaOverrides || {}) }; if (code) next[label] = code; else delete next[label]; return { ...prev, alphaOverrides: next }; });
             const handleUpdateShiftTracker = (updater) => setDashboardData(prev => ({ ...prev, shiftTracker: updater(getShiftTracker(prev)) }));
             const handleUpdateDailyPlan = (newData) => setDailyPlan(newData);
 
@@ -1956,6 +2100,7 @@ Respond with ONLY raw JSON, no markdown fences, no commentary, in this exact sha
                 React.createElement(MobileTopBar, { handleLogout, user, darkMode, toggleDarkMode: () => setDarkMode(!darkMode), onProfileClick: () => setActiveTab('profile') }),
                 React.createElement(MobileNavBar, { activeTab, setActiveTab, tabConfig }),
                 React.createElement("main", { className: "md:ml-64 p-4 md:p-8 pb-28 md:pb-8 pt-20 md:pt-8 min-h-screen box-border overflow-x-hidden" },
+                    activeTab === 'alphaCodes' && React.createElement(AlphaCodeView, { overrides: dashboardData.alphaOverrides || {}, onSetOverride: handleSetAlphaOverride }),
                     activeTab === 'debtSprint' && React.createElement(DebtSprintView, { tracker: getShiftTracker(dashboardData), onUpdate: handleUpdateShiftTracker }),
                     activeTab === 'dashboard' && React.createElement(DashboardView, { onNavigate: setActiveTab, dashboardData, onUpdateDashboard: handleUpdateDashboard, meals, dumps, books }),
                     activeTab === 'ideaBoard' && React.createElement(IdeaBoardView, { notes: ideaNotes, onAdd: handleAddIdeaNote, onUpdate: handleUpdateIdeaNote, onDelete: handleDeleteIdeaNote }),
