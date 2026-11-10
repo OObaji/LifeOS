@@ -654,26 +654,25 @@
                 React.createElement("span", { className: "font-bold text-zinc-800 dark:text-zinc-100" }, e.label),
                 codeBadge(e.code, e.colourHint));
 
-            return React.createElement("div", { className: "p-4 md:p-8 pb-32 max-w-xl mx-auto space-y-4" },
-                React.createElement("div", null,
-                    React.createElement("p", { className: "text-xs font-bold uppercase tracking-widest text-orange-500 mb-1" }, "Warehouse · temporary"),
-                    React.createElement("h2", { className: "text-3xl font-bold tracking-tight text-zinc-900 dark:text-white" }, "Alpha Codes"),
-                    React.createElement("p", { className: "text-sm text-zinc-500 dark:text-zinc-400 mt-1" }, "Type the postcode on the label to get its alpha code.")
+            // Compact layout: input and result sit at the top so both stay visible above the phone keyboard
+            return React.createElement("div", { className: "px-1 pt-0 pb-32 md:p-8 max-w-2xl mx-auto space-y-3" },
+                React.createElement("div", { className: "flex items-baseline justify-between gap-3 px-1" },
+                    React.createElement("h2", { className: "text-lg font-bold text-zinc-900 dark:text-white" }, "Alpha Codes ", React.createElement("span", { className: "text-xs font-bold uppercase tracking-widest text-orange-500" }, "· warehouse")),
+                    React.createElement("span", { className: "text-xs text-zinc-400" }, "Enter = next label")
                 ),
                 React.createElement("div", { className: "relative" },
-                    React.createElement("input", { ref: inputRef, autoFocus: true, value: query, onChange: e => setQuery(e.target.value.toUpperCase()), onKeyDown: e => { if (e.key === 'Enter') remember(); if (e.key === 'Escape') setQuery(""); }, placeholder: "e.g. LS6 2AB", autoCapitalize: "characters", autoCorrect: "off", autoComplete: "off", spellCheck: false, enterKeyHint: "done", className: "w-full px-5 py-5 pr-14 rounded-2xl bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-700 text-3xl font-bold tracking-wider font-mono text-zinc-900 dark:text-white placeholder:text-zinc-300 dark:placeholder:text-zinc-700 placeholder:font-sans placeholder:tracking-normal focus:outline-none focus:border-orange-400 shadow-sm" }),
-                    query && React.createElement("button", { onClick: () => { setQuery(""); inputRef.current?.focus(); }, className: "absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 active:scale-90", title: "Clear" }, React.createElement(X, { size: 22 }))
+                    React.createElement("input", { ref: inputRef, autoFocus: true, value: query, onChange: e => setQuery(e.target.value.toUpperCase()), onFocus: e => e.target.select(), onKeyDown: e => { if (e.key === 'Enter') remember(); if (e.key === 'Escape') setQuery(""); }, placeholder: "Postcode", autoCapitalize: "characters", autoCorrect: "off", autoComplete: "off", spellCheck: false, enterKeyHint: "done", className: "w-full h-24 md:h-28 pl-5 pr-16 rounded-3xl bg-white dark:bg-zinc-900 border-4 border-zinc-200 dark:border-zinc-700 text-5xl md:text-6xl font-black tracking-wider font-mono text-zinc-900 dark:text-white placeholder:text-zinc-300 dark:placeholder:text-zinc-700 placeholder:font-sans placeholder:font-bold placeholder:tracking-normal focus:outline-none focus:border-orange-400 shadow-md" }),
+                    query && React.createElement("button", { onClick: () => { setQuery(""); inputRef.current?.focus(); }, className: "absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 active:scale-90", title: "Clear" }, React.createElement(X, { size: 26 }))
                 ),
                 // Result
-                result.status === 'match' && React.createElement("div", { className: "rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 text-center shadow-sm" },
-                    React.createElement("p", { className: "text-xs font-bold uppercase tracking-widest text-zinc-400 mb-3" }, `${result.entry.label} →`),
-                    result.entry.code === '?'
-                        ? React.createElement("div", null,
-                            React.createElement("div", { className: `inline-flex w-40 h-28 rounded-2xl items-center justify-center text-5xl font-bold ${alphaColour('?', result.entry.colourHint)}` }, "??"),
-                            React.createElement("p", { className: "text-sm text-amber-600 dark:text-amber-400 font-medium mt-3" }, "Not readable on the sheet photo. Check the sheet, then set it below."))
-                        : React.createElement("div", { className: `inline-flex min-w-[11rem] px-6 h-32 rounded-3xl items-center justify-center text-7xl font-black font-mono tracking-tight shadow-lg ${alphaColour(result.entry.code)}` }, result.entry.code),
-                    React.createElement("p", { className: "text-xs text-zinc-400 mt-4" }, "Press Enter (or Done) for the next label")
-                ),
+                !query && React.createElement("div", { className: "h-32 md:h-48 rounded-3xl border-4 border-dashed border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-center px-6 text-zinc-400 text-base font-medium" }, "Type the postcode from the label. The letters alone (e.g. LS) are usually enough."),
+                result.status === 'match' && (result.entry.code === '?'
+                    ? React.createElement("div", { className: `h-32 md:h-48 rounded-3xl flex flex-col items-center justify-center text-center px-4 ${alphaColour('?', result.entry.colourHint)}` },
+                        React.createElement("span", { className: "text-6xl font-black" }, "??"),
+                        React.createElement("span", { className: "text-sm font-semibold mt-1" }, `${result.entry.label}: not readable on the sheet photo. Set it in Full sheet below.`))
+                    : React.createElement("div", { className: `relative h-32 md:h-48 rounded-3xl flex items-center justify-center shadow-lg ${alphaColour(result.entry.code)}` },
+                        React.createElement("span", { className: "absolute top-3 left-4 text-sm font-bold opacity-70" }, result.entry.label),
+                        React.createElement("span", { className: `${result.entry.code.length <= 3 ? 'text-[6rem] md:text-[8rem]' : result.entry.code.length === 4 ? 'text-[4.75rem] md:text-[6.5rem]' : 'text-[3.25rem] md:text-[5rem]'} leading-none font-black font-mono tracking-tight` }, result.entry.code))),
                 result.status === 'needDistrict' && React.createElement("div", { className: "rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5" },
                     React.createElement("p", { className: "text-sm font-semibold text-zinc-600 dark:text-zinc-300 mb-2" }, `${result.area} is split by district. Keep typing the number:`),
                     React.createElement("div", { className: "divide-y divide-zinc-100 dark:divide-zinc-800" }, result.options.map(optionRow))),
