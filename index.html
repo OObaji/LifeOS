@@ -869,7 +869,7 @@
                     current?.returnOnly
                         ? React.createElement("div", { className: "h-36 rounded-3xl bg-amber-400 text-zinc-900 flex flex-col items-center justify-center text-center px-5" },
                             React.createElement("span", { className: "text-2xl font-black" }, "Return address only"),
-                            React.createElement("span", { className: "text-sm font-semibold mt-1" }, `${current.postcode} is the sender's postcode. Aim at the destination postcode. If the destination is overseas, it's not on the sheet.`))
+                            React.createElement("span", { className: "text-sm font-semibold mt-1" }, `${current.postcode} is the sender's postcode. Aim at the destination postcode.`))
                     : current
                         ? React.createElement("div", { className: `relative h-36 rounded-3xl flex items-center justify-center ${alphaColour(current.code, current.hint)}` },
                             React.createElement("span", { className: "absolute top-3 left-4 text-base font-bold font-mono opacity-80" }, current.postcode),
