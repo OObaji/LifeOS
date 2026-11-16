@@ -57,6 +57,7 @@
 
         import React, { useState, useEffect, useRef, useMemo } from "https://esm.sh/react@18.2.0";
         import { createRoot } from "https://esm.sh/react-dom@18.2.0/client";
+        import { createPortal } from "https://esm.sh/react-dom@18.2.0";
         import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
         import {
             Layout, BookOpen, Target, Settings, Plus, CheckCircle2, ArrowRight, Brain,
@@ -65,7 +66,7 @@
             ListTodo, CheckSquare, Square, AlertCircle, Book, Hourglass, Check, Gift,
             Chrome, Calendar, CalendarRange, GripVertical, ArrowUp, ArrowDown, Scale,
             Lightbulb, Flag, Activity, Ban, Bookmark, Eye, EyeOff, User, LogOut, LinkIcon, Globe, Search, Star, Sparkles, Coffee, Wind,
-            Quote, Loader2, ExternalLink, Pill, PiggyBank, Wallet, HeartPulse, Briefcase, Trophy, ScanLine
+            Quote, Loader2, ExternalLink, Pill, PiggyBank, Wallet, HeartPulse, Briefcase, Trophy, ScanLine, Zap
         } from "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0";
 
         const generateUUID = () => { if (typeof crypto !== 'undefined' && crypto.randomUUID) { return crypto.randomUUID(); } return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) { var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); };
@@ -632,12 +633,191 @@
             return hit ? { status: 'match', entry: hit, area: p.area, district } : { status: 'none', area: p.area, district, options: entries };
         };
 
+        // ---------- Scan mode: read the postcode off a parcel label with the camera (on-device OCR) ----------
+        const TESSERACT_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+        let ocrWorkerPromise = null;
+        const getOcrWorker = () => {
+            if (!ocrWorkerPromise) {
+                ocrWorkerPromise = (async () => {
+                    if (!window.Tesseract) await new Promise((resolve, reject) => {
+                        const s = document.createElement('script');
+                        s.src = TESSERACT_URL; s.onload = resolve;
+                        s.onerror = () => reject(new Error("Couldn't load the text reader. Check your connection."));
+                        document.head.appendChild(s);
+                    });
+                    const worker = await window.Tesseract.createWorker('eng');
+                    await worker.setParameters({ tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ', tessedit_pageseg_mode: '11' });
+                    return worker;
+                })().catch(e => { ocrWorkerPromise = null; throw e; });
+            }
+            return ocrWorkerPromise;
+        };
+        const ALPHA_AREAS = new Set(ALPHA_SHEET.map(e => e.area));
+        // OCR often swaps look-alike characters; postcodes have fixed letter/digit positions so we can correct them
+        const TO_LETTER = { '0': 'O', '1': 'I', '2': 'Z', '5': 'S', '6': 'G', '8': 'B' };
+        const TO_DIGIT = { O: '0', Q: '0', D: '0', I: '1', L: '1', Z: '2', S: '5', G: '6', B: '8' };
+        const fixChars = (s, kinds) => {
+            let fixes = 0;
+            const out = s.split('').map((c, i) => {
+                const want = kinds[i];
+                if (want === 'L' && /\d/.test(c)) { fixes++; return TO_LETTER[c] || c; }
+                if (want === 'D' && /[A-Z]/.test(c)) { fixes++; return TO_DIGIT[c] || c; }
+                return c;
+            }).join('');
+            return { out, fixes };
+        };
+        const OUTWARD_SHAPES = { 2: ['LD'], 3: ['LDD', 'LLD', 'LDL'], 4: ['LLDD', 'LLDL'] };
+        // Only central London districts have a letter after the district number (e.g. SW1A, EC1A, W1T)
+        const LETTER_DISTRICT_AREAS = new Set(['E', 'EC', 'N', 'NW', 'SE', 'SW', 'W', 'WC']);
+        const SENDER_WORDS = new Set(['RETURN', 'RETURNS', 'FROM', 'SENDER']);
+        const readPostcodes = (text) => {
+            const tokens = (text || '').toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim().split(' ').filter(Boolean);
+            const found = new Map();
+            let senderContext = false;
+            tokens.forEach((t, i) => {
+                // A postcode that follows "return/from/sender" is probably the sender's, so rank it last
+                if (SENDER_WORDS.has(t)) senderContext = true;
+                if (t === 'DELIVER' || t === 'SHIP' || t === 'RECIPIENT') senderContext = false;
+                const pairs = [];
+                if (tokens[i + 1] && tokens[i + 1].length === 3 && t.length >= 2 && t.length <= 4) pairs.push([t, tokens[i + 1]]);
+                if (t.length >= 5 && t.length <= 7) pairs.push([t.slice(0, -3), t.slice(-3)]);
+                pairs.forEach(([o, inw]) => {
+                    const inward = fixChars(inw, 'DLL');
+                    if (!/^\d[A-Z]{2}$/.test(inward.out)) return;
+                    (OUTWARD_SHAPES[o.length] || []).forEach(shape => {
+                        const outward = fixChars(o, shape);
+                        const m = outward.out.match(/^([A-Z]{1,2})\d([A-Z\d]?)$/);
+                        if (!m || !ALPHA_AREAS.has(m[1])) return;
+                        if (/[A-Z]/.test(m[2]) && !LETTER_DISTRICT_AREAS.has(m[1])) return;
+                        const postcode = `${outward.out} ${inward.out}`;
+                        const cand = { postcode, fixes: outward.fixes + inward.fixes, sender: senderContext, order: i };
+                        const prev = found.get(postcode);
+                        if (!prev || cand.fixes < prev.fixes) found.set(postcode, cand);
+                    });
+                });
+                if (pairs.length && found.size) senderContext = false;
+            });
+            return [...found.values()].sort((a, b) => (a.sender - b.sender) || (a.fixes - b.fixes) || (a.order - b.order));
+        };
+
+        const ScanMode = ({ overrides, onClose, onScanned }) => {
+            const videoRef = useRef(null);
+            const boxRef = useRef(null);
+            const streamRef = useRef(null);
+            const lastSeenRef = useRef({ postcode: null, count: 0 });
+            const currentRef = useRef(null);
+            const [status, setStatus] = useState('starting');
+            const [error, setError] = useState(null);
+            const [current, setCurrent] = useState(null);
+            const [torchOn, setTorchOn] = useState(false);
+            const [torchAvailable, setTorchAvailable] = useState(false);
+            const [flash, setFlash] = useState(false);
+
+            useEffect(() => {
+                let active = true;
+                const canvas = document.createElement('canvas');
+                (async () => {
+                    try {
+                        if (!navigator.mediaDevices?.getUserMedia) throw new Error("This browser can't use the camera. Open the site in Safari or Chrome over https.");
+                        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+                        if (!active) { stream.getTracks().forEach(t => t.stop()); return; }
+                        streamRef.current = stream;
+                        const track = stream.getVideoTracks()[0];
+                        const caps = track.getCapabilities ? track.getCapabilities() : {};
+                        if (caps.torch) setTorchAvailable(true);
+                        if (caps.focusMode && caps.focusMode.includes('continuous')) track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
+                        videoRef.current.srcObject = stream;
+                        await videoRef.current.play().catch(() => {});
+                        setStatus('loading');
+                        const worker = await getOcrWorker();
+                        if (!active) return;
+                        setStatus('scanning');
+                        while (active) {
+                            const v = videoRef.current, box = boxRef.current;
+                            if (v && box && v.videoWidth) {
+                                // Map the on-screen guide box onto the video frame (video is object-cover scaled)
+                                const vr = v.getBoundingClientRect(), br = box.getBoundingClientRect();
+                                const scale = Math.max(vr.width / v.videoWidth, vr.height / v.videoHeight);
+                                const ox = (vr.width - v.videoWidth * scale) / 2, oy = (vr.height - v.videoHeight * scale) / 2;
+                                const sx = Math.max(0, (br.left - vr.left - ox) / scale), sy = Math.max(0, (br.top - vr.top - oy) / scale);
+                                const sw = Math.min(v.videoWidth - sx, br.width / scale), sh = Math.min(v.videoHeight - sy, br.height / scale);
+                                const outW = Math.min(1400, Math.max(800, sw));
+                                canvas.width = outW; canvas.height = Math.round(sh * outW / sw);
+                                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                                ctx.filter = 'grayscale(1) contrast(1.6)';
+                                ctx.drawImage(v, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+                                const { data } = await worker.recognize(canvas);
+                                if (!active) return;
+                                const hits = readPostcodes(data.text);
+                                const best = hits[0];
+                                if (best) {
+                                    const seen = lastSeenRef.current;
+                                    seen.count = seen.postcode === best.postcode ? seen.count + 1 : 1;
+                                    seen.postcode = best.postcode;
+                                    // A clean read is trusted straight away; a read that needed character fixes must repeat once
+                                    if ((best.fixes === 0 || seen.count >= 2) && currentRef.current?.postcode !== best.postcode) {
+                                        const res = lookupAlpha(best.postcode, overrides);
+                                        if (res.status === 'match') {
+                                            const item = { postcode: best.postcode, code: res.entry.code, hint: res.entry.colourHint, label: res.entry.label };
+                                            currentRef.current = item; setCurrent(item); onScanned(item);
+                                            setFlash(true); setTimeout(() => setFlash(false), 250);
+                                            if (navigator.vibrate) navigator.vibrate(80);
+                                        }
+                                    }
+                                }
+                            }
+                            await new Promise(r => setTimeout(r, 120));
+                        }
+                    } catch (e) {
+                        if (!active) return;
+                        setError(e.name === 'NotAllowedError' ? "Camera permission was blocked. Allow camera access for this site in your browser settings, then try again." : (e.message || "Couldn't start the camera."));
+                        setStatus('error');
+                    }
+                })();
+                return () => { active = false; streamRef.current?.getTracks().forEach(t => t.stop()); };
+            }, []);
+
+            const toggleTorch = async () => {
+                const track = streamRef.current?.getVideoTracks()[0];
+                if (!track) return;
+                try { await track.applyConstraints({ advanced: [{ torch: !torchOn }] }); setTorchOn(!torchOn); } catch { setTorchAvailable(false); }
+            };
+            const statusText = { starting: 'Starting camera...', loading: 'Loading text reader (first time takes a few seconds)...', scanning: current ? 'Point at the next parcel' : 'Point the box at the postcode', error: '' }[status];
+
+            // Portal to <body> so the overlay always covers the full screen, above the app's own fixed bars
+            return createPortal(React.createElement("div", { className: "fixed inset-0 z-[200] bg-black flex flex-col" },
+                React.createElement("div", { className: "relative flex-1 overflow-hidden" },
+                    React.createElement("video", { ref: videoRef, playsInline: true, muted: true, autoPlay: true, className: "absolute inset-0 w-full h-full object-cover" }),
+                    // Guide box with darkened surroundings
+                    React.createElement("div", { ref: boxRef, className: `absolute left-1/2 -translate-x-1/2 top-[22%] w-[86%] max-w-xl h-[22%] rounded-2xl border-4 transition-colors ${flash ? 'border-emerald-400' : 'border-white'} shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]` }),
+                    React.createElement("div", { className: "absolute top-0 inset-x-0 flex items-center justify-between p-4 pt-[max(1rem,env(safe-area-inset-top))]" },
+                        React.createElement("button", { onClick: onClose, className: "w-12 h-12 rounded-full bg-black/60 text-white flex items-center justify-center active:scale-90", title: "Close scan mode" }, React.createElement(X, { size: 26 })),
+                        React.createElement("span", { className: "px-3 py-1.5 rounded-full bg-black/60 text-white text-sm font-semibold flex items-center gap-2" }, status !== 'scanning' && status !== 'error' && React.createElement(Loader2, { size: 14, className: "animate-spin" }), statusText || 'Scan mode'),
+                        torchAvailable ? React.createElement("button", { onClick: toggleTorch, className: `w-12 h-12 rounded-full flex items-center justify-center active:scale-90 ${torchOn ? 'bg-yellow-300 text-zinc-900' : 'bg-black/60 text-white'}`, title: "Torch" }, React.createElement(Zap, { size: 22 })) : React.createElement("div", { className: "w-12" })
+                    ),
+                    error && React.createElement("div", { className: "absolute inset-x-4 top-1/2 -translate-y-1/2 p-5 rounded-2xl bg-white dark:bg-zinc-900 text-center" },
+                        React.createElement("p", { className: "font-bold text-zinc-900 dark:text-white mb-1" }, "Scan mode couldn't start"),
+                        React.createElement("p", { className: "text-sm text-zinc-600 dark:text-zinc-300" }, error),
+                        React.createElement("button", { onClick: onClose, className: "mt-4 px-5 py-2.5 rounded-xl bg-orange-500 text-white font-bold" }, "Type postcode instead"))
+                ),
+                // Result
+                React.createElement("div", { className: "bg-zinc-950 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]" },
+                    current
+                        ? React.createElement("div", { className: `relative h-36 rounded-3xl flex items-center justify-center ${alphaColour(current.code, current.hint)}` },
+                            React.createElement("span", { className: "absolute top-3 left-4 text-base font-bold font-mono opacity-80" }, current.postcode),
+                            React.createElement("span", { className: `${current.code.length <= 3 ? 'text-[6rem]' : current.code.length === 4 ? 'text-[4.75rem]' : 'text-[3.25rem]'} leading-none font-black font-mono tracking-tight` }, current.code === '?' ? '??' : current.code))
+                        : React.createElement("div", { className: "h-36 rounded-3xl border-4 border-dashed border-zinc-700 flex items-center justify-center text-zinc-400 font-medium px-6 text-center" }, "The alpha code will appear here")
+                )
+            ), document.body);
+        };
+
         const AlphaCodeView = ({ overrides = {}, onSetOverride }) => {
             const [query, setQuery] = useState("");
             const [recent, setRecent] = useState([]);
             const [editing, setEditing] = useState(null);
             const [editValue, setEditValue] = useState("");
             const [showSheet, setShowSheet] = useState(false);
+            const [scanning, setScanning] = useState(false);
             const inputRef = useRef(null);
             const result = lookupAlpha(query, overrides);
             const unclear = ALPHA_SHEET.filter(e => !overrides[e.label] && e.code === '?');
@@ -648,6 +828,8 @@
                 setRecent(prev => [item, ...prev.filter(r => r.q !== item.q)].slice(0, 8));
                 setQuery(""); inputRef.current?.focus();
             };
+            const handleScanned = (item) => setRecent(prev => [{ q: item.postcode, code: item.code, hint: item.hint }, ...prev.filter(r => r.q !== item.postcode)].slice(0, 8));
+            const closeScan = () => { setScanning(false); if (recent[0]) setQuery(recent[0].q); };
             const saveEdit = () => { const v = editValue.trim().toUpperCase(); onSetOverride(editing, v || null); setEditing(null); };
             const codeBadge = (code, hint, size = "text-sm px-2.5 py-1") => React.createElement("span", { className: `inline-flex items-center justify-center rounded-lg font-bold font-mono ${size} ${alphaColour(code, hint)}` }, code === '?' ? '??' : code);
             const optionRow = (e) => React.createElement("div", { key: e.label, className: "flex items-center justify-between gap-3 py-2" },
@@ -658,8 +840,10 @@
             return React.createElement("div", { className: "px-1 pt-0 pb-32 md:p-8 max-w-2xl mx-auto space-y-3" },
                 React.createElement("div", { className: "flex items-baseline justify-between gap-3 px-1" },
                     React.createElement("h2", { className: "text-lg font-bold text-zinc-900 dark:text-white" }, "Alpha Codes ", React.createElement("span", { className: "text-xs font-bold uppercase tracking-widest text-orange-500" }, "· warehouse")),
-                    React.createElement("span", { className: "text-xs text-zinc-400" }, "Enter = next label")
+                    React.createElement("span", { className: "text-xs text-zinc-400 hidden sm:inline" }, "Enter = next label")
                 ),
+                scanning && React.createElement(ScanMode, { overrides, onClose: closeScan, onScanned: handleScanned }),
+                React.createElement("button", { onClick: () => setScanning(true), className: "w-full h-16 rounded-3xl bg-gradient-to-br from-orange-500 to-amber-500 text-white text-xl font-black flex items-center justify-center gap-3 shadow-lg shadow-orange-500/30 active:scale-[0.98] transition-transform" }, React.createElement(ScanLine, { size: 26 }), "Scan mode"),
                 React.createElement("div", { className: "relative" },
                     React.createElement("input", { ref: inputRef, autoFocus: true, value: query, onChange: e => setQuery(e.target.value.toUpperCase()), onFocus: e => e.target.select(), onKeyDown: e => { if (e.key === 'Enter') remember(); if (e.key === 'Escape') setQuery(""); }, placeholder: "Postcode", autoCapitalize: "characters", autoCorrect: "off", autoComplete: "off", spellCheck: false, enterKeyHint: "done", className: "w-full h-24 md:h-28 pl-5 pr-16 rounded-3xl bg-white dark:bg-zinc-900 border-4 border-zinc-200 dark:border-zinc-700 text-5xl md:text-6xl font-black tracking-wider font-mono text-zinc-900 dark:text-white placeholder:text-zinc-300 dark:placeholder:text-zinc-700 placeholder:font-sans placeholder:font-bold placeholder:tracking-normal focus:outline-none focus:border-orange-400 shadow-md" }),
                     query && React.createElement("button", { onClick: () => { setQuery(""); inputRef.current?.focus(); }, className: "absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 active:scale-90", title: "Clear" }, React.createElement(X, { size: 26 }))
