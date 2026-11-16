@@ -66,7 +66,7 @@
             ListTodo, CheckSquare, Square, AlertCircle, Book, Hourglass, Check, Gift,
             Chrome, Calendar, CalendarRange, GripVertical, ArrowUp, ArrowDown, Scale,
             Lightbulb, Flag, Activity, Ban, Bookmark, Eye, EyeOff, User, LogOut, LinkIcon, Globe, Search, Star, Sparkles, Coffee, Wind,
-            Quote, Loader2, ExternalLink, Pill, PiggyBank, Wallet, HeartPulse, Briefcase, Trophy, ScanLine, Zap
+            Quote, Loader2, ExternalLink, Pill, PiggyBank, Wallet, HeartPulse, Briefcase, Trophy, ScanLine, Zap, QrCode
         } from "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0";
 
         const generateUUID = () => { if (typeof crypto !== 'undefined' && crypto.randomUUID) { return crypto.randomUUID(); } return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) { var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); };
@@ -879,13 +879,102 @@
             ), document.body);
         };
 
-        const AlphaCodeView = ({ overrides = {}, onSetOverride }) => {
+        // ---------- Sharing the Alpha Codes page with colleagues (QR code + link, no login needed) ----------
+        const QR_LIB_URL = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
+        let qrLibPromise = null;
+        const loadQrLib = () => {
+            if (window.qrcode) return Promise.resolve(window.qrcode);
+            if (!qrLibPromise) qrLibPromise = new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = QR_LIB_URL; s.onload = () => resolve(window.qrcode);
+                s.onerror = () => { qrLibPromise = null; reject(new Error("Couldn't load the QR code maker. Check your connection.")); };
+                document.head.appendChild(s);
+            });
+            return qrLibPromise;
+        };
+        // The shared link is <site>#alpha, plus any corrected codes so colleagues see the same codes as you
+        const buildAlphaShareUrl = (overrides = {}) => {
+            const base = window.location.origin + window.location.pathname;
+            const fixes = Object.entries(overrides).filter(([, code]) => code).map(([label, code]) => `${label}=${code}`).join(';');
+            return `${base}#alpha${fixes ? '?c=' + encodeURIComponent(fixes) : ''}`;
+        };
+        const readAlphaShareHash = () => {
+            const h = window.location.hash || '';
+            if (!/^#alpha(\?|$)/i.test(h)) return null;
+            const m = h.match(/[?&]c=([^&]*)/);
+            const overrides = {};
+            if (m) decodeURIComponent(m[1]).split(';').forEach(pair => {
+                const i = pair.lastIndexOf('=');
+                const label = pair.slice(0, i), code = pair.slice(i + 1).toUpperCase();
+                if (i > 0 && ALPHA_SHEET.some(e => e.label === label) && /^[A-Z0-9+]{1,8}$/.test(code)) overrides[label] = code;
+            });
+            return { overrides };
+        };
+
+        const AlphaShareModal = ({ overrides, onClose }) => {
+            const url = buildAlphaShareUrl(overrides);
+            const [qr, setQr] = useState(null);
+            const [error, setError] = useState(null);
+            const [copied, setCopied] = useState(false);
+            useEffect(() => {
+                loadQrLib().then(make => { const q = make(0, 'M'); q.addData(url); q.make(); setQr(q); }).catch(e => setError(e.message));
+            }, [url]);
+            useEffect(() => { const esc = (e) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', esc); return () => window.removeEventListener('keydown', esc); }, [onClose]);
+            const copy = async () => {
+                try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1800); }
+                catch { window.prompt("Copy this link:", url); }
+            };
+            const share = () => navigator.share({ title: 'Alpha Codes', text: 'Type or scan a parcel postcode to get its alpha code:', url }).catch(() => {});
+            const saveImage = () => { const a = document.createElement('a'); a.href = qr.createDataURL(12, 4); a.download = 'alpha-codes-qr.gif'; a.click(); };
+            // Draw the QR as an SVG of dark squares (crisp at any size, no innerHTML needed)
+            const qrSvg = () => {
+                const n = qr.getModuleCount(), m = 4, cells = [];
+                for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) cells.push(`M${c + m} ${r + m}h1v1h-1z`);
+                return React.createElement("svg", { viewBox: `0 0 ${n + m * 2} ${n + m * 2}`, className: "w-full h-auto block", shapeRendering: "crispEdges", role: "img", "aria-label": "QR code linking to the Alpha Codes page" },
+                    React.createElement("rect", { width: "100%", height: "100%", fill: "#fff" }),
+                    React.createElement("path", { d: cells.join(''), fill: "#000" }));
+            };
+            return createPortal(React.createElement("div", { className: "fixed inset-0 z-[210] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4", onClick: onClose },
+                React.createElement("div", { onClick: e => e.stopPropagation(), className: "w-full max-w-sm rounded-3xl bg-white dark:bg-zinc-900 p-5 shadow-2xl" },
+                    React.createElement("div", { className: "flex items-start justify-between gap-3 mb-3" },
+                        React.createElement("div", null,
+                            React.createElement("h3", { className: "text-xl font-black text-zinc-900 dark:text-white" }, "Share with colleagues"),
+                            React.createElement("p", { className: "text-sm text-zinc-500 dark:text-zinc-400" }, "They scan this with their phone camera and go straight to Alpha Codes. No login needed.")),
+                        React.createElement("button", { onClick: onClose, className: "p-2 -m-1 rounded-full text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200", title: "Close" }, React.createElement(X, { size: 22 }))),
+                    React.createElement("div", { className: "rounded-2xl border-4 border-orange-400 overflow-hidden bg-white" },
+                        qr ? qrSvg() : React.createElement("div", { className: "aspect-square flex items-center justify-center text-zinc-400" }, error ? React.createElement("p", { className: "text-sm text-red-600 px-6 text-center" }, error) : React.createElement(Loader2, { className: "animate-spin" }))),
+                    React.createElement("p", { className: "mt-3 text-xs font-mono text-zinc-500 dark:text-zinc-400 break-all select-all" }, url),
+                    Object.keys(overrides).length > 0 && React.createElement("p", { className: "mt-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium" }, `Includes your ${Object.keys(overrides).length} corrected code${Object.keys(overrides).length === 1 ? '' : 's'}.`),
+                    React.createElement("div", { className: "grid grid-cols-2 gap-2 mt-4" },
+                        React.createElement("button", { onClick: copy, className: "py-3 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-bold active:scale-95" }, copied ? "Copied ✓" : "Copy link"),
+                        navigator.share
+                            ? React.createElement("button", { onClick: share, className: "py-3 rounded-xl bg-orange-500 text-white text-sm font-bold active:scale-95" }, "Send…")
+                            : React.createElement("button", { onClick: saveImage, disabled: !qr, className: "py-3 rounded-xl bg-orange-500 text-white text-sm font-bold active:scale-95 disabled:opacity-40" }, "Save QR image"))
+                )), document.body);
+        };
+
+        // Standalone page colleagues land on from the QR code: just Alpha Codes, no LifeOS login.
+        // Corrections they make are kept in their own browser; the sharer's corrections come in via the link.
+        const ALPHA_LOCAL_OVERRIDES_KEY = 'lifeos_alpha_overrides';
+        const AlphaSharePage = ({ linkOverrides }) => {
+            const [localOverrides, setLocalOverrides] = useState(() => { try { return JSON.parse(localStorage.getItem(ALPHA_LOCAL_OVERRIDES_KEY)) || {}; } catch { return {}; } });
+            const setOverride = (label, code) => setLocalOverrides(prev => {
+                const next = { ...prev }; if (code) next[label] = code; else delete next[label];
+                try { localStorage.setItem(ALPHA_LOCAL_OVERRIDES_KEY, JSON.stringify(next)); } catch { /* storage unavailable */ }
+                return next;
+            });
+            return React.createElement("div", { className: "min-h-screen bg-zinc-50 dark:bg-zinc-950 pt-4 px-3" },
+                React.createElement(AlphaCodeView, { overrides: { ...linkOverrides, ...localOverrides }, onSetOverride: setOverride, shared: true }));
+        };
+
+        const AlphaCodeView = ({ overrides = {}, onSetOverride, shared = false }) => {
             const [query, setQuery] = useState("");
             const [recent, setRecent] = useState([]);
             const [editing, setEditing] = useState(null);
             const [editValue, setEditValue] = useState("");
             const [showSheet, setShowSheet] = useState(false);
             const [scanning, setScanning] = useState(false);
+            const [sharing, setSharing] = useState(false);
             const inputRef = useRef(null);
             const result = lookupAlpha(query, overrides);
             const unclear = ALPHA_SHEET.filter(e => !overrides[e.label] && e.code === '?');
@@ -908,9 +997,12 @@
             return React.createElement("div", { className: "px-1 pt-0 pb-32 md:p-8 max-w-2xl mx-auto space-y-3" },
                 React.createElement("div", { className: "flex items-baseline justify-between gap-3 px-1" },
                     React.createElement("h2", { className: "text-lg font-bold text-zinc-900 dark:text-white" }, "Alpha Codes ", React.createElement("span", { className: "text-xs font-bold uppercase tracking-widest text-orange-500" }, "· warehouse")),
-                    React.createElement("span", { className: "text-xs text-zinc-400 hidden sm:inline" }, "Enter = next label")
+                    React.createElement("div", { className: "flex items-center gap-3" },
+                        React.createElement("span", { className: "text-xs text-zinc-400 hidden sm:inline" }, "Enter = next label"),
+                        React.createElement("button", { onClick: () => setSharing(true), className: "flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm font-bold text-zinc-700 dark:text-zinc-200 active:scale-95", title: "Share with colleagues" }, React.createElement(QrCode, { size: 16 }), "Share"))
                 ),
                 scanning && React.createElement(ScanMode, { overrides, onClose: closeScan, onScanned: handleScanned }),
+                sharing && React.createElement(AlphaShareModal, { overrides, onClose: () => setSharing(false) }),
                 React.createElement("button", { onClick: () => setScanning(true), className: "w-full h-16 rounded-3xl bg-gradient-to-br from-orange-500 to-amber-500 text-white text-xl font-black flex items-center justify-center gap-3 shadow-lg shadow-orange-500/30 active:scale-[0.98] transition-transform" }, React.createElement(ScanLine, { size: 26 }), "Scan mode"),
                 React.createElement("div", { className: "relative" },
                     React.createElement("input", { ref: inputRef, autoFocus: true, value: query, onChange: e => setQuery(e.target.value.toUpperCase()), onFocus: e => e.target.select(), onKeyDown: e => { if (e.key === 'Enter') remember(); if (e.key === 'Escape') setQuery(""); }, placeholder: "Postcode", autoCapitalize: "characters", autoCorrect: "off", autoComplete: "off", spellCheck: false, enterKeyHint: "done", className: "w-full h-24 md:h-28 pl-5 pr-16 rounded-3xl bg-white dark:bg-zinc-900 border-4 border-zinc-200 dark:border-zinc-700 text-5xl md:text-6xl font-black tracking-wider font-mono text-zinc-900 dark:text-white placeholder:text-zinc-300 dark:placeholder:text-zinc-700 placeholder:font-sans placeholder:font-bold placeholder:tracking-normal focus:outline-none focus:border-orange-400 shadow-md" }),
@@ -1978,6 +2070,9 @@
             const [user, setUser] = useState(null);
             const [showSettings, setShowSettings] = useState(false);
             const [showAssistant, setShowAssistant] = useState(false);
+            // A shared link (#alpha) opens the standalone Alpha Codes page, no login needed
+            const [alphaShare, setAlphaShare] = useState(readAlphaShareHash);
+            useEffect(() => { const onHash = () => setAlphaShare(readAlphaShareHash()); window.addEventListener('hashchange', onHash); return () => window.removeEventListener('hashchange', onHash); }, []);
             const cloudRefs = useRef({ dumps: [], meals: [], books: [] });
             const suppressRealtimeRef = useRef(false);
             const saveTimerRef = useRef(null);
@@ -2327,6 +2422,8 @@ Respond with ONLY raw JSON, no markdown fences, no commentary, in this exact sha
             const handleUpdateIdeaNote = (note) => setIdeaNotes(prev => prev.map(n => n.id === note.id ? note : n));
             const handleDeleteIdeaNote = (id) => setIdeaNotes(prev => prev.filter(n => n.id !== id));
 
+
+            if (alphaShare) return React.createElement(AlphaSharePage, { linkOverrides: alphaShare.overrides });
 
             if (!user) return React.createElement(React.Fragment, null,
                 React.createElement(LandingPage, { onLoginSuccess: handleLoginSuccess, onGuestLogin: handleLoginSuccess, onOpenSettings: () => setShowSettings(true) }),
