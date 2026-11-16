@@ -576,7 +576,7 @@
         // Transcribed from the depot sheet. Ranges are postcode district numbers; "?" = unreadable on the sheet photo.
         const ALPHA_SHEET = [
             ['AB', 'A99+84'], ['AL', 'R36'], ['B', 'L55'], ['BA', 'X6'], ['BB', 'C75'], ['BD', 'E66'], ['BFPO', 'Q20'], ['BH', 'X14'], ['BL', 'C76'], ['BN', 'Q19'], ['BR', 'Q22'], ['BS', 'X5'],
-            ['BT1-18', 'C84'], ['BT19-58', 'C83'], ['BT60-94', 'C82'], ['BX1,4,5', '?', 'E'], ['BX2', '?', 'A'], ['BX8,9', '?', 'L'],
+            ['BT1-18', 'C84'], ['BT19-58', 'C83'], ['BT60-94', 'C82'],
             ['CA', 'C78'], ['CB', 'L48'], ['CF', 'X3'], ['CH', 'C74'], ['CM', 'R34'], ['CO', 'R34'], ['CR', 'Q22'], ['CT', 'R37'], ['CV', 'L57'], ['CW', 'C79'],
             ['DA', 'R40'], ['DD', 'A95'], ['DE', 'E60'], ['DG', 'C78'], ['DH', 'E70'], ['DL', 'E70'], ['DN', 'E62'], ['DT', 'X14'], ['DY', 'L53'],
             ['E', 'R32'], ['EC', 'Q27'], ['EH1-17,29-30,91,99', 'A98'], ['EH18-28,31-55', 'A97'], ['EN', 'R36'], ['EX', 'X12'], ['FK', 'A96'], ['FY', 'C75'],
@@ -895,7 +895,7 @@
         // The shared link is <site>#alpha, plus any corrected codes so colleagues see the same codes as you
         const buildAlphaShareUrl = (overrides = {}) => {
             const base = window.location.origin + window.location.pathname;
-            const fixes = Object.entries(overrides).filter(([, code]) => code).map(([label, code]) => `${label}=${code}`).join(';');
+            const fixes = Object.entries(overrides).filter(([label, code]) => code && ALPHA_SHEET.some(e => e.label === label)).map(([label, code]) => `${label}=${code}`).join(';');
             return `${base}#alpha${fixes ? '?c=' + encodeURIComponent(fixes) : ''}`;
         };
         const readAlphaShareHash = () => {
@@ -913,6 +913,7 @@
 
         const AlphaShareModal = ({ overrides, onClose }) => {
             const url = buildAlphaShareUrl(overrides);
+            const sharedCount = Object.keys(overrides).filter(label => overrides[label] && ALPHA_SHEET.some(e => e.label === label)).length;
             const [qr, setQr] = useState(null);
             const [error, setError] = useState(null);
             const [copied, setCopied] = useState(false);
@@ -944,7 +945,7 @@
                     React.createElement("div", { className: "rounded-2xl border-4 border-orange-400 overflow-hidden bg-white" },
                         qr ? qrSvg() : React.createElement("div", { className: "aspect-square flex items-center justify-center text-zinc-400" }, error ? React.createElement("p", { className: "text-sm text-red-600 px-6 text-center" }, error) : React.createElement(Loader2, { className: "animate-spin" }))),
                     React.createElement("p", { className: "mt-3 text-xs font-mono text-zinc-500 dark:text-zinc-400 break-all select-all" }, url),
-                    Object.keys(overrides).length > 0 && React.createElement("p", { className: "mt-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium" }, `Includes your ${Object.keys(overrides).length} corrected code${Object.keys(overrides).length === 1 ? '' : 's'}.`),
+                    sharedCount > 0 && React.createElement("p", { className: "mt-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium" }, `Includes your ${sharedCount} corrected code${sharedCount === 1 ? '' : 's'}.`),
                     React.createElement("div", { className: "grid grid-cols-2 gap-2 mt-4" },
                         React.createElement("button", { onClick: copy, className: "py-3 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-bold active:scale-95" }, copied ? "Copied ✓" : "Copy link"),
                         navigator.share
